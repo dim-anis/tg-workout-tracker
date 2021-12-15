@@ -1,0 +1,38 @@
+{
+  "name": "tg-workout-tracker",
+  "version": "1.0.0",
+  "description": "A workout tracker based on Telegram's BotAPI.",
+  "main": "app.ts",
+  "type": "module",
+  "scripts": {
+    "test": "ts-node-dev app.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dim-anis/tg-workout-tracker.git"
+  },
+  "keywords": [
+    "workouttracker",
+    "botapi",
+    "telegram-bot-api",
+    "telegram"
+  ],
+  "author": "dim-anis",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dim-anis/tg-workout-tracker/issues"
+  },
+  "homepage": "https://github.com/dim-anis/tg-workout-tracker#readme",
+  "dependencies": {
+    "dotenv": "^10.0.0",
+    "luxon": "^2.1.1",
+    "mongoose": "^6.0.13",
+    "node-telegram-bot-api": "^0.54.0",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.3"
+  },
+  "devDependencies": {
+    "@types/node-telegram-bot-api": "^0.53.2",
+    "ts-node-dev": "^1.1.8"
+  }
+}
