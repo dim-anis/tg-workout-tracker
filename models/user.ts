@@ -1,10 +1,13 @@
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 const Schema = mongoose.Schema;
 
 const UserSchema = new Schema(
     {
-        name: { type: String },
-        current_routine: { type: Array }
+        name: {
+            first_name: { type: String },
+            last_name: { type: String }
+        },
+        current_routine: { type: Schema.Types.ObjectId, ref: 'Routine'}
     }
 );
 
