@@ -31,8 +31,8 @@ const bot = new botAPI(<string>process.env.KEY, { polling: true } );
 bot.setMyCommands(
     [
         { command: '/start_workout', description: '- starts a workout sequence with exercises in selected order' },
-        { command: '/show_last_workout', description: '- shows all sets of the last workout' },
-        { command: '/show_exercises', description: ' - shows a list of all exercises in the DB'},
+        { command: '/show_last_workout', description: '- shows all sets of the last workout' }, // implemented
+        { command: '/show_exercises', description: ' - shows a list of all exercises in the DB'}, // implemented
         { command: '/set_routine', description: '- allows to set a routine' },
         { command: '/record_set', description: '- allows to record a single set to the db' },
         { command: '/delete_last_set', description: '- deletes last set' },
@@ -65,6 +65,10 @@ bot.on('message', async msg => {
             }
         }
         await bot.sendMessage(chatId, lastWorkoutMessage, { parse_mode: 'Markdown' });
+    }
+    if (message === '/delete_last_set') {
+        await sets.deleteLastSet();
+        bot.sendMessage(chatId, '🗑Last set has been successfully deleted.');
     }
 });
 
