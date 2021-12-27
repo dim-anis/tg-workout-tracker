@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "test": "ts-node-dev app.ts",
-    "build-dist": "./node_modules/typescript/bin/tsc"
+    "build-dist": "./node_modules/typescript/bin/tsc",
+    "trasnpiled": "node ./out/app.js"
   },
   "repository": {
     "type": "git",
@@ -25,10 +26,9 @@
   },
   "homepage": "https://github.com/dim-anis/tg-workout-tracker#readme",
   "dependencies": {
-    "@types/mongoose": "^5.11.97",
     "async": "^3.2.2",
+    "date-fns": "^2.27.0",
     "dotenv": "^10.0.0",
-    "luxon": "^2.1.1",
     "mongoose": "^6.1.2",
     "node-telegram-bot-api": "^0.54.0",
     "ts-node": "^10.4.0",

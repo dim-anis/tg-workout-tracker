@@ -1,15 +1,27 @@
-import mongoose from 'mongoose';
-const Schema = mongoose.Schema;
+import { model, Schema, Model, Document } from 'mongoose';
+export interface ISet extends Document {
+    weight: number,
+    exercise: string,
+    repetitions: number,
+    rpe: number,
+    notes?: string,
+    createdAt: Date,
+    updatedAt: Date
+}
 
-const SetSchema = new Schema(
+export const SetSchema = new Schema<ISet>(
     {
-        trainee: { type: Schema.Types.ObjectId, ref: 'User', required: true},
-        date: { type: Date, default: Date.now },
-        exercise: { type: Schema.Types.ObjectId, ref: 'Exercise', required: true},
-        repetitions: { type: Number },
+        weight: { type: Number, required: true },
+        exercise: { type: String, required: true },
+        repetitions: { type: Number, required: true },
         rpe: { type: Number, required: true },
         notes: { type: String }
+    },
+    {
+        timestamps: true,
     }
 );
 
-export default mongoose.model('Set', SetSchema);
+const Set = model<ISet>('Set', SetSchema);
+
+export default Set;
