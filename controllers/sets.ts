@@ -14,7 +14,7 @@ export async function addSet(exercise: string, weight: number, repetitions: numb
         );
         let data = await set_data.save();
         console.log(data);
-        return 'Data has been successfully recorded.'
+        return '✅Data has been successfully recorded.'
     } catch (err) {
         return (err as Error).message;
     }
@@ -37,5 +37,18 @@ export async function getLastWorkout() {
         }
     } catch (err) {
         console.log(err);
+    }
+}
+
+export async function deleteLastSet() {
+    try {
+        const allSets = await Set.find({});
+        const lastSet = allSets.at(-1);
+        if (lastSet) {
+            return await Set.deleteOne({ _id: lastSet._id });
+        }
+
+    } catch (err) {
+        console.log(err)
     }
 }
