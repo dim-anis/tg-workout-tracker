@@ -1,7 +1,10 @@
 import Routine from '../models/routine';
 
-function displayRoutine() {
-
+export async function displayRoutine() {
+    try {
+        const workout = await Routine.find({ 'name': 'Upper/Lower'}).populate('workouts.exercise_sequence', 'name');
+        return workout[0];
+    } catch (err) {
+        console.log(err);
+    }
 };
-
-export { displayRoutine };
