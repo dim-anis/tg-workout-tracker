@@ -1,15 +1,26 @@
-import mongoose, { Types } from 'mongoose';
-const Schema = mongoose.Schema;
+import { model, Schema, Document } from 'mongoose';
 
-const UserSchema = new Schema(
+export interface IUser extends Document {
+    name: {
+        first: string,
+        last: string
+    },
+    current_routine: object,
+    last_workout: string
+}
+
+const UserSchema = new Schema<IUser>(
     {
         name: {
-            first_name: { type: String },
-            last_name: { type: String }
+            first: { type: String },
+            last: { type: String }
         },
-        current_routine: { type: Schema.Types.ObjectId, ref: 'Routine'}
+        current_routine: { type: Schema.Types.ObjectId, ref: 'Routine'},
+        last_workout: { type: String }
     }
 );
 
-export default mongoose.model('User', UserSchema);
+const User = model<IUser>('User', UserSchema);
+
+export default User;
 

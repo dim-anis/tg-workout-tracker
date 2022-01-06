@@ -1,4 +1,4 @@
-import { model, Schema, Model, Document } from 'mongoose';
+import { model, Schema, Document } from 'mongoose';
 export interface ISet extends Document {
     weight: number,
     exercise: string,
