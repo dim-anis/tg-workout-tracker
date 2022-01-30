@@ -1,11 +1,12 @@
-import { model, Schema, Document } from 'mongoose';
+import { model, Schema, Document, PopulatedDoc } from 'mongoose';
+import { IRoutine } from './routine';
 
 export interface IUser extends Document {
     name: {
         first: string,
         last: string
     },
-    current_routine: object,
+    current_routine: PopulatedDoc<IRoutine>,
     last_workout: string
 }
 
@@ -15,7 +16,7 @@ const UserSchema = new Schema<IUser>(
             first: { type: String },
             last: { type: String }
         },
-        current_routine: { type: Schema.Types.ObjectId, ref: 'Routine'},
+        current_routine: [{ type: Schema.Types.ObjectId, ref: 'Routine' }],
         last_workout: { type: String }
     }
 );
