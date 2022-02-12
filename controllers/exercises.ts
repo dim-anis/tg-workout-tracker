@@ -9,6 +9,9 @@ export async function findExercise(name?: string, category?: string) {
     } else if ( name ) {
       const data = await Exercise.find({ name });
       return data;
+    } else {
+      const data = await Exercise.find({ });
+      return data;
     }
   } catch (e) {
       console.log(e);
