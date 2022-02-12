@@ -1,12 +1,13 @@
+import { isNamedImports } from "typescript";
 import Exercise from "../models/exercise";
 
-export async function showExercises(category: string | "") {
+export async function findExercise(name?: string, category?: string) {
   try {
     if (category) {
       const data = await Exercise.find({ category: category }, "name").exec();
       return data;
-    } else {
-      const data = await Exercise.find({});
+    } else if ( name ) {
+      const data = await Exercise.find({ name });
       return data;
     }
   } catch (e) {

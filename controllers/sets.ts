@@ -49,6 +49,15 @@ export async function deleteLastSet() {
       return await Set.deleteOne({ _id: lastSet._id });
     }
   } catch (err) {
-    console.log(err);
+      console.log(err);
+  }
+}
+
+export async function getAllSets(exercise: string) {
+  try {
+    const allSets: Array<ISet> = await Set.find({"exercise": exercise});
+      return allSets;
+  } catch (err) {
+      console.log(err);
   }
 }

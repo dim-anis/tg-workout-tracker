@@ -1,12 +1,13 @@
 import { IRoutine } from "../models/routine";
+import { ISet } from "../models/set";
 
 // helper functions
-export function getTodaysWorkout(lastWorkout: string, order: Array<string>) {
+export function getTodaysWorkout(lastWorkout: string, exerciseOrder: Array<string>) {
   let todaysWorkout: string;
-  if (order.indexOf(lastWorkout) + 1 == order.length) {
-    todaysWorkout = order[0];
+  if (exerciseOrder.indexOf(lastWorkout) + 1 == exerciseOrder.length) {
+    todaysWorkout = exerciseOrder[0];
   } else {
-    todaysWorkout = order[order.indexOf(lastWorkout) + 1];
+    todaysWorkout = exerciseOrder[exerciseOrder.indexOf(lastWorkout) + 1];
   }
   return todaysWorkout;
 }
@@ -19,12 +20,53 @@ export function getWorkoutSequence(routine: IRoutine) {
   return workoutSequence;
 }
 
-export function generateKeyboardOptions(array: any) {
-  let keyboard_options = [];
-  for (let i = 0; i < array.length; i++) {
-    keyboard_options.push([
-      { text: array[i].name, callback_data: array[i].name },
-    ]);
+export function generateKeyboardOptions(array: any, callback_data?: string) {
+  let keyboard_options: Array<any> = [];
+  const avgLength = array.join('').length / array.length;
+  if (avgLength <= 5) {
+    keyboard_options = [[]];
+    for (let i = 0; i < array.length; i++) {
+      keyboard_options[0].push(
+        { text: array[i], callback_data: callback_data ? `${callback_data}/${array[i]}` : array[i]},
+      )
+    }
+  } else {
+      for (let i = 0; i < array.length; i++) {
+        keyboard_options.push([
+          { text: array[i], callback_data: callback_data ? `${callback_data}/${array[i]}` : array[i]},
+        ]);
+      }
   }
   return keyboard_options;
 }
+
+export const sortSetsByDate = function(arr: ISet[]) {
+  const newObject: Record<string, any> = {};
+
+  for (let i = 0; i < arr.length; i++) {
+
+    const dateString = arr[i].createdAt.toISOString().split("T")[0];
+
+    if (!newObject.hasOwnProperty(dateString)) {
+      newObject[dateString] = {
+        date: dateString,
+        sets: [
+          { weight: arr[i].weight, repetitions: arr[i].repetitions },
+        ],
+      };
+
+    } else {
+      newObject[dateString].sets.push({
+        weight: arr[i].weight,
+        repetitions: arr[i].repetitions,
+      });
+    }
+  }
+  interface SortedArrayItem {
+    date: string,
+    sets: Array<{weight: number, repetitions: number}>
+  }
+  const sortedArray: SortedArrayItem[] = Object.values(newObject);
+  return sortedArray;
+};
+
