@@ -1,6 +1,7 @@
 import Set, { ISet } from "../models/set";
 import endOfDay from "date-fns/endOfDay";
 import startOfDay from "date-fns/startOfDay";
+import subDays from "date-fns/subDays";
 
 export async function addSet(
   exercise: string,
@@ -55,7 +56,13 @@ export async function deleteLastSet() {
 
 export async function getAllSets(exercise: string) {
   try {
-    const allSets: Array<ISet> = await Set.find({"exercise": exercise});
+    const allSets: Array<ISet> = await Set.find({
+      "exercise": exercise,
+      "createdAt": {
+        $gte: startOfDay(subDays(new Date(Date.now()), 30)),
+        $lte: endOfDay(subDays(new Date(Date.now()), 1))
+      },
+    });
       return allSets;
   } catch (err) {
       console.log(err);
