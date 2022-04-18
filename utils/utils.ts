@@ -12,6 +12,16 @@ export function getTodaysWorkout(lastWorkout: string, exerciseOrder: Array<strin
   return todaysWorkout;
 }
 
+export function getLastWorkoutsDate(splitDays: number, setsArray: Array<ISet>) {
+  let workoutDates = new Set<string>();
+  for (let i = 0; i <= setsArray.length; i++) {
+    if (workoutDates.size <= splitDays) {
+      workoutDates.add(setsArray[i].createdAt.toISOString().split("T")[0]);
+    }
+  }
+  return [...workoutDates][splitDays];
+}
+
 export function getWorkoutSequence(routine: IRoutine) {
   let workoutSequence: Array<string> = [];
   for (let i = 0; i < routine.workouts.length; i++) {

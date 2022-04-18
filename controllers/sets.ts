@@ -24,13 +24,13 @@ export async function addSet(
   }
 }
 
-export async function getLastWorkout() {
+export async function getLastWorkoutSets() {
   try {
-    const lastDateISO = await Set.find({});
-    const lastDate = lastDateISO?.at(-1)?.createdAt.toISOString().split("T")[0];
+    const lastDateISO = await Set.findOne().sort({ createdAt: -1 });
+    const lastDate = lastDateISO?.createdAt.toISOString().split("T")[0];
     if (lastDate !== undefined) {
       const lastWorkout = await Set.find({
-        createdAt: {
+        "createdAt": {
           $gte: startOfDay(new Date(lastDate)),
           $lte: endOfDay(new Date(lastDate)),
         },
@@ -42,10 +42,31 @@ export async function getLastWorkout() {
   }
 }
 
+export async function getLastNumberOfSets(numberOfSets: number) {
+  try {
+    const lastWorkouts = await Set.find().sort({ "createdAt": -1 }).limit(numberOfSets);
+    return lastWorkouts;
+  } catch (err) {
+      console.log(err);
+  }
+}
+
+export async function getAllSetsFrom(date: string) {
+  try {
+    const sets = await Set.find({
+      "createdAt": {
+        $gte: startOfDay(new Date(date)),
+        $lte: endOfDay(new Date(date))
+    }});
+    return sets;
+  } catch (err) {
+      console.log(err);
+  }
+}
+
 export async function deleteLastSet() {
   try {
-    const allSets = await Set.find({});
-    const lastSet = allSets.at(-1);
+    const lastSet = await Set.findOne().sort({ "createdAt": -1 });
     if (lastSet) {
       return await Set.deleteOne({ _id: lastSet._id });
     }
@@ -54,7 +75,7 @@ export async function deleteLastSet() {
   }
 }
 
-export async function getAllSets(exercise: string) {
+export async function getAllSetsOf(exercise: string) {
   try {
     const allSets: Array<ISet> = await Set.find({
       "exercise": exercise,
