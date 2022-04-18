@@ -1,21 +1,21 @@
 import botAPI from "node-telegram-bot-api";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+
 import { findExercise } from "./controllers/exercises";
 import {
-  getLastWorkout,
-  getAllSets,
+  getLastWorkoutSets,
+  getAllSetsOf,
   addSet,
   deleteLastSet,
+  getLastNumberOfSets,
+  getAllSetsFrom
 } from "./controllers/sets";
-import { displayRoutine } from "./controllers/routines";
-import { getUserData, updateLastWorkout } from "./controllers/users";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import {
-  getTodaysWorkout,
-  getWorkoutSequence,
   generateKeyboardOptions,
   sortSetsByDate,
+  getLastWorkoutsDate
 } from "./utils/utils";
 
 dotenv.config();
@@ -41,24 +41,26 @@ const bot = new botAPI(<string>process.env.KEY, { polling: true });
 bot.setMyCommands([
   {
     command: "/start",
-    description: "- starts a workout sequence with exercises in selected order",
+    description: "start next workout in the split",
   }, // implemented
   {
     command: "/record_set",
-    description: "- allows to record a single set to the db",
+    description: "record a single set",
   }, // implemented
-  { command: "/delete_last_set", description: "- deletes last set" }, // implemented
+  { command: "/delete_last_set", description: "delete last set" }, // implemented
   {
     command: "/show_last_workout",
-    description: "- shows all sets of the last workout",
+    description: "show all sets of the last workout",
   }, // implemented
-  { command: "/set_routine", description: "- allows to set a routine" },
+  {
+    command: "/set_routine",
+    description: "set a routine (currently disabled)",
+  },
 ]);
 
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const message = msg.text;
-  const user = msg.from?.last_name;
 
   if (message === "/record_set") {
     const exerciseList = await findExercise("");
@@ -75,14 +77,14 @@ bot.on("message", async (msg) => {
   }
 
   if (message === "/show_last_workout") {
-    const workoutList = await getLastWorkout();
-    if (workoutList) {
-      const lastSetDate = workoutList[0].createdAt;
+    const lastWorkoutSets = await getLastWorkoutSets();
+    if (lastWorkoutSets) {
+      const lastWorkoutDate = lastWorkoutSets[0].createdAt;
       let lastWorkoutMessage = `Your last workout from *${formatDistanceToNow(
-        lastSetDate
+        lastWorkoutDate
       )}* ago:\n\n`;
-      for (let i = 0; i < workoutList.length; i++) {
-        lastWorkoutMessage += `📌 ${workoutList[i].exercise}: ${workoutList[i].weight} x ${workoutList[i].repetitions}\n`;
+      for (let i = 0; i < lastWorkoutSets.length; i++) {
+        lastWorkoutMessage += `📌 ${lastWorkoutSets[i].exercise}: ${lastWorkoutSets[i].weight} x ${lastWorkoutSets[i].repetitions}\n`;
       }
       await bot.sendMessage(chatId, lastWorkoutMessage, {
         parse_mode: "Markdown",
@@ -96,33 +98,22 @@ bot.on("message", async (msg) => {
   }
 
   if (message === "/start") {
-    const userData = await getUserData(user!);
-    const current_routine = await userData!.current_routine[0].name;
-    const routineObject = await displayRoutine(current_routine);
-
-    if (routineObject) {
-      const workoutSequence = getWorkoutSequence(routineObject!);
-      let lastWorkout = userData!.last_workout;
-      const todaysWorkout = getTodaysWorkout(lastWorkout, workoutSequence);
-      const todaysWorkoutObject = routineObject!.workouts.filter(
-        (obj) => obj.name === todaysWorkout
-      );
-      const todaysExercises = todaysWorkoutObject[0].exercise_sequence.map(
-        (item) => item.name
-      );
-      const keyboard_options = generateKeyboardOptions(
-        todaysExercises,
-        "startCommand"
-      );
-      await bot.sendMessage(
-        chatId,
-        `Here's today's ${todaysWorkout} workout:`,
-        {
-          reply_markup: { inline_keyboard: keyboard_options },
-        }
-      );
-      await updateLastWorkout(todaysWorkout);
-    }
+    // continue here
+    const lastWorkoutsSets = await getLastNumberOfSets(100);
+    const lastWorkoutsDate = getLastWorkoutsDate(3, lastWorkoutsSets!);
+    const setsFromTheLastWorkout = await getAllSetsFrom(lastWorkoutsDate);
+    const options = new Set(setsFromTheLastWorkout!.map((object) => object.exercise));
+    const keyboard_options = generateKeyboardOptions(
+      [...options],
+      "startCommand"
+    );
+    await bot.sendMessage(
+      chatId,
+      `Here's today's WORKOUT_NAME workout:`,
+      {
+        reply_markup: { inline_keyboard: keyboard_options },
+      }
+    );
   }
 });
 
@@ -161,7 +152,7 @@ bot.on("callback_query", async (msg) => {
         })
         .then((msg) => messageIds.unshift(msg.message_id));
     } else if (data === "recordReps") {
-      const repsIncrement = parseInt(msg.data!.split("/")[2]);
+      const repsIncrement = parseFloat(msg.data!.split("/")[2]);
       set = {
         ...set,
         lastReps: !isNaN(repsIncrement)
@@ -187,7 +178,7 @@ bot.on("callback_query", async (msg) => {
       // All data collected, ready to addSet
       await addSet(set.exercise!, set.lastWeight!, set.lastReps!, set.lastRPE!);
       await bot
-        .sendMessage(chatId, "✅Set successfully recorded")
+        .sendMessage(chatId, "✅ Set successfully recorded")
         .then((msg) => messageIds.unshift(msg.message_id));
       let keyboard_options: Array<any> = [
         [{ text: "Yes", callback_data: `startCommand/${set.exercise}` }],
@@ -200,9 +191,9 @@ bot.on("callback_query", async (msg) => {
         .then((msg) => messageIds.unshift(msg.message_id));
     } else {
       const exercise = data;
-      const exerciseInfo = await findExercise(exercise);
-      const isCompound = exerciseInfo![0].is_compound;
-      const allSets = await getAllSets(exercise);
+      const exerciseType = await findExercise(exercise);
+      const isCompound = exerciseType![0].is_compound;
+      const allSets = await getAllSetsOf(exercise);
       const sortedSets = sortSetsByDate(allSets!);
       const lastWeight = sortedSets?.at(-2)?.sets[0].weight;
       const lastReps = sortedSets?.at(-2)?.sets[0].repetitions;
