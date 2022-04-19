@@ -16,8 +16,8 @@ export async function addSet(
       repetitions: repetitions,
       rpe: rpe,
     });
-    let data = await set_data.save();
-    console.log(data);
+
+    await set_data.save();
     return "✅ Data has been successfully recorded";
   } catch (err) {
     return (err as Error).message;
