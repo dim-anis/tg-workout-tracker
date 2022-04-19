@@ -9,13 +9,13 @@ import {
   addSet,
   deleteLastSet,
   getLastNumberOfSets,
-  getAllSetsFrom
+  getAllSetsFrom,
 } from "./controllers/sets";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 import {
   generateKeyboardOptions,
   sortSetsByDate,
-  getLastWorkoutsDate
+  getLastWorkoutsDate,
 } from "./utils/utils";
 
 dotenv.config();
@@ -78,13 +78,21 @@ bot.on("message", async (msg) => {
 
   if (message === "/show_last_workout") {
     const lastWorkoutSets = await getLastWorkoutSets();
+    console.log(lastWorkoutSets);
     if (lastWorkoutSets) {
       const lastWorkoutDate = lastWorkoutSets[0].createdAt;
       let lastWorkoutMessage = `Your last workout from *${formatDistanceToNow(
         lastWorkoutDate
       )}* ago:\n\n`;
       for (let i = 0; i < lastWorkoutSets.length; i++) {
-        lastWorkoutMessage += `📌 ${lastWorkoutSets[i].exercise}: ${lastWorkoutSets[i].weight} x ${lastWorkoutSets[i].repetitions}\n`;
+        lastWorkoutMessage += `${
+          lastWorkoutSets[i].rpe >= 9 ? "🟥"
+          : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9 ? "🟧"
+          : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5 ? "🟨"
+          : "🟩"
+        } - ${lastWorkoutSets[i].exercise} - ${lastWorkoutSets[i].weight} x ${
+          lastWorkoutSets[i].repetitions
+        }\n`;
       }
       await bot.sendMessage(chatId, lastWorkoutMessage, {
         parse_mode: "Markdown",
@@ -93,8 +101,13 @@ bot.on("message", async (msg) => {
   }
 
   if (message === "/delete_last_set") {
-    await deleteLastSet();
-    await bot.sendMessage(chatId, "✅ Last set deleted");
+    const keyboard_options = generateKeyboardOptions(
+      ["✅ Yes", "❌ No"],
+      "deleteSet"
+    );
+    await bot.sendMessage(chatId, "Are you sure?", {
+      reply_markup: { inline_keyboard: keyboard_options }
+    });
   }
 
   if (message === "/start") {
@@ -102,18 +115,16 @@ bot.on("message", async (msg) => {
     const lastWorkoutsSets = await getLastNumberOfSets(100);
     const lastWorkoutsDate = getLastWorkoutsDate(3, lastWorkoutsSets!);
     const setsFromTheLastWorkout = await getAllSetsFrom(lastWorkoutsDate);
-    const options = new Set(setsFromTheLastWorkout!.map((object) => object.exercise));
+    const options = new Set(
+      setsFromTheLastWorkout!.map((object) => object.exercise)
+    );
     const keyboard_options = generateKeyboardOptions(
       [...options],
       "startCommand"
     );
-    await bot.sendMessage(
-      chatId,
-      `Here's today's WORKOUT_NAME workout:`,
-      {
-        reply_markup: { inline_keyboard: keyboard_options },
-      }
-    );
+    await bot.sendMessage(chatId, `Here's today's workout:`, {
+      reply_markup: { inline_keyboard: keyboard_options }
+    });
   }
 });
 
@@ -273,6 +284,12 @@ bot.on("callback_query", async (msg) => {
     numSet = 1;
     messageIds = [];
     return;
+  } else if (command === "deleteSet") {
+      if (data === "✅ Yes") {
+        await deleteLastSet();
+        await bot.sendMessage(chatId, "✅ Deleted last set");
+      }
+      return;
   }
 });
 
