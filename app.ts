@@ -86,10 +86,13 @@ bot.on("message", async (msg) => {
       )}* ago:\n\n`;
       for (let i = 0; i < lastWorkoutSets.length; i++) {
         lastWorkoutMessage += `${
-          lastWorkoutSets[i].rpe >= 9 ? "🟥"
-          : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9 ? "🟧"
-          : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5 ? "🟨"
-          : "🟩"
+          lastWorkoutSets[i].rpe >= 9
+            ? "🟥"
+            : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9
+            ? "🟧"
+            : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5
+            ? "🟨"
+            : "🟩"
         } - ${lastWorkoutSets[i].exercise} - ${lastWorkoutSets[i].weight} x ${
           lastWorkoutSets[i].repetitions
         }\n`;
@@ -106,7 +109,7 @@ bot.on("message", async (msg) => {
       "deleteSet"
     );
     await bot.sendMessage(chatId, "Are you sure?", {
-      reply_markup: { inline_keyboard: keyboard_options }
+      reply_markup: { inline_keyboard: keyboard_options },
     });
   }
 
@@ -123,7 +126,7 @@ bot.on("message", async (msg) => {
       "startCommand"
     );
     await bot.sendMessage(chatId, `Here's today's workout:`, {
-      reply_markup: { inline_keyboard: keyboard_options }
+      reply_markup: { inline_keyboard: keyboard_options },
     });
   }
 });
@@ -139,7 +142,7 @@ interface Set {
 let set: Set = {};
 
 bot.on("callback_query", async (msg) => {
-  console.log(msg.data);
+  bot.answerCallbackQuery(msg.id);
   const [command, data] = msg.data!.split("/");
   const chatId = msg.message!.chat.id;
 
@@ -153,7 +156,7 @@ bot.on("callback_query", async (msg) => {
           : set.lastWeight,
       };
       const keyboard_options = generateKeyboardOptions(
-        ["-2", "-1", "✅", "+1", "+2"],
+        ["-3", "-2", "-1", "✅", "+1", "+2", "+3"],
         "startCommand/recordReps"
       );
       await bot
@@ -210,8 +213,8 @@ bot.on("callback_query", async (msg) => {
       const lastReps = sortedSets?.at(-2)?.sets[0].repetitions;
       const options =
         isCompound === true
-          ? ["-5kg", "-2.5kg", "✅", "+2.5kg", "+5kg"]
-          : ["-2.5kg", "-1kg", "✅", "+1kg", "+2.5kg"];
+          ? ["-5", "-2.5", "-1", "✅", "+1", "+2.5", "+5"]
+          : ["-2.5", "-1.25", "-1", "✅", "+1", "+1.25", "+2.5"];
       set = {
         ...set,
         exercise,
@@ -285,11 +288,17 @@ bot.on("callback_query", async (msg) => {
     messageIds = [];
     return;
   } else if (command === "deleteSet") {
-      if (data === "✅ Yes") {
-        await deleteLastSet();
-        await bot.sendMessage(chatId, "✅ Deleted last set");
-      }
-      return;
+    if (data === "✅ Yes") {
+      await deleteLastSet();
+      bot.editMessageText("✅ Deleted last set", {
+        chat_id: chatId,
+        message_id: msg.message?.message_id,
+      });
+      setTimeout(() => {
+        bot.deleteMessage(chatId, msg.message!.message_id!.toString());
+      }, 1500);
+    }
+    return;
   }
 });
 
