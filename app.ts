@@ -77,13 +77,14 @@ bot.on("message", async (msg) => {
   }
 
   if (message === "/show_last_workout") {
+    bot.deleteMessage(chatId, msg.message_id.toString());
     const lastWorkoutSets = await getLastWorkoutSets();
     console.log(lastWorkoutSets);
     if (lastWorkoutSets) {
       const lastWorkoutDate = lastWorkoutSets[0].createdAt;
-      let lastWorkoutMessage = `Your last workout from *${formatDistanceToNow(
+      let lastWorkoutMessage = `Your last workout from *[${formatDistanceToNow(
         lastWorkoutDate
-      )}* ago:\n\n`;
+      )}]* ago:\n\n`;
       for (let i = 0; i < lastWorkoutSets.length; i++) {
         lastWorkoutMessage += `${
           lastWorkoutSets[i].rpe >= 9
@@ -97,13 +98,16 @@ bot.on("message", async (msg) => {
           lastWorkoutSets[i].repetitions
         }\n`;
       }
+      const keyboard_options = generateKeyboardOptions(["❌"], "closeLastWorkoutStats")
       await bot.sendMessage(chatId, lastWorkoutMessage, {
         parse_mode: "Markdown",
+        reply_markup: { inline_keyboard: keyboard_options }
       });
     }
   }
 
   if (message === "/delete_last_set") {
+    bot.deleteMessage(chatId, msg.message_id.toString());
     const keyboard_options = generateKeyboardOptions(
       ["✅ Yes", "❌ No"],
       "deleteSet"
@@ -299,6 +303,8 @@ bot.on("callback_query", async (msg) => {
       }, 1500);
     }
     return;
+  } else if (command === "closeLastWorkoutStats") {
+      bot.deleteMessage(chatId, msg.message!.message_id!.toString());
   }
 });
 
