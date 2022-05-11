@@ -64,46 +64,48 @@ bot.on("message", async (msg) => {
 
   if (message === "/record_set") {
     const exerciseList = await findExercise("");
-    const exerciseNames = exerciseList?.map((item) => item.name);
-    if (exerciseNames) {
-      const keyboard_options = generateKeyboardOptions(
-        exerciseNames,
-        "recordSetCommand"
-      );
-      bot.sendMessage(chatId, "Choose an exercise: ", {
-        reply_markup: { inline_keyboard: keyboard_options },
-      });
-    }
+    if (exerciseList === undefined) return;
+
+    const exerciseNames = exerciseList.map((item) => item.name);
+    const keyboard_options = generateKeyboardOptions(
+      exerciseNames,
+      "recordSetCommand"
+    );
+    bot.sendMessage(chatId, "Choose an exercise: ", {
+      reply_markup: { inline_keyboard: keyboard_options },
+    });
   }
 
   if (message === "/show_last_workout") {
     bot.deleteMessage(chatId, msg.message_id.toString());
     const lastWorkoutSets = await getLastWorkoutSets();
-    console.log(lastWorkoutSets);
-    if (lastWorkoutSets) {
-      const lastWorkoutDate = lastWorkoutSets[0].createdAt;
-      let lastWorkoutMessage = `Your last workout from *[${formatDistanceToNow(
-        lastWorkoutDate
-      )}]* ago:\n\n`;
-      for (let i = 0; i < lastWorkoutSets.length; i++) {
-        lastWorkoutMessage += `${
-          lastWorkoutSets[i].rpe >= 9
-            ? "🟥"
-            : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9
-            ? "🟧"
-            : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5
-            ? "🟨"
-            : "🟩"
-        } - ${lastWorkoutSets[i].exercise} - ${lastWorkoutSets[i].weight} x ${
-          lastWorkoutSets[i].repetitions
-        }\n`;
-      }
-      const keyboard_options = generateKeyboardOptions(["❌"], "closeLastWorkoutStats")
-      await bot.sendMessage(chatId, lastWorkoutMessage, {
-        parse_mode: "Markdown",
-        reply_markup: { inline_keyboard: keyboard_options }
-      });
+
+    if (lastWorkoutSets === undefined) return;
+    const lastWorkoutDate = lastWorkoutSets[0].createdAt;
+
+    let lastWorkoutMessage = `Your last workout from *[${formatDistanceToNow(
+      lastWorkoutDate
+    )}]* ago:\n\n`;
+
+    for (let i = 0; i < lastWorkoutSets.length; i++) {
+      lastWorkoutMessage += `${
+        lastWorkoutSets[i].rpe >= 9
+          ? "🟥"
+          : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9
+          ? "🟧"
+          : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5
+          ? "🟨"
+          : "🟩"
+      } - ${lastWorkoutSets[i].exercise} - ${lastWorkoutSets[i].weight} x ${
+        lastWorkoutSets[i].repetitions
+      }\n`;
     }
+
+    const keyboard_options = generateKeyboardOptions(["❌"], "closeLastWorkoutStats")
+    await bot.sendMessage(chatId, lastWorkoutMessage, {
+      parse_mode: "Markdown",
+      reply_markup: { inline_keyboard: keyboard_options }
+    });
   }
 
   if (message === "/delete_last_set") {
@@ -118,12 +120,16 @@ bot.on("message", async (msg) => {
   }
 
   if (message === "/start") {
-    // continue here
     const lastWorkoutsSets = await getLastNumberOfSets(100);
-    const lastWorkoutsDate = getLastWorkoutsDate(3, lastWorkoutsSets!);
+
+    if (lastWorkoutsSets === undefined) return;
+    const lastWorkoutsDate = getLastWorkoutsDate(3, lastWorkoutsSets);
     const setsFromTheLastWorkout = await getAllSetsFrom(lastWorkoutsDate);
+
+    if (setsFromTheLastWorkout === undefined) return;
+
     const options = new Set(
-      setsFromTheLastWorkout!.map((object) => object.exercise)
+      setsFromTheLastWorkout.map((object) => object.exercise)
     );
     const keyboard_options = generateKeyboardOptions(
       [...options],
@@ -147,12 +153,14 @@ let set: Set = {};
 
 bot.on("callback_query", async (msg) => {
   bot.answerCallbackQuery(msg.id);
-  const [command, data] = msg.data!.split("/");
-  const chatId = msg.message!.chat.id;
+  if (msg.data === undefined || msg.message === undefined) return;
+  const [command, data] = msg.data.split("/");
+  const chatId = msg.message.chat.id;
 
   if (command === "startCommand") {
+    console.log(msg);
     if (data === "recordWeight") {
-      const weightIncrement = parseFloat(msg.data!.split("/")[2]);
+      const weightIncrement = parseFloat(msg.data.split("/")[2]);
       set = {
         ...set,
         lastWeight: !isNaN(weightIncrement)
