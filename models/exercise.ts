@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
 
-interface IExercise {
+export interface IExercise {
     name: string;
     category: string;
     is_compound: boolean;

@@ -80,3 +80,15 @@ export const sortSetsByDate = function(arr: ISet[]) {
   return sortedArray;
 };
 
+export const addRPEColor = (rpeValue: number) => {
+  if (rpeValue >= 9) {
+    return "🟥";
+  } else if (rpeValue >= 7.5 && rpeValue < 9) {
+    return "🟧";
+  } else if (rpeValue < 7.5) {
+    return "🟨";
+  } else {
+    return "🟩";
+  }
+};
+
