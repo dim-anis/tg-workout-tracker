@@ -1,27 +1,21 @@
-import { model, Schema, Document, PopulatedDoc } from 'mongoose';
-import { IRoutine } from './routine';
+import mongoose, { model } from "mongoose";
+const Schema = mongoose.Schema;
 
-export interface IUser extends Document {
-    name: {
-        first: string,
-        last: string
-    },
-    current_routine: PopulatedDoc<IRoutine>,
-    last_workout: string
+export interface IUser {
+  name: string,
+  email: string,
+  password: string,
+  refreshToken: string
 }
 
-const UserSchema = new Schema<IUser>(
-    {
-        name: {
-            first: { type: String },
-            last: { type: String }
-        },
-        current_routine: [{ type: Schema.Types.ObjectId, ref: 'Routine' }],
-        last_workout: { type: String }
-    }
+const UserSchema = new Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    refreshToken: { type: String },
+  },
+  { collection: "user-data" }
 );
 
-const User = model<IUser>('User', UserSchema);
-
-export default User;
-
+export default model<IUser>("User", UserSchema);

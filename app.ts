@@ -1,342 +1,211 @@
-import botAPI from "node-telegram-bot-api";
-import dotenv from "dotenv";
-import mongoose from "mongoose";
+import dotenv from 'dotenv';
+import mongoose from 'mongoose';
+import botAPI from 'node-telegram-bot-api';
+import dbConnect from './config/dbConnection';
+import type {AxiosError} from 'axios';
+import axios from 'axios';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 
-import { findExercise } from "./controllers/exercises";
-import {
-  getLastWorkoutSets,
-  getAllSetsOf,
-  addSet,
-  deleteLastSet,
-  getLastNumberOfSets,
-  getAllSetsFrom,
-} from "./controllers/sets";
-import formatDistanceToNow from "date-fns/formatDistanceToNow";
-import {
-  generateKeyboardOptions,
-  sortSetsByDate,
-  getLastWorkoutsDate,
-} from "./utils/utils";
+import commands from './config/botCommands';
+import allExercises from './routes/exercises';
+import workouts from './routes/workouts';
+
+import type {IExercise} from './models/exercise';
+import type {IWorkout} from './models/workouts';
+
+import express from 'express';
+
+const app = express();
+
+app.use(express.json());
+
+app.use('/exercises', allExercises);
+app.use('/workouts', workouts);
 
 dotenv.config();
 
-const uri =
-  "mongodb+srv://<username>:<password>@cluster1.vp9hy.mongodb.net/<database>";
-const options = {
-  dbName: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  pass: process.env.DB_PASSWORD,
-};
+const PORT = process.env.PORT ?? 5000;
 
-mongoose.connect(uri, options);
+import {
+	generateKeyboardOptions,
+	addRPEColor,
+} from './utils/utils';
+
+void dbConnect();
 
 const db = mongoose.connection;
-db.on("error", console.error.bind(console, "Connection error: "));
-db.once("open", function () {
-  console.log("Connected to MongoDB successfully");
+db.once('open', () => {
+	console.log('Connected to MongoDB');
+	app.listen(PORT, () => {
+		console.log(`Server is running on port: ${PORT}.`);
+	});
 });
 
-const bot = new botAPI(<string>process.env.KEY, { polling: true });
+const bot = new botAPI(process.env.KEY!, {polling: true});
 
-bot.setMyCommands([
-  {
-    command: "/start",
-    description: "start next workout in the split",
-  }, // implemented
-  {
-    command: "/record_set",
-    description: "record a single set",
-  }, // implemented
-  { command: "/delete_last_set", description: "delete last set" }, // implemented
-  {
-    command: "/show_last_workout",
-    description: "show all sets of the last workout",
-  }, // implemented
-  {
-    command: "/set_routine",
-    description: "set a routine (currently disabled)",
-  },
-]);
+void bot.setMyCommands(commands);
 
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const message = msg.text;
+bot.on('message', async msg => {
+	const chatId = msg.chat.id;
+	const message = msg.text;
 
-  if (message === "/record_set") {
-    const exerciseList = await findExercise("");
-    if (exerciseList === undefined) return;
+	if (message === '/record_set') {
+		try {
+			const response = await axios.get<IExercise[]>('http://localhost:5000/exercises');
+			const {data: exerciseList} = response;
+			const exerciseNames = exerciseList.map(item => item.name);
+			const kbdOptions = generateKeyboardOptions(exerciseNames);
+			bot.sendMessage(
+				chatId,
+				'Choose an exercise: ',
+				{
+					reply_markup: {
+						inline_keyboard: kbdOptions,
+					},
+				});
+			bot.deleteMessage(chatId, msg.message_id.toString());
 
-    const exerciseNames = exerciseList.map((item) => item.name);
-    const keyboard_options = generateKeyboardOptions(
-      exerciseNames,
-      "recordSetCommand"
-    );
-    bot.sendMessage(chatId, "Choose an exercise: ", {
-      reply_markup: { inline_keyboard: keyboard_options },
-    });
-  }
+			bot.once('callback_query', async query => {
+				bot.answerCallbackQuery(query.id);
+				const exercise = query.data;
 
-  if (message === "/show_last_workout") {
-    bot.deleteMessage(chatId, msg.message_id.toString());
-    const lastWorkoutSets = await getLastWorkoutSets();
+				await bot.sendMessage(chatId,
+					`${exercise}\n\nType in the weight, num of reps and RPE without units separated by " "\n\nExample:\n\n100 10 7.5`,
+				);
 
-    if (lastWorkoutSets === undefined) return;
-    const lastWorkoutDate = lastWorkoutSets[0].createdAt;
+				bot.once('message', async msg => {
+					const stringValues = msg.text?.split(' ');
+					if (typeof stringValues === 'undefined' || stringValues.length < 3) {
+						throw new Error('Please type all three values separated by space \' \'\n\nE.g.: 100 10 7.5');
+					}
 
-    let lastWorkoutMessage = `Your last workout from *[${formatDistanceToNow(
-      lastWorkoutDate
-    )}]* ago:\n\n`;
+					const intValues = stringValues.map(value => parseFloat(value));
 
-    for (let i = 0; i < lastWorkoutSets.length; i++) {
-      lastWorkoutMessage += `${
-        lastWorkoutSets[i].rpe >= 9
-          ? "🟥"
-          : lastWorkoutSets[i].rpe >= 7.5 && lastWorkoutSets[i].rpe < 9
-          ? "🟧"
-          : lastWorkoutSets[i].rpe > 6 && lastWorkoutSets[i].rpe < 7.5
-          ? "🟨"
-          : "🟩"
-      } - ${lastWorkoutSets[i].exercise} - ${lastWorkoutSets[i].weight} x ${
-        lastWorkoutSets[i].repetitions
-      }\n`;
-    }
+					if (intValues.some(value => isNaN(value))) {
+						throw new Error('Only numbers are allowed!');
+					}
 
-    const keyboard_options = generateKeyboardOptions(["❌"], "closeLastWorkoutStats")
-    await bot.sendMessage(chatId, lastWorkoutMessage, {
-      parse_mode: "Markdown",
-      reply_markup: { inline_keyboard: keyboard_options }
-    });
-  }
+					const [weight, repetitions, rpe] = intValues;
+					const currentDate = new Date();
+					const set = {
+						user: 'Dmitry Anisov',
+						createdAt: currentDate,
+						sets: [{
+							exercise,
+						  weight,
+						  repetitions,
+						  rpe,
+						}],
+					};
+					const response = await axios.put<IWorkout>('http://localhost:5000/workouts', JSON.stringify(set), {
+						headers: {
+							'Content-Type': 'application/json',
+						},
+					});
+					bot.sendMessage(chatId, `Successfully recorded a set of ${exercise}`);
+				});
+			});
+		} catch (err: unknown) {
+			const error = err as Error | AxiosError;
+			if (!axios.isAxiosError(error)) {
+				// Not an Axios error
+				bot.sendMessage(chatId, `An unexpected error occured. Error details: ${error.message}`);
+			}
 
-  if (message === "/delete_last_set") {
-    bot.deleteMessage(chatId, msg.message_id.toString());
-    const keyboard_options = generateKeyboardOptions(
-      ["✅ Yes", "❌ No"],
-      "deleteSet"
-    );
-    await bot.sendMessage(chatId, "Are you sure?", {
-      reply_markup: { inline_keyboard: keyboard_options },
-    });
-  }
+			// Axios error
+			if (!error.response) {
+				bot.sendMessage(chatId, 'No server response');
+			} else if (error.response.status === 404) {
+				bot.sendMessage(chatId, 'Invalid URL');
+			} else if (error.response.status === 400) {
+				const message = error.response?.data.message;
+				bot.sendMessage(chatId, message);
+			} else {
+				bot.sendMessage(chatId, 'Failed to fetch exercise list');
+			}
+		}
+	}
 
-  if (message === "/start") {
-    const lastWorkoutsSets = await getLastNumberOfSets(100);
+	if (message?.split(' ')[0] === '/show_last_workout') {
+		const nToLast = message.split(' ')[1];
+		bot.deleteMessage(chatId, msg.message_id.toString());
+		try {
+			const response = await axios.get<IWorkout[]>(`http://localhost:5000/workouts?nToLast=${nToLast}`);
+			const {data: workoutList} = response;
+			const lastWorkout = workoutList.at(-1);
+			if (!lastWorkout) {
+				return;
+			}
 
-    if (lastWorkoutsSets === undefined) return;
-    const lastWorkoutsDate = getLastWorkoutsDate(3, lastWorkoutsSets);
-    const setsFromTheLastWorkout = await getAllSetsFrom(lastWorkoutsDate);
+			const lastWorkoutSets = lastWorkout.sets;
+			const timeSinceLastWorkout = formatDistanceToNow(new Date(lastWorkoutSets[0].createdAt));
 
-    if (setsFromTheLastWorkout === undefined) return;
+			const messageString = `Last workout from *${timeSinceLastWorkout} ago:*\n\n`;
+			const hintMessage = '* to see nth-last workout type:\n\n/show_last_workout followed by a space and a number\n\nExample: /show_last_workout 2';
 
-    const options = new Set(
-      setsFromTheLastWorkout.map((object) => object.exercise)
-    );
-    const keyboard_options = generateKeyboardOptions(
-      [...options],
-      "startCommand"
-    );
-    await bot.sendMessage(chatId, `Here's today's workout:`, {
-      reply_markup: { inline_keyboard: keyboard_options },
-    });
-  }
+			const lastWorkoutMessage = lastWorkoutSets.reduce((acc, set) => {
+				const {rpe, exercise, weight, repetitions} = set;
+				return acc + `${addRPEColor(rpe)} ${exercise} - ${weight} x ${repetitions}\n`;
+			}, messageString);
+			console.log(lastWorkoutMessage);
+			const kbdOptions = generateKeyboardOptions(['❌'], 'closeLastWorkoutStats');
+			await bot.sendMessage(chatId, lastWorkoutMessage, {
+				parse_mode: 'Markdown',
+				reply_markup: {inline_keyboard: kbdOptions},
+			});
+			await bot.sendMessage(chatId, hintMessage);
+		} catch (err: unknown) {
+			const error = err as Error | AxiosError;
+			if (!axios.isAxiosError(error)) {
+				bot.sendMessage(chatId, `An unexpected error occured. Error details: ${error.message}`);
+			} else if (!error.response) {
+				bot.sendMessage(chatId, 'No server response');
+			} else if (error.response.status === 404) {
+				bot.sendMessage(chatId, 'Invalid URL');
+			} else if (error.response.status === 400) {
+				const message = error.response?.data.message;
+				bot.sendMessage(chatId, message);
+			} else {
+				bot.sendMessage(chatId, 'Failed to fetch workout list');
+			}
+		}
+	}
+
+	if (message === '/start') {
+		bot.deleteMessage(chatId, msg.message_id.toString());
+		try {
+			const response = await axios.get<IWorkout[]>(`http://localhost:5000/workouts?nToLast=${4}`);
+			const {data: workoutList} = response;
+			const currentWorkout = workoutList.at(-1);
+			if (!currentWorkout) {
+				return;
+			}
+
+			const currentWorkoutSets = currentWorkout.sets;
+			const options = new Set(
+				currentWorkoutSets.map(set => set.exercise),
+			);
+			const kbdOptions = generateKeyboardOptions(
+				[...options],
+				'startCommand',
+			);
+			await bot.sendMessage(chatId, 'Here\'s today\'s workout:', {
+				reply_markup: {inline_keyboard: kbdOptions},
+			});
+		} catch (err: unknown) {
+			const error = err as Error | AxiosError;
+			if (!axios.isAxiosError(error)) {
+				bot.sendMessage(chatId, error.message);
+			} else if (!error.response) {
+				bot.sendMessage(chatId, 'No server response');
+			} else if (error.response.status === 404) {
+				bot.sendMessage(chatId, 'Invalid URL');
+			} else if (error.response.status === 400) {
+				const message = error.response?.data.message;
+				bot.sendMessage(chatId, message);
+			} else {
+				bot.sendMessage(chatId, 'Failed to fetch workout list');
+			}
+		}
+	}
 });
-
-let messageIds: Array<number> = [];
-let numSet = 1;
-interface Set {
-  exercise?: string;
-  lastWeight?: number;
-  lastReps?: number;
-  lastRPE?: number;
-}
-let set: Set = {};
-
-bot.on("callback_query", async (msg) => {
-  bot.answerCallbackQuery(msg.id);
-  if (msg.data === undefined || msg.message === undefined) return;
-  const [command, data] = msg.data.split("/");
-  const chatId = msg.message.chat.id;
-
-  if (command === "startCommand") {
-    console.log(msg);
-    if (data === "recordWeight") {
-      const weightIncrement = parseFloat(msg.data.split("/")[2]);
-      set = {
-        ...set,
-        lastWeight: !isNaN(weightIncrement)
-          ? set.lastWeight! + weightIncrement
-          : set.lastWeight,
-      };
-      const keyboard_options = generateKeyboardOptions(
-        ["-3", "-2", "-1", "✅", "+1", "+2", "+3"],
-        "startCommand/recordReps"
-      );
-      await bot
-        .sendMessage(chatId, `Recommended reps: *${set.lastReps}*`, {
-          reply_markup: { inline_keyboard: keyboard_options },
-          parse_mode: "Markdown",
-        })
-        .then((msg) => messageIds.unshift(msg.message_id));
-    } else if (data === "recordReps") {
-      const repsIncrement = parseFloat(msg.data!.split("/")[2]);
-      set = {
-        ...set,
-        lastReps: !isNaN(repsIncrement)
-          ? set.lastReps! + repsIncrement
-          : set.lastReps,
-      };
-      const keyboard_options = generateKeyboardOptions(
-        ["5", "6", "7", "8", "9"],
-        "startCommand/recordRPE"
-      );
-      await bot
-        .sendMessage(chatId, `How did it feel?`, {
-          reply_markup: { inline_keyboard: keyboard_options },
-          parse_mode: "Markdown",
-        })
-        .then((msg) => messageIds.unshift(msg.message_id));
-    } else if (data === "recordRPE") {
-      const rpeValue = parseFloat(msg.data!.split("/")[2]);
-      set = {
-        ...set,
-        lastRPE: rpeValue,
-      };
-      // All data collected, ready to addSet
-      await addSet(set.exercise!, set.lastWeight!, set.lastReps!, set.lastRPE!);
-      await bot
-        .sendMessage(chatId, "✅ Set successfully recorded")
-        .then((msg) => messageIds.unshift(msg.message_id));
-      let keyboard_options: Array<any> = [
-        [{ text: "Yes", callback_data: `startCommand/${set.exercise}` }],
-        [{ text: "No", callback_data: "finishExercise" }],
-      ];
-      await bot
-        .sendMessage(chatId, "One more set?", {
-          reply_markup: { inline_keyboard: keyboard_options },
-        })
-        .then((msg) => messageIds.unshift(msg.message_id));
-    } else {
-      const exercise = data;
-      const exerciseType = await findExercise(exercise);
-      const isCompound = exerciseType![0].is_compound;
-      const allSets = await getAllSetsOf(exercise);
-      const sortedSets = sortSetsByDate(allSets!);
-      const lastWeight = sortedSets?.at(-2)?.sets[0].weight;
-      const lastReps = sortedSets?.at(-2)?.sets[0].repetitions;
-      const options =
-        isCompound === true
-          ? ["-5", "-2.5", "-1", "✅", "+1", "+2.5", "+5"]
-          : ["-2.5", "-1.25", "-1", "✅", "+1", "+1.25", "+2.5"];
-      set = {
-        ...set,
-        exercise,
-        lastWeight,
-        lastReps,
-      };
-      const keyboard_options = generateKeyboardOptions(
-        options,
-        "startCommand/recordWeight"
-      );
-      await bot
-        .sendMessage(
-          chatId,
-          `Recording a set of *${exercise.toUpperCase()}*\nLast time you did: *${lastWeight}kg x ${lastReps}*`,
-          {
-            reply_markup: { inline_keyboard: keyboard_options },
-            parse_mode: "Markdown",
-          }
-        )
-        .then((msg) => messageIds.unshift(msg.message_id));
-    }
-  } else if (command === "recordSetCommand") {
-    try {
-      const exercise = data;
-      await bot
-        .sendMessage(chatId, `Recording set #${numSet} of ${exercise}s...`)
-        .then((msg) => messageIds.unshift(msg.message_id));
-      const weight = await recordData(chatId, "Add weight in kgs:");
-      messageIds.unshift(weight.userMessageId, weight.botMessageId);
-      const repetitions = await recordData(chatId, "Add reps:");
-      messageIds.unshift(repetitions.userMessageId, repetitions.botMessageId);
-      const rpe = await recordData(
-        chatId,
-        "How difficult was the set on a scale from 5 to 10?"
-      );
-      messageIds.unshift(rpe.userMessageId, rpe.botMessageId);
-      const setData = await addSet(
-        exercise,
-        weight.data,
-        repetitions.data,
-        rpe.data
-      );
-      await bot
-        .sendMessage(chatId, setData)
-        .then((msg) => messageIds.unshift(msg.message_id));
-      let keyboard_options: Array<any> = [
-        [{ text: "Yes", callback_data: `recordSetCommand/${exercise}` }],
-        [{ text: "No", callback_data: "finishExercise" }],
-      ];
-      await bot
-        .sendMessage(chatId, "One more set?", {
-          reply_markup: { inline_keyboard: keyboard_options },
-        })
-        .then((msg) => messageIds.unshift(msg.message_id));
-      numSet += 1;
-    } catch (e) {
-      let result = (e as Error).message;
-      numSet = 1;
-      await bot
-        .sendMessage(chatId, result)
-        .then((msg) => messageIds.unshift(msg.message_id));
-      return;
-    }
-  } else if (command === "finishExercise") {
-    if (messageIds.length > 0) {
-      for (let i = 0; i < messageIds.length; i++) {
-        bot.deleteMessage(chatId, messageIds[i].toString());
-      }
-    }
-    numSet = 1;
-    messageIds = [];
-    return;
-  } else if (command === "deleteSet") {
-    if (data === "✅ Yes") {
-      await deleteLastSet();
-      bot.editMessageText("✅ Deleted last set", {
-        chat_id: chatId,
-        message_id: msg.message?.message_id,
-      });
-      setTimeout(() => {
-        bot.deleteMessage(chatId, msg.message!.message_id!.toString());
-      }, 1500);
-    }
-    return;
-  } else if (command === "closeLastWorkoutStats") {
-      bot.deleteMessage(chatId, msg.message!.message_id!.toString());
-  }
-});
-
-interface IData {
-  data: number;
-  userMessageId: number;
-  botMessageId: number;
-}
-const recordData = (chatId: number, message: string) =>
-  new Promise<IData>((resolve, reject) => {
-    let botMessageId: number;
-    bot
-      .sendMessage(chatId, message)
-      .then((msg) => (botMessageId = msg.message_id));
-    bot.on("message", async (msg) => {
-      const userMessageId = msg.message_id;
-      if (!isNaN(Number(msg.text!))) {
-        const data = {
-          data: parseFloat(msg.text!),
-          userMessageId,
-          botMessageId,
-        };
-        resolve(data);
-      }
-      reject(new Error(`❌ Failed: expected "number" received "${msg.text}".`));
-    });
-  });
