@@ -1,24 +1,7 @@
-import type {ObjectId} from 'mongoose';
+import type {InferSchemaType} from 'mongoose';
 import {model, Schema} from 'mongoose';
 
-export type IWorkout = {
-	user: ObjectId;
-	createdAt: Date;
-	updatedAt: Date;
-	sets: [
-		{
-			weight: number;
-			exercise: string;
-			repetitions: number;
-			rpe: number;
-			notes?: string;
-			createdAt: Date;
-			updatedAt?: Date;
-		},
-	];
-};
-
-const WorkoutSchema = new Schema(
+const workoutSchema = new Schema(
 	{
 		user: {
 			type: Schema.Types.ObjectId,
@@ -59,4 +42,6 @@ const WorkoutSchema = new Schema(
 	{timestamps: true, collection: 'workouts'},
 );
 
-export default model<IWorkout>('Workout', WorkoutSchema);
+export type WorkoutType = InferSchemaType<typeof workoutSchema> & {updatedAt: Date; createdAt: Date};
+
+export default model<WorkoutType>('Workout', workoutSchema);

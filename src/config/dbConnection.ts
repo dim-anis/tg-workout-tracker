@@ -1,4 +1,3 @@
-import type {AxiosError} from 'axios';
 import mongoose from 'mongoose';
 
 const dbConnect = async () => {
