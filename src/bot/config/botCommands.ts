@@ -12,6 +12,10 @@ const commands = [
 		description: 'record a single set',
 	},
 	{
+		command: '/edit_exercises',
+		description: 'remove or add new exercises',
+	},
+	{
 		command: '/delete_last_set',
 		description: 'delete last set'},
 	{
@@ -19,8 +23,8 @@ const commands = [
 		description: 'show Nth last workout (defaults to last workout)',
 	},
 	{
-		command: '/set_routine',
-		description: 'set a routine (currently disabled)',
+		command: '/settings',
+		description: 'nuff said',
 	},
 ];
 

@@ -1,8 +1,11 @@
 import express from 'express';
-import {getAllExercises, findExerciseByName, findExercisesByCategory} from '../controllers/exercises.js';
+import {getAllExercises, findExerciseByName, findExercisesByCategory, createExercise} from '../controllers/exercises.js';
 
 const router = express.Router();
 
-const allExercises = router.get('/', getAllExercises);
+router
+	.route('/')
+	.get(getAllExercises)
+	.put(createExercise);
 
-export default allExercises;
+export default router;

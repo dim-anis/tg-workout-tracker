@@ -1,17 +1,19 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import {model, Schema} from 'mongoose';
 
-export type IExercise = {
+export type ExerciseType = {
 	name: string;
 	category: string;
 	is_compound: boolean;
 };
 
-const ExerciseSchema = new Schema<IExercise>(
+const ExerciseSchema = new Schema<ExerciseType>(
 	{
-		name: {type: String},
+		name: {type: String, unique: true},
 		category: {type: String},
 		is_compound: {type: Boolean, default: false},
 	},
 );
 
-export default model<IExercise>('Exercise', ExerciseSchema);
+export default model<ExerciseType>('Exercise', ExerciseSchema);

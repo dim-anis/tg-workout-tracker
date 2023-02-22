@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import type {Document} from 'mongoose';
 import {model, Schema} from 'mongoose';
 
-export type ISet = {
+export type SetType = {
 	weight: number;
 	exercise: string;
 	repetitions: number;
@@ -11,7 +13,7 @@ export type ISet = {
 	updatedAt: Date;
 } & Document;
 
-export const SetSchema = new Schema<ISet>(
+export const SetSchema = new Schema<SetType>(
 	{
 		weight: {type: Number, required: true},
 		exercise: {type: String, required: true},
@@ -24,6 +26,6 @@ export const SetSchema = new Schema<ISet>(
 	},
 );
 
-const Set = model<ISet>('Set', SetSchema);
+const Set = model<SetType>('Set', SetSchema);
 
 export default Set;

@@ -1,4 +1,4 @@
-export class BaseError extends Error {
+export class ErrorResponse extends Error {
 	statusCode: number;
 
 	constructor(statusCode: number, message: string) {
@@ -10,13 +10,3 @@ export class BaseError extends Error {
 		Error.captureStackTrace(this);
 	}
 }
-
-// Export class NotFoundError extends BaseError {
-// 	propertyName: string;
-
-// 	constructor(propertyName: string) {
-// 		super(404, `Property ${propertyName} not found.`);
-
-// 		this.propertyName = propertyName;
-// 	}
-// }

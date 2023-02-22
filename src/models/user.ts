@@ -1,21 +1,30 @@
+/* eslint-disable @typescript-eslint/naming-convention */
+
 import mongoose, {model} from 'mongoose';
 const {Schema} = mongoose;
 
-export type IUser = {
-	name: string;
-	email: string;
-	password: string;
-	refreshToken: string;
+export type UserType = {
+	name?: string;
+	user_id: string;
+	settings: {
+		unit: string;
+		splitLength: number;
+	};
 };
 
 const UserSchema = new Schema(
 	{
-		name: {type: String, required: true},
-		email: {type: String, required: true, unique: true},
-		password: {type: String, required: true},
-		refreshToken: {type: String},
+		name: {type: String},
+		user_id: {type: String, required: true, unique: true},
+		settings: {
+			unit: {type: String, default: 'kgs'},
+			splitLength: {type: Number, default: 3},
+		},
 	},
-	{collection: 'user-data'},
+	{
+		collection: 'user-data',
+		timestamps: true,
+	},
 );
 
-export default model<IUser>('User', UserSchema);
+export default model<UserType>('User', UserSchema);

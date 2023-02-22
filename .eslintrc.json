@@ -11,13 +11,21 @@
             "files": [
                 "*.ts",
                 "*.tsx"
-            ]
+            ],
+            "rules": {
+                "@typescript-eslint/naming-convention": [
+                    "error",
+                    {
+                        "selector": "variable",
+                        "format": ["camelCase", "snake_case"]
+                    }
+                ]
+            }
         }
     ],
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"
     },
-    "rules": {
-    }
+    "rules": {}    
 }
