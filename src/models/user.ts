@@ -7,7 +7,7 @@ export type UserType = {
 	name?: string;
 	user_id: string;
 	settings: {
-		unit: string;
+		isMetric: boolean;
 		splitLength: number;
 	};
 };
@@ -17,7 +17,7 @@ const UserSchema = new Schema(
 		name: {type: String},
 		user_id: {type: String, required: true, unique: true},
 		settings: {
-			unit: {type: String, default: 'kgs'},
+			isMetric: {type: Boolean, default: true},
 			splitLength: {type: Number, default: 3},
 		},
 	},

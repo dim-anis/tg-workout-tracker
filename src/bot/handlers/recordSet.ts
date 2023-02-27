@@ -4,7 +4,7 @@ import {Composer} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from 'bot/types/bot';
 import type {ExerciseType} from '../../models/exercise';
-import {getMainMenu, getRpeOptions, getEditOptions, getMenuFromStringArray} from '../config/keyboards';
+import {getMainMenu, getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
 import {upsertSet} from '../api/workouts';
 import {getAllExercises} from '../api/exercises';
 

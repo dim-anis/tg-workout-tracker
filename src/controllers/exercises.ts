@@ -1,5 +1,4 @@
 import type {Request, Response, NextFunction} from 'express';
-import MongooseError from 'mongoose';
 import Exercise from '../models/exercise.js';
 import handleAsync from '../middleware/async.js';
 import {ErrorResponse} from '../utils/errors.js';
@@ -7,7 +6,7 @@ import {ErrorResponse} from '../utils/errors.js';
 export const getAllExercises = handleAsync(async (req: Request, res: Response, next: NextFunction) => {
 	const exercises = await Exercise.find({});
 	if (!exercises) {
-		throw new ErrorResponse(400, 'You havent\'t added any exercises yet');
+		next(new ErrorResponse(400, 'You havent\'t added any exercises yet'));
 	}
 
 	return res.status(200).json({
@@ -21,7 +20,7 @@ export const findExerciseByName = handleAsync(async (req: Request, res: Response
 	const {name} = req.query;
 	const exercise = await Exercise.find({name});
 	if (!exercise) {
-		throw new ErrorResponse(400, 'Couldn\'t find this exercise');
+		next(new ErrorResponse(400, 'Couldn\'t find this exercise'));
 	}
 
 	return res.status(200).json({
@@ -31,10 +30,10 @@ export const findExerciseByName = handleAsync(async (req: Request, res: Response
 	});
 });
 
-export const findExercisesByCategory = handleAsync(async (req: Request, res: Response, category: string) => {
+export const findExercisesByCategory = handleAsync(async (req: Request, res: Response, next: NextFunction, category: string) => {
 	const exercises = await Exercise.find({category}, 'name').exec();
 	if (!exercises) {
-		throw new ErrorResponse(400, `No exercise found in ${category}`);
+		next(new ErrorResponse(400, `No exercise found in ${category}`));
 	}
 
 	return res.status(200).json({

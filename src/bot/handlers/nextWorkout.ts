@@ -1,54 +1,54 @@
 /* eslint-disable no-await-in-loop */
 
-import {Composer, InlineKeyboard} from 'grammy';
+import {Composer, InlineKeyboard, session} from 'grammy';
 import {toHoursAndMins} from '../utils';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from 'bot/types/bot';
 import type {WorkoutType} from '../../models/workout';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
 import {updateWorkout, getWorkouts} from '../api/workouts';
+import {countSets, averageRpe} from './helpers/countSets';
 
 const composer = new Composer<MyContext>();
 
-async function getWeight(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedWeight: number, hitAllReps: boolean, setsCompletedIndicator: string) {
+async function getWeight(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedWeight: number, hitAllReps: boolean) {
+	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
 	await ctx.editMessageText(
-		`<b>${selectedExercise} ${setsCompletedIndicator}</b>\n\nPlease enter the weight\n\nLast working weight: <b>${predictedWeight}kg</b>\n\n${hitAllReps ? '🟢 Hit all reps last time' : '🔴 Didn\'t hit all reps last time'}`,
+		`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\nPlease enter the weight\n\nLast working weight: <b>${predictedWeight}kg</b>\n\n${hitAllReps ? '🟢 Hit all reps last time' : '🔴 Didn\'t hit all reps last time'}`,
 		{reply_markup: await getWeightOptions(), parse_mode: 'HTML'},
 	);
 
-	let weight;
+	ctx = await conversation.waitFor(['callback_query:data', 'message:text']);
 
-	const context = await conversation.waitFor(['callback_query:data', 'message:text']);
-	if (context.callbackQuery?.data) {
-		weight = predictedWeight + Number(context.callbackQuery?.data);
-	} else {
-		weight = Number(context.message?.text);
+	if (ctx.callbackQuery) {
+		return predictedWeight + Number(ctx.callbackQuery.data);
 	}
 
-	return weight;
+	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
+	return Number(ctx.message!.text);
 }
 
-async function getRepetitions(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedReps: number, hitAllReps: boolean, setsCompletedIndicator: string) {
+async function getRepetitions(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedReps: number, hitAllReps: boolean) {
+	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
 	await ctx.editMessageText(
-		`<b>${selectedExercise} ${setsCompletedIndicator}</b>\n\nPlease enter the repetitions\n\nExpected number of repetitions: <b>${predictedReps}</b>\n\n${hitAllReps ? '🟢 Hit all reps last time' : '🔴 Didn\'t hit all reps last time'}`,
+		`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\nPlease enter the repetitions\n\nExpected number of repetitions: <b>${predictedReps}</b>\n\n${hitAllReps ? '🟢 Hit all reps last time' : '🔴 Didn\'t hit all reps last time'}`,
 		{reply_markup: await getRepOptions(), parse_mode: 'HTML'},
 	);
 
-	let repetitions;
+	ctx = await conversation.waitFor(['callback_query:data', 'message:text']);
 
-	const context = await conversation.waitFor(['callback_query:data', 'message:text']);
-	if (context.callbackQuery?.data) {
-		repetitions = predictedReps + Number(context.callbackQuery?.data);
-	} else {
-		repetitions = Number(context.message?.text);
+	if (ctx.callbackQuery) {
+		return predictedReps + Number(ctx.callbackQuery.data);
 	}
 
-	return repetitions;
+	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
+	return Number(ctx.message?.text);
 }
 
-async function getRPE(ctx: MyContext, conversation: MyConversation, selectedExercise: string, setsCompletedIndicator: string) {
+async function getRPE(ctx: MyContext, conversation: MyConversation, selectedExercise: string) {
+	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
 	await ctx.editMessageText(
-		`<b>${selectedExercise} ${setsCompletedIndicator}</b>\n\nPlease enter the RPE\n\nHow hard was this set?`,
+		`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\nPlease enter the RPE\n\nHow hard was this set?`,
 		{reply_markup: await getRpeOptions(), parse_mode: 'HTML'},
 
 	);
@@ -66,16 +66,15 @@ const recordSet = async (
 	hitAllReps: boolean,
 ) => {
 	let canContinue = false;
-	let setCount = 0;
 	let updatedWorkout;
 
 	do {
-		const setsCompletedIndicator = '•'.repeat(setCount);
+		const weight = await getWeight(ctx, conversation, selectedExercise, predictedWeight, hitAllReps);
+		const repetitions = await getRepetitions(ctx, conversation, selectedExercise, predictedReps, hitAllReps);
+		const rpe = await getRPE(ctx, conversation, selectedExercise);
 
-		const weight = await getWeight(ctx, conversation, selectedExercise, predictedWeight, hitAllReps, setsCompletedIndicator);
-		const repetitions = await getRepetitions(ctx, conversation, selectedExercise, predictedReps, hitAllReps, setsCompletedIndicator);
-		const rpe = await getRPE(ctx, conversation, selectedExercise, setsCompletedIndicator);
-
+		const allSetsCount = conversation.session.sets.push({exercise: selectedExercise, weight, repetitions, rpe});
+		const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
 		// Record the set here
 		const set = {
 			user_id: ctx.dbchat.user_id,
@@ -89,7 +88,6 @@ const recordSet = async (
 			throw new Error('Failed to record set to DB!');
 		}
 
-		setCount++;
 		updatedWorkout = response.data;
 
 		const replyKbd = new InlineKeyboard()
@@ -97,7 +95,7 @@ const recordSet = async (
 			.text('+ One More', 'recordOneMore');
 
 		await ctx.editMessageText(
-			`<b>${selectedExercise} ${setsCompletedIndicator}</b>\n\n${weight} kgs x ${repetitions} @ ${rpe}RPE\n\n✅ Set was successfully recorded`,
+			`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\n${weight} kgs x ${repetitions} @ ${rpe}RPE\n\n✅ Set was successfully recorded`,
 			{reply_markup: replyKbd, parse_mode: 'HTML'},
 		);
 
@@ -136,18 +134,6 @@ const getValidNumber = async (conversation: MyConversation, ctx: MyContext, maxV
 
 	return validWeight;
 };
-
-const countSets = (setsArray: WorkoutType['sets']) => setsArray.reduce<Record<string, number>>((result, curr) => {
-	if (curr.exercise in result) {
-		result[curr.exercise]++;
-	} else {
-		result[curr.exercise] = 1;
-	}
-
-	return result;
-}, {});
-
-const averageRpe = (array: WorkoutType['sets']) => Number((array.reduce((total, set) => total + set.rpe, 0) / array.length).toFixed(1));
 
 const getNextWorkout = (workouts: WorkoutType[], splitLength: number) => {
 	const currentMesoStartIndex = workouts.findIndex(workout => workout.avg_rpe <= 6) - 1;
@@ -217,25 +203,25 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
 
-		const setCount = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout.sets) : {};
-		const kbdOptions = new InlineKeyboard();
-		for (const exercise of nextWorkoutExercises) {
-			kbdOptions
-				.text(
-					`${exercise} ${'•'.repeat(setCount[exercise])}`,
-					exercise,
-				)
-				.row();
-		}
-
-		await ctx.editMessageText(
-			workoutTitle,
-			{reply_markup: kbdOptions, parse_mode: 'HTML'},
-		);
-
-		const {callbackQuery: {data: selectedExercise}} = await conversation.waitForCallbackQuery(nextWorkoutExercises);
-
 		do {
+			const setCount = countSets(conversation.session.sets);
+			const kbdOptions = new InlineKeyboard();
+			for (const exercise of nextWorkoutExercises) {
+				kbdOptions
+					.text(
+						`${exercise} ${'•'.repeat(setCount[exercise])}`,
+						exercise,
+					)
+					.row();
+			}
+
+			await ctx.editMessageText(
+				workoutTitle,
+				{reply_markup: kbdOptions, parse_mode: 'HTML'},
+			);
+
+			const {callbackQuery: {data: selectedExercise}} = await conversation.waitForCallbackQuery(nextWorkoutExercises);
+
 			const {predictedWeight, predictedReps, hitAllReps} = getLastWorkoutSetData(selectedExercise, nextWorkout, hasOneMicro);
 
 			if (typeof predictedWeight === 'undefined') {

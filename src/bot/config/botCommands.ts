@@ -16,13 +16,6 @@ const commands = [
 		description: 'remove or add new exercises',
 	},
 	{
-		command: '/delete_last_set',
-		description: 'delete last set'},
-	{
-		command: '/show_last_workout',
-		description: 'show Nth last workout (defaults to last workout)',
-	},
-	{
 		command: '/settings',
 		description: 'nuff said',
 	},

@@ -20,7 +20,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 			.row()
 			.text('Edit exercise list', 'editExercises');
 
-		const first_msg = await ctx.reply('<b>EDIT EXERCISE LIST</b>\n\nChoose an option:', {
+		const {message_id} = await ctx.reply('<b>EDIT EXERCISE LIST</b>\n\nChoose an option:', {
 			reply_markup: editExerciseMenu,
 			parse_mode: 'HTML',
 		});
@@ -34,11 +34,11 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 			}
 
 			const allExercises = response.data;
-			const exerciseToEdit = await getExercise(ctx, conversation, allExercises, chat_id, first_msg.message_id);
+			const exerciseToEdit = await getExercise(ctx, conversation, allExercises, chat_id, message_id);
 
 			await ctx.api.editMessageText(
 				chat_id,
-				first_msg.message_id,
+				message_id,
 				`<b>EDIT ${exerciseToEdit.toUpperCase()}</b>\n\nWhat would you like to do with it?`,
 				{
 					parse_mode: 'HTML',
@@ -49,7 +49,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		if (option === 'addNewExercise') {
 			await ctx.api.editMessageText(
 				chat_id,
-				first_msg.message_id,
+				message_id,
 				'<b>ADD NEW EXERCISE</b>\n\nType in the name:',
 				{
 					parse_mode: 'HTML',
@@ -91,13 +91,16 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 			const response = await conversation.external(async () => createExercise(payload));
 
 			if (!response.data) {
-				throw new Error('Failed to record exercise to DB!');
+				throw new Error(response.message);
 			}
 
 			await ctx.api.editMessageText(
 				chat_id,
 				message.message_id,
-				`You've added ${name.toUpperCase()} to your exercise list!`,
+				`You've added <b>${name.toUpperCase()}</b> to your exercise list!`,
+				{
+					parse_mode: 'HTML',
+				},
 			);
 
 			conversation.log(response.data);

@@ -9,11 +9,11 @@ import type {MyContext} from 'bot/types/bot';
 
 const composer = new Composer<MyContext>();
 
+composer.filter(ctx => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);
 composer.use(recordSet);
 composer.use(nextWorkout);
 composer.use(editExercises);
-// Composer.filter(ctx => ctx.chat?.type === 'private').use(commands);
 
 export default composer;

@@ -69,4 +69,5 @@ export const getMenuFromStringArray = async (labels: string[], options?: {addBac
 };
 
 export const getRecordSetButton = async (): Promise<InlineKeyboard> => new InlineKeyboard()
+	.text('Cancel', 'cancel')
 	.text('Record a set?', '/record_set');

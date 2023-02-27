@@ -45,7 +45,7 @@ const handleSignUp = async (conversation: MyConversation, ctx: MyContext) => {
 			const {data: unit} = cbCtxUnit.callbackQuery;
 
 			const payload = JSON.stringify({splitLength, unit, user_id});
-			const response = await conversation.external(async () => updateUser(payload));
+			const response = await conversation.external(async () => updateUser(ctx.dbchat.user_id, payload));
 			if (response.data) {
 				await ctx.api.editMessageText(
 					chat_id,

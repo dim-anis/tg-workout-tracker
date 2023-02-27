@@ -1,4 +1,4 @@
-import type {Request, Response} from 'express';
+import type {NextFunction, Request, Response} from 'express';
 import Workout from '../models/workout.js';
 import User from '../models/user.js';
 import {startOfDay, endOfDay} from 'date-fns';
@@ -6,12 +6,12 @@ import {type SetType} from 'models/set.js';
 import {ErrorResponse} from '../utils/errors.js';
 import handleAsync from '../middleware/async.js';
 
-export const getWorkouts = handleAsync(async (req: Request, res: Response) => {
+export const getWorkouts = handleAsync(async (req: Request, res: Response, next: NextFunction) => {
 	const limit: number = parseInt(req.body.limit as string, 10);
 
 	const workouts = await Workout.find({}).sort({createdAt: -1}).limit(limit).exec();
 	if (!workouts) {
-		throw new ErrorResponse(404, 'Could\'nt find any workouts. Time to record some!');
+		next(new ErrorResponse(404, 'Could\'nt find any workouts. Time to record some!'));
 	}
 
 	return res.status(200).json({
@@ -21,13 +21,13 @@ export const getWorkouts = handleAsync(async (req: Request, res: Response) => {
 	});
 });
 
-export const getWorkoutById = handleAsync(async (req: Request, res: Response) => {
+export const getWorkoutById = handleAsync(async (req: Request, res: Response, next: NextFunction) => {
 	const {id} = req.params;
 
 	const workout = await Workout.findById(id);
 
 	if (!workout) {
-		throw new ErrorResponse(404, 'Couldn\t find the workout.');
+		next(new ErrorResponse(404, 'Couldn\t find the workout.'));
 	}
 
 	res.status(200).json({
@@ -37,7 +37,7 @@ export const getWorkoutById = handleAsync(async (req: Request, res: Response) =>
 	});
 });
 
-export const createWorkout = handleAsync(async (req: Request, res: Response): Promise<void> => {
+export const createWorkout = handleAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
 	const user_id: string = req.body.user_id as string;
 	const sets = req.body.sets as SetType[];
 	const newSet = sets[0];
@@ -47,7 +47,8 @@ export const createWorkout = handleAsync(async (req: Request, res: Response): Pr
 	const userObject = await User.findOne({user_id});
 
 	if (!userObject) {
-		throw new ErrorResponse(404, 'User not found');
+		next(new ErrorResponse(404, 'User not found'));
+		return;
 	}
 
 	const query = {createdAt: {
@@ -65,7 +66,7 @@ export const createWorkout = handleAsync(async (req: Request, res: Response): Pr
 	const workout = await Workout.findOneAndUpdate(query, update, options);
 
 	if (!workout) {
-		throw new ErrorResponse(500, 'Something went wrong. Try again.');
+		next(new ErrorResponse(500, 'Something went wrong. Try again.'));
 	}
 
 	res.status(200).json({

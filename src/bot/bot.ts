@@ -1,13 +1,13 @@
 
 import dotenv from 'dotenv';
-import {Bot, GrammyError, HttpError, session} from 'grammy';
-import {AxiosError} from 'axios';
+import {Bot, session} from 'grammy';
 import commands from './config/botCommands';
 import handlers from './handlers/index';
 import type {MyContext} from 'bot/types/bot';
 import {conversations} from '@grammyjs/conversations';
 import {type SessionStorage} from 'bot/types/bot';
 import attachUser from './middleware/attachUser';
+import {errorHandler} from './middleware/errorHandler';
 
 dotenv.config();
 
@@ -16,10 +16,13 @@ const bot = new Bot<MyContext>(process.env.KEY!);
 await bot.api.setMyCommands(commands);
 
 function initial(): SessionStorage {
-	return {userSettings: {
-		unit: 'kgs',
-		splitLength: 4,
-	}};
+	return {
+		userSettings: {
+			isMetric: true,
+			splitLength: 4,
+		},
+		sets: [],
+	};
 }
 
 bot.use(session({initial}));
@@ -38,19 +41,6 @@ bot.on('callback_query:data', async ctx => {
 	await ctx.answerCallbackQuery();
 });
 
-bot.catch(err => {
-	const {ctx} = err;
-	console.error(`Error while handling update ${ctx.update.update_id}:`);
-	const e = err.error;
-	if (e instanceof GrammyError) {
-		console.error('Error in request:', e.description);
-	} else if (e instanceof HttpError) {
-		console.error('Could not contact Telegram:', e);
-	} else if (e instanceof AxiosError) {
-		console.error('Axios error');
-	}	else {
-		console.error('Unknown error:', e);
-	}
-});
+bot.catch(errorHandler);
 
 export default bot;

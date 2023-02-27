@@ -15,14 +15,14 @@ type RequestResponse<UserType extends Record<string, any>> =
   | SuccessfulResponse<UserType>
   | ErrorResponse;
 
-export async function updateUser(payload: string) {
+export async function updateUser(userId: string, payload: string) {
 	const options = {
 		headers: {
 			'Content-Type': 'application/json',
 		},
 	};
 	try {
-		const response = await axios.put<SuccessfulResponse<UserType>>('http://localhost:5000/users', payload, options);
+		const response = await axios.put<SuccessfulResponse<UserType>>(`http://localhost:5000/users/${userId}`, payload, options);
 		if (response.statusText !== 'OK') {
 			throw new Error(response.statusText);
 		}
