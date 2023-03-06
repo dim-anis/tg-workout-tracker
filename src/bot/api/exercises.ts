@@ -30,7 +30,7 @@ export async function getAllExercises() {
 		};
 	} catch (e) {
 		return {
-			message: 'Failed to update the user. Try again.',
+			message: 'Failed to fetch exercises. Try again.',
 		};
 	}
 }

@@ -11,6 +11,9 @@ import {countSets, averageRpe} from './helpers/countSets';
 
 const composer = new Composer<MyContext>();
 
+const floatOrIntRegexp = /^(?=.)([+-]?([0-9]*)(\.([0-9]+))?)$/;
+const intRegexp = /^[+-]?\d+$/;
+
 async function getWeight(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedWeight: number, hitAllReps: boolean) {
 	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
 	await ctx.editMessageText(
@@ -18,7 +21,7 @@ async function getWeight(ctx: MyContext, conversation: MyConversation, selectedE
 		{reply_markup: await getWeightOptions(), parse_mode: 'HTML'},
 	);
 
-	ctx = await conversation.waitFor(['callback_query:data', 'message:text']);
+	ctx = await conversation.waitUntil(ctx => ctx.hasText(floatOrIntRegexp), async ctx => ctx.deleteMessage());
 
 	if (ctx.callbackQuery) {
 		return predictedWeight + Number(ctx.callbackQuery.data);
@@ -35,7 +38,7 @@ async function getRepetitions(ctx: MyContext, conversation: MyConversation, sele
 		{reply_markup: await getRepOptions(), parse_mode: 'HTML'},
 	);
 
-	ctx = await conversation.waitFor(['callback_query:data', 'message:text']);
+	ctx = await conversation.waitUntil(ctx => ctx.hasText(intRegexp), async ctx => ctx.deleteMessage());
 
 	if (ctx.callbackQuery) {
 		return predictedReps + Number(ctx.callbackQuery.data);

@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import {model, Schema} from 'mongoose';
+import {model, Schema, type Types} from 'mongoose';
 
 export type ExerciseType = {
+	_id: Types.ObjectId;
 	name: string;
 	category: string;
 	is_compound: boolean;

@@ -17,7 +17,7 @@ const commands = [
 	},
 	{
 		command: '/settings',
-		description: 'nuff said',
+		description: 'choose Split Length, change weight units',
 	},
 ];
 

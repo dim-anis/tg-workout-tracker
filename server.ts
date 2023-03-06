@@ -17,7 +17,7 @@ const app = express();
 const PORT = process.env.PORT ?? 5000;
 
 mongoose.set('strictQuery', false);
-void dbConnect();
+await dbConnect();
 
 const db = mongoose.connection;
 app.listen(PORT, () => {

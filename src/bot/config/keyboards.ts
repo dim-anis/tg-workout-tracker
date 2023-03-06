@@ -12,9 +12,9 @@ export const getRpeOptions = async (): Promise<InlineKeyboard> => new InlineKeyb
 	.text('🟡 7', '7');
 
 export const getWeightOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('+1')
-	.text('+2.5')
-	.text('+5').row()
+	.text('+1', '1')
+	.text('+2.5', '2.5')
+	.text('+5', '5').row()
 	.text('-1')
 	.text('-2.5')
 	.text('-5').row()
@@ -22,9 +22,9 @@ export const getWeightOptions = async (): Promise<InlineKeyboard> => new InlineK
 	.text('Use same', '0');
 
 export const getRepOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('+1')
-	.text('+2')
-	.text('+3').row()
+	.text('+1', '1')
+	.text('+2', '2')
+	.text('+3', '3').row()
 	.text('-1')
 	.text('-2')
 	.text('-3').row()

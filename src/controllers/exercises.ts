@@ -4,7 +4,7 @@ import handleAsync from '../middleware/async.js';
 import {ErrorResponse} from '../utils/errors.js';
 
 export const getAllExercises = handleAsync(async (req: Request, res: Response, next: NextFunction) => {
-	const exercises = await Exercise.find({});
+	const exercises = await Exercise.find({}).lean();
 	if (!exercises) {
 		next(new ErrorResponse(400, 'You havent\'t added any exercises yet'));
 	}

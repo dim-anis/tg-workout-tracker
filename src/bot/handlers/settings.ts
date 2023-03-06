@@ -29,7 +29,6 @@ const mainMenu = new Menu<MyContext>('main')
 	.text(
 		'✅ Submit',
 		async ctx => {
-			// Call API and save settings to the DB here or make calls for each setting
 			const payload = {
 				...ctx.session.userSettings,
 				user_id: ctx.dbchat.user_id,
