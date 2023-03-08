@@ -2,12 +2,12 @@
   "name": "tg-workout-tracker",
   "version": "1.0.0",
   "description": "A workout tracker built with grammyjs.",
-  "main": "server.ts",
+  "main": "./src/bot.ts",
   "type": "module",
   "scripts": {
-    "dev": "nodemon server.ts",
+    "dev": "nodemon ./src/bot.ts",
     "build-dist": "./node_modules/typescript/bin/tsc",
-    "trasnpiled": "node ./out/server.js",
+    "trasnpiled": "node ./out/bot.js",
     "build": "tsc --build"
   },
   "repository": {
@@ -15,9 +15,9 @@
     "url": "git+https://github.com/dim-anis/tg-workout-tracker.git"
   },
   "keywords": [
+    "grammyjs",
     "workouttracker",
-    "botapi",
-    "telegram-bot-api",
+    "telegram-bot",
     "telegram"
   ],
   "author": "dim-anis",

@@ -4,8 +4,7 @@ import recordSet from './recordSet';
 import nextWorkout from './nextWorkout';
 import settings from './settings';
 import editExercises from './editExercises';
-
-import type {MyContext} from 'bot/types/bot';
+import type {MyContext} from '../types/bot';
 
 const composer = new Composer<MyContext>();
 

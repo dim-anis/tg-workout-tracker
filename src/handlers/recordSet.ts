@@ -2,11 +2,11 @@
 
 import {Composer} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
-import type {MyConversation, MyContext} from 'bot/types/bot';
-import type {ExerciseType} from '../../models/exercise';
+import type {MyConversation, MyContext} from '../types/bot';
+import type {ExerciseType} from '../models/exercise';
 import {getMainMenu, getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
-import {upsertSet} from '../api/workouts';
-import {getAllExercises} from '../api/exercises';
+import {createWorkout} from '../models/workout';
+import {getAllExercises} from '../models/exercise';
 
 const composer = new Composer<MyContext>();
 
@@ -64,34 +64,28 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 		`<b>${exercise?.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`,
 		{parse_mode: 'HTML', reply_markup: await getRpeOptions()},
 	);
-	const {callbackQuery: {data: rpe}} = await conversation.waitForCallbackQuery(/[+-]?(\d*\.\d+|\d+\.\d*|\d+)/gm);
+	const {callbackQuery: {data: rpeString}} = await conversation.waitForCallbackQuery(/[+-]?(\d*\.\d+|\d+\.\d*|\d+)/gm);
+	const rpe = Number(rpeString);
 
 	return {exercise, weight, repetitions, rpe};
 }
 
 const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => {
 	try {
-		const response = await conversation.external(async () => getAllExercises());
-		if (!response.data) {
+		const exercises = await conversation.external(async () => getAllExercises());
+		if (!exercises) {
 			throw new Error('Failed to get the Exercise Data');
 		}
 
-		const allExercises = response.data;
-		const chosenExercise = await getExercise(ctx, conversation, allExercises);
+		const chosenExercise = await getExercise(ctx, conversation, exercises);
 		const setData = await getSetData(ctx, conversation, chosenExercise);
+		const updatedWorkout = await conversation.external(async () => createWorkout(ctx.dbchat.user_id, [setData]));
 
-		const payload = {
-			user_id: ctx.dbchat.user_id,
-			sets: [setData],
-		};
-		const r = await conversation.external(async () => upsertSet(JSON.stringify(payload)));
-
-		if (!r.data) {
-			throw new Error('POST request failed!');
+		if (!updatedWorkout) {
+			throw new Error('Failed to record a set!');
 		}
 
-		await ctx.reply('✅ Success!');
-		await ctx.reply('Choose an option:', {reply_markup: await getMainMenu()});
+		await ctx.reply('<b>✅ Success!\n\nChoose an option:</b>', {reply_markup: await getMainMenu(), parse_mode: 'HTML'});
 		return;
 	} catch (err: unknown) {
 		console.log(err);

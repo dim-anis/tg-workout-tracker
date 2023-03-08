@@ -1,7 +1,7 @@
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
-import type {MyConversation, MyContext} from 'bot/types/bot';
-import {createExercise, getAllExercises} from '../api/exercises';
+import type {MyConversation, MyContext} from '../types/bot';
+import {getAllExercises, createExercise} from '../models/exercise';
 import {getYesNoOptions} from '../config/keyboards';
 import {getExercise} from './helpers/getExerciseFromInline';
 
@@ -28,13 +28,12 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		const {callbackQuery: {data: option}} = await conversation.waitForCallbackQuery(['addNewExercise', 'editExercises']);
 
 		if (option === 'editExercises') {
-			const response = await conversation.external(async () => getAllExercises());
-			if (!response.data) {
+			const exercises = await conversation.external(async () => getAllExercises());
+			if (!exercises) {
 				throw new Error('Failed to get the Exercise Data');
 			}
 
-			const allExercises = response.data;
-			const exerciseToEdit = await getExercise(ctx, conversation, allExercises, chat_id, message_id);
+			const exerciseToEdit = await getExercise(ctx, conversation, exercises, chat_id, message_id);
 
 			await ctx.api.editMessageText(
 				chat_id,
@@ -67,7 +66,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 
 			const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['yesOption', 'noOption']);
 
-			let is_compound;
+			let is_compound: boolean;
 			if (data === 'yesOption') {
 				is_compound = true;
 			} else {
@@ -86,12 +85,10 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 
 			const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(['Chest', 'Legs', 'Back']);
 
-			const payload = JSON.stringify({name, category, is_compound});
+			const createdExercise = await conversation.external(async () => createExercise(name, category, is_compound));
 
-			const response = await conversation.external(async () => createExercise(payload));
-
-			if (!response.data) {
-				throw new Error(response.message);
+			if (!createdExercise) {
+				throw new Error('Failed to create exercise');
 			}
 
 			await ctx.api.editMessageText(
@@ -102,8 +99,6 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 					parse_mode: 'HTML',
 				},
 			);
-
-			conversation.log(response.data);
 		}
 	} catch (e) {
 		console.log(e);

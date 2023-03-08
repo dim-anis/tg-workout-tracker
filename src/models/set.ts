@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-
-import type {Document} from 'mongoose';
 import {model, Schema} from 'mongoose';
 
 export type SetType = {
@@ -9,23 +7,19 @@ export type SetType = {
 	repetitions: number;
 	rpe: number;
 	notes?: string;
-	createdAt: Date;
-	updatedAt: Date;
-} & Document;
+};
 
-export const SetSchema = new Schema<SetType>(
+export const SetSchema = new Schema(
 	{
 		weight: {type: Number, required: true},
 		exercise: {type: String, required: true},
 		repetitions: {type: Number, required: true},
 		rpe: {type: Number, required: true},
-		notes: {type: String},
+		notes: {type: String, required: false},
 	},
 	{
 		timestamps: true,
 	},
 );
 
-const Set = model<SetType>('Set', SetSchema);
-
-export default Set;
+export default model<SetType>('Set', SetSchema);

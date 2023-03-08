@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop */
 
-import {type MyContext, type MyConversation} from 'bot/types/bot';
+import {type MyContext, type MyConversation} from '../../types/bot';
 import {type ExerciseType} from 'models/exercise';
 import {getMenuFromStringArray} from '../../config/keyboards';
 

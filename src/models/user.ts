@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import mongoose, {model} from 'mongoose';
-const {Schema} = mongoose;
+import {model, Schema} from 'mongoose';
 
 export type UserType = {
 	name?: string;
@@ -27,4 +26,31 @@ const UserSchema = new Schema(
 	},
 );
 
-export default model<UserType>('User', UserSchema);
+const User = model<UserType>('User', UserSchema);
+
+const updateUser = async (user_id: string, splitLength: number, isMetric: boolean) => {
+	const userUpdated = await User.findOneAndUpdate(
+		{user_id},
+		{
+			$set: {
+				settings: {
+					splitLength,
+					isMetric,
+				},
+			},
+		},
+		{
+			new: true,
+		},
+	);
+
+	return userUpdated;
+};
+
+const findOrCreateUser = async (user_id: number) => User.findOneAndUpdate(
+	{user_id},
+	{},
+	{upsert: true, new: true},
+);
+
+export {User, findOrCreateUser, updateUser};
