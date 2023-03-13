@@ -67,4 +67,4 @@ async function runBot() {
 	process.once('SIGINT', async () => bot.stop());
 }
 
-await runBot();
+void runBot();

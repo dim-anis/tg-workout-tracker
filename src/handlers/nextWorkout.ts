@@ -3,18 +3,15 @@ import {Composer, InlineKeyboard} from 'grammy';
 import intervalToDuration from 'date-fns/intervalToDuration';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import type {WorkoutType} from '../models/workout';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
-import {getWorkouts, createWorkout} from '../models/workout';
+import {type WorkoutType, getWorkouts, createWorkout} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
 
 const composer = new Composer<MyContext>();
 
-const floatOrIntRegexp = /^(?=.)([+-]?([0-9]*)(\.([0-9]+))?)$/;
-const intRegexp = /^[+-]?\d+$/;
-
 const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) => {
-	const {splitLength, isMetric} = ctx.session.userSettings;
+	const {splitLength, isMetric} = conversation.session.userSettings;
+	// Make it an option in the settings
 	const mesocycleLength = splitLength * 4;
 
 	try {
@@ -33,15 +30,14 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
+		const setCountMap = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout?.sets) : {};
 
 		do {
-			const setCount = countSets(conversation.session.sets);
-
 			const kbdOptions = new InlineKeyboard();
 			for (const exercise of nextWorkoutExercises) {
 				kbdOptions
 					.text(
-						`${exercise} ${'•'.repeat(setCount[exercise])}`,
+						`${exercise} ${'•'.repeat(setCountMap[exercise])}`,
 						exercise,
 					)
 					.row();
@@ -53,13 +49,13 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 			);
 
 			const {callbackQuery: {data: selectedExercise}} = await conversation.waitForCallbackQuery(nextWorkoutExercises);
-			const {predictedWeight, predictedReps, hitAllReps} = getLastWorkoutSetData(selectedExercise, nextWorkout);
+			const {lastWeight, lastReps, hitAllReps} = getLastWorkoutSetData(selectedExercise, nextWorkout);
 
-			if (typeof predictedWeight === 'undefined') {
+			if (typeof lastWeight === 'undefined') {
 				throw new Error('Not enough data for projection');
 			}
 
-			updatedCurrentWorkout = await recordSet(conversation, ctx, selectedExercise, predictedWeight, predictedReps, hitAllReps);
+			updatedCurrentWorkout = await recordExercise(conversation, ctx, selectedExercise, lastWeight, lastReps, hitAllReps);
 
 			await ctx.editMessageText(
 				'Would you like to finish this workout?',
@@ -89,40 +85,37 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 	}
 };
 
-async function getWeight(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedWeight: number, hitAllReps: boolean) {
-	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
+async function getWeight(ctx: MyContext, conversation: MyConversation, selectedExercise: string, lastWeight: number, hitAllReps: boolean, setCount: number) {
 	await ctx.editMessageText(
-		`<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\nPlease enter the weight\n\nLast working weight: <b>${predictedWeight}kg</b>\n\n${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`,
+		`<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\nPlease enter the weight\n\nLast working weight: <b>${lastWeight}kg</b>\n\n${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`,
 		{reply_markup: await getWeightOptions(), parse_mode: 'HTML'},
 	);
 
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 	if (ctx.callbackQuery) {
-		return predictedWeight + Number(ctx.callbackQuery.data);
+		return lastWeight + Number(ctx.callbackQuery.data);
 	}
 
 	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
 	return Number(ctx.message!.text);
 }
 
-async function getRepetitions(ctx: MyContext, conversation: MyConversation, selectedExercise: string, predictedReps: number, hitAllReps: boolean) {
-	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
+async function getRepetitions(ctx: MyContext, conversation: MyConversation, selectedExercise: string, lastReps: number, hitAllReps: boolean, setCount: number) {
 	await ctx.editMessageText(
-		`<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\nPlease enter the repetitions\n\nExpected number of repetitions: <b>${predictedReps}</b>\n\n${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`,
+		`<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\nPlease enter the repetitions\n\nExpected number of repetitions: <b>${lastReps}</b>\n\n${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`,
 		{reply_markup: await getRepOptions(), parse_mode: 'HTML'},
 	);
 
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 	if (ctx.callbackQuery) {
-		return predictedReps + Number(ctx.callbackQuery.data);
+		return lastReps + Number(ctx.callbackQuery.data);
 	}
 
 	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
 	return Number(ctx.message?.text);
 }
 
-async function getRPE(ctx: MyContext, conversation: MyConversation, selectedExercise: string) {
-	const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
+async function getRPE(ctx: MyContext, conversation: MyConversation, selectedExercise: string, setCount: number) {
 	await ctx.editMessageText(
 		`<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\nPlease enter the RPE\n\nHow hard was this set?`,
 		{reply_markup: await getRpeOptions(), parse_mode: 'HTML'},
@@ -137,26 +130,39 @@ async function recordSet(
 	conversation: MyConversation,
 	ctx: MyContext,
 	selectedExercise: string,
-	predictedWeight: number,
-	predictedReps: number,
+	lastWeight: number,
+	lastReps: number,
+	hitAllReps: boolean,
+	setCount: number,
+) {
+	const weight = await getWeight(ctx, conversation, selectedExercise, lastWeight, hitAllReps, setCount);
+	const repetitions = await getRepetitions(ctx, conversation, selectedExercise, lastReps, hitAllReps, setCount);
+	const rpe = await getRPE(ctx, conversation, selectedExercise, setCount);
+
+	return conversation.external(async () => createWorkout(ctx.dbchat.user_id, [{exercise: selectedExercise, weight, repetitions, rpe}]));
+}
+
+async function recordExercise(
+	conversation: MyConversation,
+	ctx: MyContext,
+	selectedExercise: string,
+	lastWeight: number,
+	lastReps: number,
 	hitAllReps: boolean,
 ) {
 	let canContinue = false;
 	let updatedWorkout;
+	let setCount = 0;
 
 	do {
-		const weight = await getWeight(ctx, conversation, selectedExercise, predictedWeight, hitAllReps);
-		const repetitions = await getRepetitions(ctx, conversation, selectedExercise, predictedReps, hitAllReps);
-		const rpe = await getRPE(ctx, conversation, selectedExercise);
-
-		const allSetsCount = conversation.session.sets.push({exercise: selectedExercise, weight, repetitions, rpe});
-		const setCount = conversation.session.sets.filter(set => set.exercise === selectedExercise).length;
-
-		updatedWorkout = await conversation.external(async () => createWorkout(ctx.dbchat.user_id, [{exercise: selectedExercise, weight, repetitions, rpe}]));
+		updatedWorkout = await recordSet(conversation, ctx, selectedExercise, lastWeight, lastReps, hitAllReps, setCount);
 
 		if (typeof updatedWorkout === 'undefined') {
 			throw new Error('Failed to record set to DB!');
 		}
+
+		setCount = countSets(updatedWorkout.sets)[selectedExercise];
+		const {weight, repetitions, rpe} = updatedWorkout.sets[updatedWorkout.sets.length - 1];
 
 		const replyKbd = new InlineKeyboard()
 			.text('Finish', 'stopRecording')
@@ -197,11 +203,11 @@ function getNextWorkout(workouts: WorkoutType[], splitLength: number) {
 
 function getLastWorkoutSetData(selectedExercise: string, nextWorkout: WorkoutType) {
 	const allSets = nextWorkout.sets.filter(set => set.exercise === selectedExercise);
-	const predictedWeight = allSets[allSets.length - 1].weight;
-	const predictedReps = allSets[allSets.length - 1].repetitions;
-	const hitAllReps = allSets.every(set => set.repetitions >= predictedReps);
+	const lastWeight = allSets[allSets.length - 1].weight;
+	const lastReps = allSets[allSets.length - 1].repetitions;
+	const hitAllReps = allSets.every(set => set.repetitions >= lastReps);
 
-	return {predictedWeight, predictedReps, hitAllReps};
+	return {lastWeight, lastReps, hitAllReps};
 }
 
 composer
