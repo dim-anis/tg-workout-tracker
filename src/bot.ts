@@ -8,7 +8,7 @@ import attachUser from './middleware/attachUser';
 import {errorHandler} from './middleware/errorHandler';
 import dbConnect from './config/dbConnect';
 import mongoose from 'mongoose';
-import * as MongoStorage from '@grammyjs/storage-mongodb';
+import type * as MongoStorage from '@grammyjs/storage-mongodb';
 
 dotenv.config();
 
@@ -36,7 +36,7 @@ async function runBot() {
 
 	bot.use(session({
 		initial,
-		storage: new MongoStorage.MongoDBAdapter<SessionStorage>({collection}),
+		// Storage: new MongoStorage.MongoDBAdapter<SessionStorage>({collection}),
 	}));
 
 	bot.use(attachUser);

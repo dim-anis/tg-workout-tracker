@@ -1,9 +1,9 @@
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import {getAllExercises, createExercise} from '../models/exercise';
 import {getYesNoOptions} from '../config/keyboards';
 import {getExercise} from './helpers/getExerciseFromInline';
+import {createUserExercise, getAllUserExercises} from '../models/user';
 
 const composer = new Composer<MyContext>();
 
@@ -13,6 +13,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 	}
 
 	const {id: chat_id} = ctx.chat;
+	const {user_id} = ctx.dbchat;
 
 	try {
 		const editExerciseMenu = new InlineKeyboard()
@@ -28,7 +29,8 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		const {callbackQuery: {data: option}} = await conversation.waitForCallbackQuery(['addNewExercise', 'editExercises']);
 
 		if (option === 'editExercises') {
-			const exercises = await conversation.external(async () => getAllExercises());
+			const exercises = await conversation.external(async () => getAllUserExercises(user_id));
+			conversation.log(exercises);
 			if (!exercises) {
 				throw new Error('Failed to get the Exercise Data');
 			}
@@ -85,7 +87,8 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 
 			const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(['Chest', 'Legs', 'Back']);
 
-			const createdExercise = await conversation.external(async () => createExercise(name, category, is_compound));
+			const createdExercise = await conversation.external(async () => createUserExercise(user_id, name, category, is_compound));
+			// CreateExercise(name, category, is_compound)
 
 			if (!createdExercise) {
 				throw new Error('Failed to create exercise');

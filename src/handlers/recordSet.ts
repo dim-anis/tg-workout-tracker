@@ -6,7 +6,7 @@ import type {MyConversation, MyContext} from '../types/bot';
 import type {ExerciseType} from '../models/exercise';
 import {getMainMenu, getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
 import {createWorkout} from '../models/workout';
-import {getAllExercises} from '../models/exercise';
+import {getAllUserExercises} from '../models/user';
 
 const composer = new Composer<MyContext>();
 
@@ -71,8 +71,10 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 }
 
 const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => {
+	const {user_id} = ctx.dbchat;
+
 	try {
-		const exercises = await conversation.external(async () => getAllExercises());
+		const exercises = await conversation.external(async () => getAllUserExercises(user_id));
 		if (!exercises) {
 			throw new Error('Failed to get the Exercise Data');
 		}
