@@ -36,7 +36,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "grammy": "^1.14.1",
-    "mongoose": "^6.9.1",
+    "mongoose": "^7.0.1",
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
