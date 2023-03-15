@@ -4,7 +4,7 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
-import {type WorkoutType, getWorkouts, createWorkout} from '../models/workout';
+import {type WorkoutType, getWorkouts, createOrUpdateWorkout} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
 
 const composer = new Composer<MyContext>();
@@ -76,7 +76,6 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 			end: new Date(updatedAt),
 		});
 		const avgRpe = averageRpe(updatedCurrentWorkout.sets);
-
 		const msgTextStats = `<b>Workout Stats</b>\n\nWorkout number: ${workoutNumber}<b>/${mesocycleLength}</b>\nTotal duration: <b>${hours ? `${hours}h` : ''} ${minutes ? `${minutes}min` : ''}</b>\nAverage RPE: <b>${avgRpe}</b>`;
 
 		await ctx.editMessageText(msgTextStats, {parse_mode: 'HTML'});
@@ -139,7 +138,7 @@ async function recordSet(
 	const repetitions = await getRepetitions(ctx, conversation, selectedExercise, lastReps, hitAllReps, setCount);
 	const rpe = await getRPE(ctx, conversation, selectedExercise, setCount);
 
-	return conversation.external(async () => createWorkout(ctx.dbchat.user_id, [{exercise: selectedExercise, weight, repetitions, rpe}]));
+	return conversation.external(async () => createOrUpdateWorkout(ctx.dbchat.user_id, {exercise: selectedExercise, weight, repetitions, rpe}));
 }
 
 async function recordExercise(

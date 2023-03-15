@@ -3,6 +3,7 @@ import {type Types, model, Schema} from 'mongoose';
 import {startOfDay, endOfDay} from 'date-fns';
 import {type SetType, SetSchema} from './set';
 import {User} from './user';
+import {averageRpe} from '../handlers/helpers/countSets';
 
 export type WorkoutType = {
 	user: Types.ObjectId;
@@ -42,33 +43,44 @@ const getWorkouts = async (limit: number) => Workout.find({}).sort({createdAt: -
 
 const getWorkoutById = async (id: number) => Workout.findById(id);
 
-const createWorkout = async (user_id: string, sets: SetType[]) => {
-	const newSet = sets[0];
+const createOrUpdateWorkout = async (user_id: string, set: SetType) => {
 	const currentTime = new Date();
 
-	const userObject = await User.findOne({user_id});
+	const user = await User.findOne({user_id});
 
-	if (!userObject) {
+	if (!user) {
 		return;
 	}
 
-	const query = {createdAt: {
-		$gt: startOfDay(new Date(currentTime)),
-		$lt: endOfDay(new Date(currentTime)),
-	}};
-
-	const update = {
-		user: userObject._id,
-		$push: {sets: {...newSet}},
+	const query = {
+		user: user._id,
+		createdAt: {
+			$gt: startOfDay(new Date(currentTime)),
+			$lt: endOfDay(new Date(currentTime)),
+		},
 	};
 
-	const workout = await Workout.findOneAndUpdate(
+	const workout = await Workout.findOne(query);
+
+	if (workout === null) {
+		return;
+	}
+
+	const update = {
+		user: user._id,
+		$push: {
+			sets: set,
+		},
+		avg_rpe: averageRpe(workout.sets),
+	};
+
+	const updatedWorkout = await Workout.findOneAndUpdate(
 		query,
 		update,
 		{upsert: true, new: true, setDefaultsOnInsert: true},
 	).lean();
 
-	return workout;
+	return updatedWorkout;
 };
 
-export {getWorkouts, getWorkoutById, createWorkout};
+export {getWorkouts, getWorkoutById, createOrUpdateWorkout};

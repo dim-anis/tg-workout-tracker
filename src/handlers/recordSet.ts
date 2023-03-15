@@ -5,7 +5,7 @@ import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import type {ExerciseType} from '../models/exercise';
 import {getMainMenu, getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
-import {createWorkout} from '../models/workout';
+import {createOrUpdateWorkout} from '../models/workout';
 import {getAllUserExercises} from '../models/user';
 
 const composer = new Composer<MyContext>();
@@ -81,7 +81,7 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 
 		const chosenExercise = await getExercise(ctx, conversation, exercises);
 		const setData = await getSetData(ctx, conversation, chosenExercise);
-		const updatedWorkout = await conversation.external(async () => createWorkout(ctx.dbchat.user_id, [setData]));
+		const updatedWorkout = await conversation.external(async () => createOrUpdateWorkout(ctx.dbchat.user_id, setData));
 
 		if (!updatedWorkout) {
 			throw new Error('Failed to record a set!');
