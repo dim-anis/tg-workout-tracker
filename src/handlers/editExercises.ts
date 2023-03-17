@@ -87,8 +87,10 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 
 			const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(['Chest', 'Legs', 'Back']);
 
-			const createdExercise = await conversation.external(async () => createUserExercise(user_id, name, category, is_compound));
-			// CreateExercise(name, category, is_compound)
+			const createdExercise = await conversation.external(async () => createUserExercise(
+				user_id,
+				{name, category, is_compound},
+			));
 
 			if (!createdExercise) {
 				throw new Error('Failed to create exercise');

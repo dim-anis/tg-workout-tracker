@@ -4,7 +4,6 @@ import {model, Schema} from 'mongoose';
 import {ExerciseSchema, type ExerciseType} from './exercise';
 
 export type UserType = {
-	name?: string;
 	user_id: string;
 	exercises: ExerciseType[];
 	settings: {
@@ -15,7 +14,6 @@ export type UserType = {
 
 const UserSchema = new Schema(
 	{
-		name: {type: String},
 		user_id: {type: String, required: true, unique: true},
 		exercises: {type: [ExerciseSchema], required: true},
 		settings: {
@@ -36,12 +34,50 @@ const getAllUserExercises = async (user_id: string) => {
 	return user?.exercises;
 };
 
-const createUserExercise = async (user_id: string, name: string, category: string, is_compound: boolean) => {
+const createUserExercise = async (user_id: string, exercise: ExerciseType | ExerciseType[]) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{
 			$push: {
-				exercises: {name, category, is_compound},
+				exercises: exercise,
+			},
+		},
+		{
+			new: true,
+			runValidators: true,
+		},
+	);
+
+	return userUpdated;
+};
+
+const updateUserExercise = async (user_id: string, currName: string, editedExercise: ExerciseType) => {
+	const userUpdated = await User.findOneAndUpdate(
+		{user_id, 'exercises.name': currName},
+		{
+			$set: {
+				'exercises.$.name': editedExercise.name,
+				'exercises.$.category': editedExercise.category,
+				'exercises.$.is_compound': editedExercise.is_compound,
+			},
+		},
+		{
+			new: true,
+			runValidators: true,
+		},
+	);
+	console.log(userUpdated);
+	return userUpdated;
+};
+
+const deleteUserExercise = async (user_id: string, exerciseName: string) => {
+	const userUpdated = await User.findOneAndUpdate(
+		{user_id},
+		{
+			$pull: {
+				exercises: {
+					name: exerciseName,
+				},
 			},
 		},
 		{
@@ -77,4 +113,4 @@ const findOrCreateUser = async (user_id: number) => User.findOneAndUpdate(
 	{upsert: true, new: true},
 );
 
-export {User, findOrCreateUser, updateUser, getAllUserExercises, createUserExercise};
+export {User, findOrCreateUser, updateUser, getAllUserExercises, deleteUserExercise, createUserExercise, updateUserExercise};

@@ -4,14 +4,17 @@ import {
 	type ConversationFlavor,
 } from '@grammyjs/conversations';
 import {type UserType} from 'models/user';
-import {type WorkoutType} from 'models/workout';
+import {type ExerciseType} from 'models/exercise';
 
 export type SessionStorage = {
 	userSettings: {
 		isMetric: boolean;
 		splitLength: number;
 	};
-	sets: WorkoutType['sets'];
+	state: {
+		cmdName: string;
+		data: string;
+	};
 };
 
 export type MyContext = GrammyContext & SessionFlavor<SessionStorage> & ConversationFlavor & {dbchat: UserType};

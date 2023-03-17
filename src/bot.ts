@@ -30,7 +30,10 @@ async function runBot() {
 				isMetric: true,
 				splitLength: 4,
 			},
-			sets: [],
+			state: {
+				cmdName: 'idle',
+				data: '',
+			},
 		};
 	}
 
