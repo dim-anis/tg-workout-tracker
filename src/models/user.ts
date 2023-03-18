@@ -66,7 +66,7 @@ const updateUserExercise = async (user_id: string, currName: string, editedExerc
 			runValidators: true,
 		},
 	);
-	console.log(userUpdated);
+
 	return userUpdated;
 };
 
@@ -88,7 +88,7 @@ const deleteUserExercise = async (user_id: string, exerciseName: string) => {
 	return userUpdated;
 };
 
-const updateUser = async (user_id: string, splitLength: number, isMetric: boolean) => {
+const updateUserSettings = async (user_id: string, splitLength: number, isMetric: boolean) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{
@@ -113,4 +113,4 @@ const findOrCreateUser = async (user_id: number) => User.findOneAndUpdate(
 	{upsert: true, new: true},
 );
 
-export {User, findOrCreateUser, updateUser, getAllUserExercises, deleteUserExercise, createUserExercise, updateUserExercise};
+export {User, findOrCreateUser, updateUserSettings, getAllUserExercises, deleteUserExercise, createUserExercise, updateUserExercise};

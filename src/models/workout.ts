@@ -60,27 +60,34 @@ const createOrUpdateWorkout = async (user_id: string, set: SetType) => {
 		},
 	};
 
-	const workout = await Workout.findOne(query);
-
-	if (workout === null) {
-		return;
-	}
-
 	const update = {
 		user: user._id,
 		$push: {
 			sets: set,
 		},
-		avg_rpe: averageRpe(workout.sets),
 	};
 
-	const updatedWorkout = await Workout.findOneAndUpdate(
+	const updatedSetsWorkout = await Workout.findOneAndUpdate(
 		query,
 		update,
 		{upsert: true, new: true, setDefaultsOnInsert: true},
 	).lean();
 
-	return updatedWorkout;
+	const {_id} = updatedSetsWorkout;
+
+	const updateAvgRpeWorkout = await Workout.findOneAndUpdate(
+		_id,
+		{
+			$set: {
+				avg_rpe: averageRpe(updatedSetsWorkout.sets),
+			},
+		},
+		{
+			new: true,
+		},
+	).lean();
+
+	return updateAvgRpeWorkout;
 };
 
 export {getWorkouts, getWorkoutById, createOrUpdateWorkout};

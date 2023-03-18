@@ -1,7 +1,7 @@
 import {Composer} from 'grammy';
 import type {MyContext} from '../types/bot';
 import {Menu} from '@grammyjs/menu';
-import {updateUser} from '../models/user';
+import {updateUserSettings} from '../models/user';
 
 const composer = new Composer<MyContext>();
 
@@ -30,7 +30,7 @@ const mainMenu = new Menu<MyContext>('main')
 		'✅ Submit',
 		async ctx => {
 			const {splitLength, isMetric} = ctx.session.userSettings;
-			const updatedUser = await updateUser(ctx.dbchat.user_id, splitLength, isMetric);
+			const updatedUser = await updateUserSettings(ctx.dbchat.user_id, splitLength, isMetric);
 			if (!updatedUser) {
 				await ctx.editMessageText('😔 Failed to update the settings, try again', {reply_markup: undefined});
 			}
