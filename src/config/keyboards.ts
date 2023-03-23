@@ -1,15 +1,26 @@
 import {InlineKeyboard} from 'grammy';
 
-export const getRpeOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('🔴 9', '9')
-	.text('🔴 9.5', '9.5')
-	.text('🔴 10', '10').row()
-	.text('🟠 7.5', '7.5')
-	.text('🟠 8', '8')
-	.text('🟠 8.5', '8.5').row()
-	.text('🟡 6', '6')
-	.text('🟡 6.5', '6.5')
-	.text('🟡 7', '7');
+export const rpeValues = [9, 9.5, 10, 7.5, 8, 8.5, 6, 6.5, 7];
+
+export const getRpeOptions = async (): Promise<InlineKeyboard> => {
+	const keyboard = new InlineKeyboard();
+
+	for (const [index, value] of rpeValues.entries()) {
+		if (value >= 9) {
+			keyboard.text(`🔴 ${value}`, `${value}`);
+		} else if (value < 9 && value >= 7.5) {
+			keyboard.text(`🟠 ${value}`, `${value}`);
+		} else {
+			keyboard.text(`🟡 ${value}`, `${value}`);
+		}
+
+		if ((index + 1) % 3 === 0) {
+			keyboard.row();
+		}
+	}
+
+	return keyboard;
+};
 
 export const getWeightOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
 	.text('+1', '1')

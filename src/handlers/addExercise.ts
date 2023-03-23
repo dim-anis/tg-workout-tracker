@@ -1,13 +1,10 @@
-import {Composer, InlineKeyboard} from 'grammy';
-import {createConversation} from '@grammyjs/conversations';
+import {InlineKeyboard} from 'grammy';
 import type {MyConversation, MyContext} from '../types/bot';
 import {getYesNoOptions} from '../config/keyboards';
 import {createUserExercise} from '../models/user';
 import waitForTextAndRemove from './helpers/waitForTextAndRemove';
 
-const composer = new Composer<MyContext>();
-
-async function handleEditExercises(conversation: MyConversation, ctx: MyContext) {
+export default async function handleAddExercise(conversation: MyConversation, ctx: MyContext) {
 	if (!ctx.chat) {
 		return;
 	}
@@ -15,10 +12,10 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 	const {user_id} = ctx.dbchat;
 
 	try {
-		await ctx.reply(
-			'<b>ADD NEW EXERCISE</b>\n\nType in the name:',
-			{
+		await ctx.editMessageText(
+			'📋 <b>ADD NEW EXERCISE</b>\n\nType in the name:', {
 				parse_mode: 'HTML',
+				reply_markup: undefined,
 			});
 
 		const name = await waitForTextAndRemove(conversation, ctx);
@@ -28,7 +25,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		}
 
 		await ctx.editMessageText(
-			`<b>ADD ${name.toUpperCase()}</b>\n\nIs it a compound exercise?\n\n<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>`,
+			`📋 <b>ADD ${name.toUpperCase()}</b>\n\nIs it a compound exercise?\n\n<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>`,
 			{
 				parse_mode: 'HTML',
 				reply_markup: await getYesNoOptions(),
@@ -45,7 +42,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		}
 
 		await ctx.editMessageText(
-			`<b>ADD ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`,
+			`📋 <b>ADD ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`,
 			{
 				parse_mode: 'HTML',
 				reply_markup: new InlineKeyboard().text('Legs').row().text('Chest').row().text('Back'),
@@ -64,7 +61,7 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		}
 
 		await ctx.editMessageText(
-			`You've added <b>${name.toUpperCase()}</b> to your exercise list!`,
+			`📋 <b>ADD NEW EXERCISE</b>\n\nYou've added <b>${name.toUpperCase()}</b> to your exercise list!`,
 			{
 				parse_mode: 'HTML',
 			},
@@ -73,12 +70,3 @@ async function handleEditExercises(conversation: MyConversation, ctx: MyContext)
 		console.log(e);
 	}
 }
-
-composer
-	.use(createConversation(handleEditExercises));
-
-composer.command('addExercise', async ctx => {
-	await ctx.conversation.enter('handleEditExercises');
-});
-
-export default composer;

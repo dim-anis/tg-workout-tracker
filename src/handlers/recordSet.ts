@@ -4,7 +4,7 @@ import {Composer} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import type {ExerciseType} from '../models/exercise';
-import {getMainMenu, getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
+import {getMainMenu, getRpeOptions, getMenuFromStringArray, rpeValues} from '../config/keyboards';
 import {createOrUpdateWorkout} from '../models/workout';
 import {getAllUserExercises} from '../models/user';
 
@@ -64,7 +64,7 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 		`<b>${exercise?.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`,
 		{parse_mode: 'HTML', reply_markup: await getRpeOptions()},
 	);
-	const {callbackQuery: {data: rpeString}} = await conversation.waitForCallbackQuery(/[+-]?(\d*\.\d+|\d+\.\d*|\d+)/gm);
+	const {callbackQuery: {data: rpeString}} = await conversation.waitForCallbackQuery(rpeValues.map(val => val.toString()));
 	const rpe = Number(rpeString);
 
 	return {exercise, weight, repetitions, rpe};

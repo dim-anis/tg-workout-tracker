@@ -31,7 +31,7 @@ categoriesMenu.dynamic(async ctx => {
 	return range;
 });
 
-const exercisesMenuText = (category: string) => `<b>${category}</b>\n\nChoose your Exercise:`;
+const exercisesMenuText = (category: string) => `<b>${category}</b>\n\nSelect an exercise`;
 const exercisesMenu = new Menu<MyContext>('exercises');
 exercisesMenu.dynamic(async ctx => {
 	const payload = ctx.match;
