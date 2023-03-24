@@ -4,6 +4,7 @@ import {
 	type ConversationFlavor,
 } from '@grammyjs/conversations';
 import {type UserType} from 'models/user';
+import {type Exercise} from '../handlers/populateExercises';
 import {type ExerciseType} from 'models/exercise';
 
 export type SessionStorage = {
@@ -15,6 +16,7 @@ export type SessionStorage = {
 		cmdName: string;
 		data: string;
 	};
+	preloadedExercises: string[];
 };
 
 export type MyContext = GrammyContext & SessionFlavor<SessionStorage> & ConversationFlavor & {dbchat: UserType};

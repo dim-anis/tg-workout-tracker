@@ -3,10 +3,10 @@ import {Menu, MenuRange} from '@grammyjs/menu';
 import {type MyContext} from '../types/bot';
 import {createConversation} from '@grammyjs/conversations';
 import handleAddExercise from './addExercise';
-import {getAllUserExercises} from 'models/user';
+// Import {getAllUserExercises} from 'models/user';
 import exerciseData from '../config/exercises.json' assert {type: 'json'};
 
-type Exercise = {
+export type Exercise = {
 	name: string;
 	category: string;
 	is_compound: boolean;
@@ -19,6 +19,8 @@ const mainMenu = new Menu<MyContext>('main')
 		{text: 'Select from preloaded', payload: 'populateExercises'},
 		'populate-exercises-main',
 		async ctx => {
+			const userExercises = ctx.dbchat.exercises.map(exercise => exercise.name);
+			ctx.session.preloadedExercises = userExercises;
 			await ctx.editMessageText(populateMainText, {parse_mode: 'HTML'});
 		},
 	)
@@ -30,28 +32,43 @@ const mainMenu = new Menu<MyContext>('main')
 		},
 	);
 
-const populateMainText = '<b>POPULATE EXERCISES</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"\n\nSelected exercises are marked with "■", not yet selected with "□"';
+const populateMainText = '<b>POPULATE EXERCISES</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"';
 const populateExercisesMain = new Menu<MyContext>('populate-exercises-main');
 populateExercisesMain.dynamic(async ctx => {
 	const categories = new Set(exercises.map(ex => ex.category));
 
-	const range = new MenuRange<MyContext>();
-	range
+	const range = new MenuRange<MyContext>()
 		.back('⬅️ Back')
 		.row();
 
 	for (const cat of categories) {
 		range
 			.submenu(
-				{text: cat, payload: cat},
+				{
+					text: cat,
+					payload: cat,
+				},
 				'populate-exercises-submenu',
-				async ctx =>
-					ctx.editMessageText(populateExercisesMainSubText(cat), {
+				async ctx => {
+					await ctx.editMessageText(populateExercisesMainSubText(cat), {
 						parse_mode: 'HTML',
-					}),
+					});
+				},
 			)
 			.row();
 	}
+
+	range
+		.text(
+			{text: '✅ Submit'},
+			async ctx => {
+				const userExercises = ctx.dbchat.exercises.map(exercise => exercise.name);
+				const notInUserExercises = ctx.session.preloadedExercises.filter(exercise => !userExercises.includes(exercise));
+				console.log(`Number of new exercises: ${notInUserExercises.length}`);
+				const newExercises = exercises.filter(exercise => notInUserExercises.includes(exercise.name));
+				console.log(`Preloading ${newExercises.length} exercises...`);
+			},
+		);
 
 	return range;
 });
@@ -65,10 +82,10 @@ populateExercisesSub.dynamic(async ctx => {
 		throw new Error('No category chosen!');
 	}
 
-	return createExerciseMenu(ctx, category);
+	return createExerciseMenu(category);
 });
 
-async function createExerciseMenu(ctx: MyContext, category: string) {
+async function createExerciseMenu(category: string) {
 	const selectedCategoryExercises = exercises.filter(ex => ex.category === category);
 	const range = new MenuRange<MyContext>();
 
@@ -84,9 +101,24 @@ async function createExerciseMenu(ctx: MyContext, category: string) {
 	for (const exercise of selectedCategoryExercises) {
 		range
 			.text(
-				{text: exercise.name, payload: category},
+				{
+					text: ctx =>
+						ctx.session.preloadedExercises.includes(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
+					payload: category,
+				},
 				async ctx => {
-					console.log('Hi from the subMenu');
+					/*
+					   Do nothing if exercise is in userDB
+						 update the text if not in userDB and added to newList
+					 	 update the text if not in userDB and removed from the newList
+					*/
+					if (ctx.session.preloadedExercises.includes(exercise.name)) {
+						ctx.session.preloadedExercises = ctx.session.preloadedExercises.filter(ex => ex !== exercise.name);
+						ctx.menu.update();
+					} else {
+						ctx.session.preloadedExercises.push(exercise.name);
+						ctx.menu.update();
+					}
 				},
 			)
 			.row();
