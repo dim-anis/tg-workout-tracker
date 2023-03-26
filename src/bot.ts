@@ -34,7 +34,10 @@ async function runBot() {
 				cmdName: 'idle',
 				data: '',
 			},
-			preloadedExercises: [],
+			exercises: {
+				fromDB: new Set(),
+				toAdd: new Set(),
+			},
 		};
 	}
 

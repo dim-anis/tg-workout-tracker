@@ -162,6 +162,6 @@ categoriesMenu.register(exercisesMenu);
 
 composer.use(categoriesMenu);
 
-composer.command('editExercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
+composer.command('edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
 
 export default composer;

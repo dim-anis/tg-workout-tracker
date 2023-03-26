@@ -13,11 +13,11 @@ const commands = [
 	},
 	{
 		command: '/edit_exercises',
-		description: 'remove or add new exercises',
+		description: 'edit, remove or add new exercises',
 	},
 	{
 		command: '/settings',
-		description: 'choose Split Length, change weight units',
+		description: 'choose split length, change weight units',
 	},
 ];
 

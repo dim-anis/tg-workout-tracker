@@ -1,8 +1,8 @@
 import {InlineKeyboard} from 'grammy';
-import type {MyConversation, MyContext} from '../types/bot';
-import {getYesNoOptions} from '../config/keyboards';
-import {createUserExercise} from '../models/user';
-import waitForTextAndRemove from './helpers/waitForTextAndRemove';
+import type {MyConversation, MyContext} from '../../types/bot';
+import {getYesNoOptions} from '../../config/keyboards';
+import {createUserExercise} from '../../models/user';
+import waitForTextAndRemove from '../helpers/waitForTextAndRemove';
 
 export default async function handleAddExercise(conversation: MyConversation, ctx: MyContext) {
 	if (!ctx.chat) {

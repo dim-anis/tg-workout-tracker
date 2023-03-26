@@ -1,26 +1,20 @@
 import {Composer} from 'grammy';
 import {Menu, MenuRange} from '@grammyjs/menu';
-import {type MyContext} from '../types/bot';
+import {type MyContext} from '../../types/bot';
 import {createConversation} from '@grammyjs/conversations';
-import handleAddExercise from './addExercise';
-// Import {getAllUserExercises} from 'models/user';
-import exerciseData from '../config/exercises.json' assert {type: 'json'};
+import handleAddExercise from './addExerciseConversation';
+import exerciseData from '../../config/exercises.json' assert {type: 'json'};
+import {createUserExercise} from '../../models/user';
+import {type ExerciseType} from '../../models/exercise';
 
-export type Exercise = {
-	name: string;
-	category: string;
-	is_compound: boolean;
-};
-
-const exercises: Exercise[] = exerciseData as Exercise[];
+const exercises: ExerciseType[] = exerciseData as ExerciseType[];
 
 const mainMenu = new Menu<MyContext>('main')
 	.submenu(
 		{text: 'Select from preloaded', payload: 'populateExercises'},
 		'populate-exercises-main',
 		async ctx => {
-			const userExercises = ctx.dbchat.exercises.map(exercise => exercise.name);
-			ctx.session.preloadedExercises = userExercises;
+			ctx.session.exercises.fromDB = new Set(ctx.dbchat.exercises.map(exercise => exercise.name));
 			await ctx.editMessageText(populateMainText, {parse_mode: 'HTML'});
 		},
 	)
@@ -62,11 +56,12 @@ populateExercisesMain.dynamic(async ctx => {
 		.text(
 			{text: '✅ Submit'},
 			async ctx => {
-				const userExercises = ctx.dbchat.exercises.map(exercise => exercise.name);
-				const notInUserExercises = ctx.session.preloadedExercises.filter(exercise => !userExercises.includes(exercise));
-				console.log(`Number of new exercises: ${notInUserExercises.length}`);
-				const newExercises = exercises.filter(exercise => notInUserExercises.includes(exercise.name));
-				console.log(`Preloading ${newExercises.length} exercises...`);
+				const {toAdd} = ctx.session.exercises;
+				const exercisesToAdd = exercises.filter(exObj => [...toAdd].includes(exObj.name));
+				console.log(`Preloading ${toAdd.size} exercises...`);
+				const r = await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
+
+				await ctx.editMessageText('👌 Exercises updated!', {reply_markup: undefined});
 			},
 		);
 
@@ -103,20 +98,17 @@ async function createExerciseMenu(category: string) {
 			.text(
 				{
 					text: ctx =>
-						ctx.session.preloadedExercises.includes(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
+						ctx.session.exercises.fromDB.has(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
 					payload: category,
 				},
 				async ctx => {
-					/*
-					   Do nothing if exercise is in userDB
-						 update the text if not in userDB and added to newList
-					 	 update the text if not in userDB and removed from the newList
-					*/
-					if (ctx.session.preloadedExercises.includes(exercise.name)) {
-						ctx.session.preloadedExercises = ctx.session.preloadedExercises.filter(ex => ex !== exercise.name);
+					const {fromDB, toAdd} = ctx.session.exercises;
+
+					if (toAdd.has(exercise.name) && !fromDB.has(exercise.name)) {
+						toAdd.delete(exercise.name);
 						ctx.menu.update();
-					} else {
-						ctx.session.preloadedExercises.push(exercise.name);
+					} else if (!toAdd.has(exercise.name) && !fromDB.has(exercise.name)) {
+						toAdd.add(exercise.name);
 						ctx.menu.update();
 					}
 				},
@@ -135,7 +127,7 @@ populateExercisesMain.register(populateExercisesSub);
 mainMenu.register(populateExercisesMain);
 composer.use(mainMenu);
 
-composer.command('addEx', async ctx => {
+composer.command('add_exercise', async ctx => {
 	await ctx.reply('📋 <b>ADD EXERCISE</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
 });
 
