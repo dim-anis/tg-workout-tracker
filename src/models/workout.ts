@@ -49,7 +49,7 @@ const createOrUpdateWorkout = async (user_id: string, set: SetType) => {
 	const user = await User.findOne({user_id});
 
 	if (!user) {
-		return;
+		throw new Error('User doesn not exist');
 	}
 
 	const query = {

@@ -17,13 +17,14 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 	try {
 		const workouts = await conversation.external(async () => getWorkouts(mesocycleLength));
+		const isSameDayWorkout = isSameDay(workouts[0].createdAt, new Date());
 
 		if (workouts.length < splitLength) {
 			throw new Error('Not enough data for projection');
 		}
 
 		const firstWorkoutThisMesoIndex = workouts.findIndex(workout => workout.avg_rpe <= 6) + 1;
-		const workoutNumber = isSameDay(workouts[0].createdAt, new Date()) ? firstWorkoutThisMesoIndex - 1 : firstWorkoutThisMesoIndex;
+		const workoutNumber = isSameDayWorkout ? firstWorkoutThisMesoIndex - 1 : firstWorkoutThisMesoIndex;
 		const hasOneMicro = workoutNumber > splitLength;
 
 		const nextWorkout = getNextWorkout(workouts, splitLength);
@@ -32,7 +33,8 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
-		const setCountMap = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout?.sets) : {};
+
+		const setCountMap = isSameDayWorkout ? countSets(nextWorkout.sets) : countSets(updatedCurrentWorkout.sets);
 
 		do {
 			const kbdOptions = new InlineKeyboard();
