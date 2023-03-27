@@ -6,6 +6,7 @@ import type {MyConversation, MyContext} from '../types/bot';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
 import {type WorkoutType, getWorkouts, createOrUpdateWorkout} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
+import {isSameDay} from 'date-fns';
 
 const composer = new Composer<MyContext>();
 
@@ -21,7 +22,8 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 			throw new Error('Not enough data for projection');
 		}
 
-		const workoutNumber = workouts.findIndex(workout => workout.avg_rpe <= 6) + 1;
+		const firstWorkoutThisMesoIndex = workouts.findIndex(workout => workout.avg_rpe <= 6) + 1;
+		const workoutNumber = isSameDay(workouts[0].createdAt, new Date()) ? firstWorkoutThisMesoIndex - 1 : firstWorkoutThisMesoIndex;
 		const hasOneMicro = workoutNumber > splitLength;
 
 		const nextWorkout = getNextWorkout(workouts, splitLength);
@@ -183,6 +185,12 @@ async function recordExercise(
 }
 
 function getNextWorkout(workouts: WorkoutType[], splitLength: number) {
+	const isSameWorkout = isSameDay(workouts[0].createdAt, new Date());
+
+	if (isSameWorkout) {
+		return workouts[0];
+	}
+
 	const step = splitLength - 1;
 	const workoutCandidate = workouts[step];
 
