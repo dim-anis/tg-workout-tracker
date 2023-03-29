@@ -4,9 +4,10 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
-import {type WorkoutType, getWorkouts, createOrUpdateWorkout} from '../models/workout';
+import {type WorkoutType, getWorkouts} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
 import {isSameDay} from 'date-fns';
+import {createOrUpdateUserWorkout} from '../models/user';
 
 const composer = new Composer<MyContext>();
 
@@ -34,10 +35,11 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
 
-		const setCountMap = isSameDayWorkout ? countSets(nextWorkout.sets) : countSets(updatedCurrentWorkout.sets);
-
 		do {
+			const todaysSetCountMap = isSameDayWorkout ? countSets(workouts[0].sets) : {};
+			const setCountMap = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout.sets) : todaysSetCountMap;
 			const kbdOptions = new InlineKeyboard();
+
 			for (const exercise of nextWorkoutExercises) {
 				kbdOptions
 					.text(
@@ -142,7 +144,7 @@ async function recordSet(
 	const repetitions = await getRepetitions(ctx, conversation, selectedExercise, lastReps, hitAllReps, setCount);
 	const rpe = await getRPE(ctx, conversation, selectedExercise, setCount);
 
-	return conversation.external(async () => createOrUpdateWorkout(ctx.dbchat.user_id, {exercise: selectedExercise, weight, repetitions, rpe}));
+	return conversation.external(async () => createOrUpdateUserWorkout(ctx.dbchat.user_id, {exercise: selectedExercise, weight, repetitions, rpe}));
 }
 
 async function recordExercise(
@@ -188,26 +190,25 @@ async function recordExercise(
 
 function getNextWorkout(workouts: WorkoutType[], splitLength: number) {
 	const isSameWorkout = isSameDay(workouts[0].createdAt, new Date());
-
-	if (isSameWorkout) {
-		return workouts[0];
-	}
-
-	const step = splitLength - 1;
-	const workoutCandidate = workouts[step];
+	let workoutNumber = splitLength - 1;
+	const workoutCandidate = workouts[workoutNumber];
 
 	// Filtering out the deload workouts and getting the last proper workout
 	if (workoutCandidate.avg_rpe <= 6) {
-		for (let i = 0; i < workouts.length; i + step) {
+		for (let i = 0; i < workouts.length; i + workoutNumber) {
 			if (workouts[i].avg_rpe <= 6) {
 				continue;
 			}
 
-			return workouts[i];
+			workoutNumber = i;
 		}
 	}
 
-	return workoutCandidate;
+	if (isSameWorkout) {
+		workoutNumber += 1;
+	}
+
+	return workouts[workoutNumber];
 }
 
 function getLastWorkoutSetData(selectedExercise: string, nextWorkout: WorkoutType) {

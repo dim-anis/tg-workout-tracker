@@ -15,7 +15,7 @@ const composer = new Composer<MyContext>();
 
 composer.filter(ctx => ctx.chat?.type === 'private');
 composer.use(start);
-composer.filter(() => !isConversationActive).use(settings);
+composer.use(settings);
 composer.use(addExercise);
 composer.use(recordSet);
 composer.use(nextWorkout);

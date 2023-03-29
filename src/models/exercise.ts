@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import {model, Schema, type Types} from 'mongoose';
+import {model, Schema} from 'mongoose';
 
 export type ExerciseType = {
 	name: string;

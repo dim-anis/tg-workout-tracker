@@ -9,7 +9,7 @@ export type SetType = {
 	notes?: string;
 };
 
-export const SetSchema = new Schema(
+export const SetSchema = new Schema<SetType>(
 	{
 		weight: {type: Number, required: true},
 		exercise: {type: String, required: true},
