@@ -1,14 +1,20 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import {model, Schema} from 'mongoose';
+import {type Types, Schema, model} from 'mongoose';
 import {type SetType, SetSchema} from './set';
 
-type WorkoutType = {
+export type ArchivedWorkoutType = {
+	user: Types.ObjectId;
 	sets: SetType[];
 	avg_rpe: number;
 } & {updatedAt: Date; createdAt: Date};
 
-const WorkoutSchema = new Schema<WorkoutType>(
+export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>(
 	{
+		user: {
+			type: Schema.Types.ObjectId,
+			required: true,
+			ref: 'User',
+		},
 		sets: {
 			type: [SetSchema],
 			required: true,
@@ -23,7 +29,3 @@ const WorkoutSchema = new Schema<WorkoutType>(
 		timestamps: true,
 	},
 );
-
-const Workout = model<WorkoutType>('Workout', WorkoutSchema);
-
-export {Workout, type WorkoutType, WorkoutSchema};

@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import {model, Schema} from 'mongoose';
+// import {models, model, Schema, type Types} from 'mongoose';
+import mongoose from 'mongoose';
 import {WorkoutSchema, Workout, type WorkoutType} from './workout';
 import {ExerciseSchema, type ExerciseType} from './exercise';
 import {type SetType} from './set';
 import isSameDay from 'date-fns/isSameDay';
 import {averageRpe} from '../handlers/helpers/countSets';
+import {ArchivedWorkoutSchema, type ArchivedWorkoutType} from './archivedWorkout';
 
 export type UserType = {
+	_id: mongoose.Types.ObjectId;
 	user_id: string;
 	exercises: ExerciseType[];
 	recentWorkouts: WorkoutType[];
@@ -17,7 +20,7 @@ export type UserType = {
 	};
 };
 
-export const UserSchema = new Schema<UserType>(
+export const UserSchema = new mongoose.Schema<UserType>(
 	{
 		user_id: {type: String, required: true, unique: true},
 		exercises: {type: [ExerciseSchema], required: true},
@@ -33,12 +36,33 @@ export const UserSchema = new Schema<UserType>(
 	},
 );
 
-UserSchema.pre('save', next => {
-	console.log('pre middleware running on save');
-	next();
+UserSchema.pre<UserType>('save', async function (next) {
+	if (this.recentWorkouts.length < 20) {
+		next();
+		return;
+	}
+
+	const workoutToArchive = this.recentWorkouts.pop();
+	if (!workoutToArchive) {
+		next();
+		return;
+	}
+
+	const modelName = `ArchivedWorkouts_${this._id.toString()}`;
+	if (!mongoose.models[modelName]) {
+		mongoose.model(modelName, ArchivedWorkoutSchema);
+	}
+
+	const ArchivedWorkout = mongoose.model<ArchivedWorkoutType>(modelName);
+	const archivedWorkout = new ArchivedWorkout({
+		user: this._id,
+		...workoutToArchive,
+	});
+
+	await archivedWorkout.save();
 });
 
-const User = model<UserType>('User', UserSchema);
+const User = mongoose.model<UserType>('User', UserSchema);
 
 const createOrUpdateUserWorkout = async (user_id: string, set: SetType) => {
 	const user = await User.findOne({user_id});
@@ -58,6 +82,7 @@ const createOrUpdateUserWorkout = async (user_id: string, set: SetType) => {
 
 		user.recentWorkouts.unshift(newWorkout);
 		const updatedUser = (await user.save()).toObject();
+
 		return updatedUser.recentWorkouts[0];
 	}
 
@@ -66,6 +91,7 @@ const createOrUpdateUserWorkout = async (user_id: string, set: SetType) => {
 	user.recentWorkouts[0].avg_rpe = newAvgRpe;
 
 	const updatedUser = (await user.save()).toObject();
+
 	return updatedUser.recentWorkouts[0];
 };
 

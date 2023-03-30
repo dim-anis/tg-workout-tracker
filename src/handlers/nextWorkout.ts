@@ -4,7 +4,7 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
-import {type WorkoutType, getWorkouts} from '../models/workout';
+import {type WorkoutType} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
 import {isSameDay} from 'date-fns';
 import {createOrUpdateUserWorkout} from '../models/user';
@@ -17,7 +17,7 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 	const mesocycleLength = splitLength * 4;
 
 	try {
-		const workouts = await conversation.external(async () => getWorkouts(mesocycleLength));
+		const workouts = ctx.dbchat.recentWorkouts;
 		const isSameDayWorkout = isSameDay(workouts[0].createdAt, new Date());
 
 		if (workouts.length < splitLength) {
