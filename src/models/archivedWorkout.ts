@@ -6,7 +6,9 @@ export type ArchivedWorkoutType = {
 	user: Types.ObjectId;
 	sets: SetType[];
 	avg_rpe: number;
-} & {updatedAt: Date; createdAt: Date};
+	created: Date;
+	updated: Date;
+};
 
 export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>(
 	{
@@ -24,8 +26,13 @@ export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>(
 			default: 0,
 			required: true,
 		},
-	},
-	{
-		timestamps: true,
+		created: {
+			type: Date,
+			required: true,
+		},
+		updated: {
+			type: Date,
+			require: true,
+		},
 	},
 );

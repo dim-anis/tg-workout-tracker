@@ -37,12 +37,13 @@ export const UserSchema = new mongoose.Schema<UserType>(
 );
 
 UserSchema.pre<UserType>('save', async function (next) {
-	if (this.recentWorkouts.length < 20) {
+	if (this.recentWorkouts.length < 16) {
 		next();
 		return;
 	}
 
 	const workoutToArchive = this.recentWorkouts.pop();
+
 	if (!workoutToArchive) {
 		next();
 		return;
@@ -56,7 +57,10 @@ UserSchema.pre<UserType>('save', async function (next) {
 	const ArchivedWorkout = mongoose.model<ArchivedWorkoutType>(modelName);
 	const archivedWorkout = new ArchivedWorkout({
 		user: this._id,
-		...workoutToArchive,
+		sets: workoutToArchive.sets,
+		avg_rpe: workoutToArchive.avg_rpe,
+		created: workoutToArchive.createdAt,
+		updated: workoutToArchive.updatedAt,
 	});
 
 	await archivedWorkout.save();
