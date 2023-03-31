@@ -37,7 +37,7 @@ export const UserSchema = new mongoose.Schema<UserType>(
 );
 
 UserSchema.pre<UserType>('save', async function (next) {
-	if (this.recentWorkouts.length < 20) {
+	if (this.recentWorkouts.length <= 20) {
 		next();
 		return;
 	}
