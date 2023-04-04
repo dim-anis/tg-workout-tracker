@@ -27,11 +27,6 @@ export const defaultExercises: ExerciseType[] = [
 		is_compound: true,
 	},
 	{
-		name: 'Lat Pulldown',
-		category: 'Back',
-		is_compound: true,
-	},
-	{
 		name: 'Lateral Machine Raise',
 		category: 'Shoulders',
 		is_compound: false,

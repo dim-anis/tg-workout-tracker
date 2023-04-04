@@ -5,7 +5,6 @@ import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
 import type {ExerciseType} from '../models/exercise';
 import {getMainMenu, getRpeOptions, getMenuFromStringArray, rpeValues} from '../config/keyboards';
-import {getAllUserExercises} from '../models/user';
 import {createOrUpdateUserWorkout} from '../models/user';
 
 const composer = new Composer<MyContext>();
@@ -74,9 +73,9 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 	const {user_id} = ctx.dbchat;
 
 	try {
-		const exercises = await conversation.external(async () => getAllUserExercises(user_id));
+		const {exercises} = ctx.dbchat;
 		if (!exercises) {
-			throw new Error('Failed to get the Exercise Data');
+			throw new Error('No exercises found!');
 		}
 
 		const chosenExercise = await getExercise(ctx, conversation, exercises);

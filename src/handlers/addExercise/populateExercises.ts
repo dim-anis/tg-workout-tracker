@@ -57,8 +57,10 @@ populateExercisesMain.dynamic(async () => {
 			async ctx => {
 				const {toAdd} = ctx.session.exercises;
 				const exercisesToAdd = defaultExercises.filter(exObj => [...toAdd].includes(exObj.name));
-				console.log(`Preloading ${toAdd.size} exercises...`);
+				console.log(exercisesToAdd);
+				console.log(`Preloading ${toAdd.size} exercises... for user ${ctx.dbchat.user_id}`);
 				const r = await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
+				ctx.dbchat.exercises.concat(exercisesToAdd);
 
 				await ctx.editMessageText('👌 Exercises updated!', {reply_markup: undefined});
 			},
@@ -97,7 +99,7 @@ async function createExerciseMenu(category: string) {
 			.text(
 				{
 					text: ctx =>
-						ctx.session.exercises.fromDB.has(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
+						ctx.session.exercises.fromDB.has(exercise.name) || ctx.session.exercises.toAdd.has(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
 					payload: category,
 				},
 				async ctx => {

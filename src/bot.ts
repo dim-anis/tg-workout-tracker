@@ -46,14 +46,18 @@ async function runBot() {
 		// Storage: new MongoStorage.MongoDBAdapter<SessionStorage>({collection}),
 	}));
 
+	bot.command('cancel', async (ctx, next) => {
+		if (ctx.conversation) {
+			await ctx.conversation.exit();
+			await ctx.reply('Left the conversation');
+		}
+
+		await next();
+	});
+
 	bot.use(attachUser);
 	bot.use(conversations());
 	bot.use(handlers);
-
-	bot.command('cancel', async ctx => {
-		await ctx.conversation.exit();
-		await ctx.reply('Left the conversation');
-	});
 
 	bot.on('callback_query:data', async ctx => {
 		console.log('Unknown button event with payload', ctx.callbackQuery.data);

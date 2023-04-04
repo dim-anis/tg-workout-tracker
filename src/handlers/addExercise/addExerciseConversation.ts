@@ -51,14 +51,17 @@ export default async function handleAddExercise(conversation: MyConversation, ct
 
 		const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(['Chest', 'Legs', 'Back']);
 
-		const createdExercise = await conversation.external(async () => createUserExercise(
+		const updatedUser = await conversation.external(async () => createUserExercise(
 			user_id,
 			{name, category, is_compound},
 		));
 
-		if (!createdExercise) {
+		if (!updatedUser) {
 			throw new Error('Failed to create exercise');
 		}
+
+		const newExericse = updatedUser.exercises[updatedUser.exercises.length - 1];
+		ctx.dbchat.exercises.push(newExericse);
 
 		await ctx.editMessageText(
 			`📋 <b>ADD NEW EXERCISE</b>\n\nYou've added <b>${name.toUpperCase()}</b> to your exercise list!`,

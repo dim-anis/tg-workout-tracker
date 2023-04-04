@@ -10,7 +10,7 @@ export type ExerciseType = {
 
 export const ExerciseSchema = new Schema(
 	{
-		name: {type: String, required: true, unique: true},
+		name: {type: String, required: true},
 		category: {type: String, required: true},
 		is_compound: {type: Boolean, required: true},
 	},
