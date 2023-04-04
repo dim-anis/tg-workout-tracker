@@ -3,13 +3,12 @@ import {Menu, MenuRange} from '@grammyjs/menu';
 import {type MyContext} from '../../types/bot';
 import {createConversation} from '@grammyjs/conversations';
 import handleAddExercise from './addExerciseConversation';
-import exerciseData from '../../config/exercises.json' assert {type: 'json'};
+import {defaultExercises} from '../../config/exercises';
 import {createUserExercise} from '../../models/user';
-import {type ExerciseType} from '../../models/exercise';
 
-const exercises: ExerciseType[] = exerciseData as ExerciseType[];
+const composer = new Composer<MyContext>();
 
-const mainMenu = new Menu<MyContext>('main')
+const addExerciseMenu = new Menu<MyContext>('addExerciseMenu')
 	.submenu(
 		{text: 'Select from preloaded', payload: 'populateExercises'},
 		'populate-exercises-main',
@@ -26,10 +25,10 @@ const mainMenu = new Menu<MyContext>('main')
 		},
 	);
 
-const populateMainText = '<b>POPULATE EXERCISES</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"';
+const populateMainText = '<b>Populate exercises</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"';
 const populateExercisesMain = new Menu<MyContext>('populate-exercises-main');
-populateExercisesMain.dynamic(async ctx => {
-	const categories = new Set(exercises.map(ex => ex.category));
+populateExercisesMain.dynamic(async () => {
+	const categories = new Set(defaultExercises.map(ex => ex.category));
 
 	const range = new MenuRange<MyContext>()
 		.back('⬅️ Back')
@@ -57,7 +56,7 @@ populateExercisesMain.dynamic(async ctx => {
 			{text: '✅ Submit'},
 			async ctx => {
 				const {toAdd} = ctx.session.exercises;
-				const exercisesToAdd = exercises.filter(exObj => [...toAdd].includes(exObj.name));
+				const exercisesToAdd = defaultExercises.filter(exObj => [...toAdd].includes(exObj.name));
 				console.log(`Preloading ${toAdd.size} exercises...`);
 				const r = await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
 
@@ -81,7 +80,7 @@ populateExercisesSub.dynamic(async ctx => {
 });
 
 async function createExerciseMenu(category: string) {
-	const selectedCategoryExercises = exercises.filter(ex => ex.category === category);
+	const selectedCategoryExercises = defaultExercises.filter(ex => ex.category === category);
 	const range = new MenuRange<MyContext>();
 
 	range
@@ -119,16 +118,15 @@ async function createExerciseMenu(category: string) {
 	return range;
 }
 
-const composer = new Composer<MyContext>();
-
 composer.use(createConversation(handleAddExercise));
 
 populateExercisesMain.register(populateExercisesSub);
-mainMenu.register(populateExercisesMain);
-composer.use(mainMenu);
+addExerciseMenu.register(populateExercisesMain);
+
+composer.use(addExerciseMenu);
 
 composer.command('add_exercise', async ctx => {
-	await ctx.reply('📋 <b>ADD EXERCISE</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
+	await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
 });
 
 export default composer;

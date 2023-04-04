@@ -1,7 +1,7 @@
 import {Composer} from 'grammy';
 import {Menu, MenuRange} from '@grammyjs/menu';
 import {type MyContext} from '../../types/bot';
-import {deleteUserExercise, getAllUserExercises} from '../../models/user';
+import {deleteUserExercise} from '../../models/user';
 import {createConversation} from '@grammyjs/conversations';
 import editExerciseConversation from './editExerciseConversation';
 
@@ -12,7 +12,7 @@ const categoriesMenu = new Menu<MyContext>('categories');
 categoriesMenu.dynamic(async ctx => {
 	ctx.session.state.cmdName = 'editExercise';
 
-	const exercises = await getAllUserExercises(ctx.dbchat.user_id);
+	const {exercises} = ctx.dbchat;
 	const categories = new Set(exercises.map(ex => ex.category));
 	const range = new MenuRange<MyContext>();
 	for (const cat of categories) {
@@ -45,7 +45,7 @@ exercisesMenu.dynamic(async ctx => {
 });
 
 async function createExerciseMenu(ctx: MyContext, category: string) {
-	const exercises = await getAllUserExercises(ctx.dbchat.user_id);
+	const {exercises} = ctx.dbchat;
 	const selectedCategoryExercises = exercises.filter(ex => ex.category === category);
 	const range = new MenuRange<MyContext>();
 
@@ -145,6 +145,7 @@ deleteMenu.dynamic(async ctx => {
 				const [category, exercise] = ctx.match.split(',');
 				console.log({category, exercise});
 				await deleteUserExercise(ctx.dbchat.user_id, exercise);
+				ctx.dbchat.exercises = ctx.dbchat.exercises.filter(exObj => exObj.name !== exercise);
 				await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
 					parse_mode: 'HTML',
 				});
