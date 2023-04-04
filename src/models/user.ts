@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-
-// import {models, model, Schema, type Types} from 'mongoose';
 import mongoose from 'mongoose';
 import {WorkoutSchema, Workout, type WorkoutType} from './workout';
 import {ExerciseSchema, type ExerciseType} from './exercise';
