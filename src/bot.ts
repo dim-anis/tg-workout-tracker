@@ -6,7 +6,7 @@ import {type MyContext, type SessionStorage} from 'types/bot';
 import {conversations} from '@grammyjs/conversations';
 import attachUser from './middleware/attachUser';
 import {errorHandler} from './middleware/errorHandler';
-import dbConnect from './config/dbConnect';
+import dbConnect from './config/dbConnection';
 import mongoose from 'mongoose';
 import type * as MongoStorage from '@grammyjs/storage-mongodb';
 

@@ -6,10 +6,9 @@ import addExercise from './addExercise/populateExercises';
 import settings from './settings';
 import editExerciseMenu from './editExercises/editExerciseMenu';
 import type {MyContext} from '../types/bot';
-
-async function isConversationActive(ctx: MyContext) {
-	return Object.keys(await ctx.conversation.active()).length > 0;
-}
+import {userHasExercises} from '../middleware/userHasExercises';
+import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts';
+import {isNotInConversation} from '../middleware/isNotInConversation';
 
 const composer = new Composer<MyContext>();
 
@@ -17,8 +16,8 @@ composer.filter(ctx => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);
 composer.use(addExercise);
-composer.use(recordSet);
-composer.use(nextWorkout);
-composer.use(editExerciseMenu);
+composer.use(isNotInConversation, userHasExercises, recordSet);
+composer.use(isNotInConversation, userHasEnoughWorkouts, nextWorkout);
+composer.use(userHasExercises, editExerciseMenu);
 
 export default composer;

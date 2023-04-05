@@ -8,6 +8,7 @@ const handleStart = async (ctx: MyContext) => {
 	await ctx.reply('Choose an option:', {reply_markup: await getMainMenu()});
 };
 
-composer.command('start', handleStart);
+composer.command(['start', 'menu'], handleStart);
+composer.callbackQuery(['/start', '/menu'], handleStart);
 
 export default composer;

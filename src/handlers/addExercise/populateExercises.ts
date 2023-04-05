@@ -31,7 +31,7 @@ populateExercisesMain.dynamic(async () => {
 	const categories = new Set(defaultExercises.map(ex => ex.category));
 
 	const range = new MenuRange<MyContext>()
-		.back('⬅️ Back')
+		.back('<< Back')
 		.row();
 
 	for (const cat of categories) {
@@ -127,6 +127,9 @@ addExerciseMenu.register(populateExercisesMain);
 
 composer.use(addExerciseMenu);
 
+composer.callbackQuery('/add_exercise', async ctx => {
+	await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+});
 composer.command('add_exercise', async ctx => {
 	await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
 });

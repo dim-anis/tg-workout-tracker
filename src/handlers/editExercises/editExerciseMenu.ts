@@ -7,13 +7,15 @@ import editExerciseConversation from './editExerciseConversation';
 
 const composer = new Composer<MyContext>();
 
-const categoriesMenuText = '<b>EDIT EXERCISES\n\nSelect a category:</b>';
+const categoriesMenuText = '<b>Edit exercises</b>\n\n<i>Select a category:</i>';
 const categoriesMenu = new Menu<MyContext>('categories');
 categoriesMenu.dynamic(async ctx => {
 	ctx.session.state.cmdName = 'editExercise';
 
 	const {exercises} = ctx.dbchat;
+
 	const categories = new Set(exercises.map(ex => ex.category));
+
 	const range = new MenuRange<MyContext>();
 	for (const cat of categories) {
 		range

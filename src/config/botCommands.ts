@@ -1,6 +1,6 @@
 const commands = [
 	{
-		command: '/start',
+		command: '/menu',
 		description: 'show all commands',
 	},
 	{
@@ -10,6 +10,10 @@ const commands = [
 	{
 		command: '/record_set',
 		description: 'record a single set',
+	},
+	{
+		command: '/add_exercise',
+		description: 'add your own or choose from a set of preloaded exercises',
 	},
 	{
 		command: '/edit_exercises',

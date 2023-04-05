@@ -18,12 +18,8 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 	try {
 		const workouts = ctx.dbchat.recentWorkouts;
+
 		const isSameDayWorkout = isSameDay(workouts[0].createdAt, new Date());
-
-		if (workouts.length < splitLength) {
-			throw new Error('Not enough data for projection');
-		}
-
 		const firstWorkoutThisMesoIndex = workouts.findIndex(workout => workout.avg_rpe <= 6) + 1;
 		const workoutNumber = isSameDayWorkout ? firstWorkoutThisMesoIndex - 1 : firstWorkoutThisMesoIndex;
 		const hasOneMicro = workoutNumber > splitLength;
@@ -56,10 +52,6 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 			const {callbackQuery: {data: selectedExercise}} = await conversation.waitForCallbackQuery(nextWorkoutExercises);
 			const {lastWeight, lastReps, hitAllReps} = getLastWorkoutSetData(selectedExercise, nextWorkout);
-
-			if (typeof lastWeight === 'undefined') {
-				throw new Error('Not enough data for projection');
-			}
 
 			updatedCurrentWorkout = await recordExercise(conversation, ctx, selectedExercise, lastWeight, lastReps, hitAllReps);
 
@@ -139,7 +131,7 @@ async function recordSet(
 	lastReps: number,
 	hitAllReps: boolean,
 	setCount: number,
-) {
+): Promise<WorkoutType> {
 	const weight = await getWeight(ctx, conversation, selectedExercise, lastWeight, hitAllReps, setCount);
 	const repetitions = await getRepetitions(ctx, conversation, selectedExercise, lastReps, hitAllReps, setCount);
 	const rpe = await getRPE(ctx, conversation, selectedExercise, setCount);
@@ -154,7 +146,7 @@ async function recordExercise(
 	lastWeight: number,
 	lastReps: number,
 	hitAllReps: boolean,
-) {
+): Promise<WorkoutType> {
 	let canContinue = false;
 	let updatedWorkout;
 	let setCount = 0;

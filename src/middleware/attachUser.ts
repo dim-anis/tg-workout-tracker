@@ -10,7 +10,7 @@ const attachUser = async (ctx: MyContext, next: NextFunction) => {
 	const user = await findOrCreateUser(ctx.chat.id);
 
 	ctx.dbchat = user.toObject();
-	return next();
+	await next();
 };
 
 export default attachUser;

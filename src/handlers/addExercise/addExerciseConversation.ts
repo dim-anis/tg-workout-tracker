@@ -1,6 +1,7 @@
 import {InlineKeyboard} from 'grammy';
 import type {MyConversation, MyContext} from '../../types/bot';
 import {getYesNoOptions} from '../../config/keyboards';
+import {exerciseCategories} from '../../config/exercises';
 import {createUserExercise} from '../../models/user';
 import waitForTextAndRemove from '../helpers/waitForTextAndRemove';
 
@@ -41,15 +42,25 @@ export default async function handleAddExercise(conversation: MyConversation, ct
 			is_compound = false;
 		}
 
+		const categoryOptions = new InlineKeyboard();
+		for (const [index, cat] of exerciseCategories.entries()) {
+			if (index % 3 === 0) {
+				categoryOptions.row();
+			}
+
+			categoryOptions
+				.text(cat);
+		}
+
 		await ctx.editMessageText(
 			`📋 <b>ADD ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`,
 			{
 				parse_mode: 'HTML',
-				reply_markup: new InlineKeyboard().text('Legs').row().text('Chest').row().text('Back'),
+				reply_markup: categoryOptions,
 			},
 		);
 
-		const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(['Chest', 'Legs', 'Back']);
+		const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(exerciseCategories);
 
 		const updatedUser = await conversation.external(async () => createUserExercise(
 			user_id,
