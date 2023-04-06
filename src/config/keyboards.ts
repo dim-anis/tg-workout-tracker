@@ -45,9 +45,9 @@ export const getRepOptions = async (): Promise<InlineKeyboard> => new InlineKeyb
 export const getMainMenu = async (): Promise<InlineKeyboard> => new InlineKeyboard()
 	.text('Next workout', '/next_workout').row()
 	.text('Record set', '/record_set').row()
-	.text('Show last workout', '/show_last_workout').row()
-	.text('Delete last set', '/delete_last_set').row()
-	.text('Set routine', '/set_routine').row();
+	.text('Add exercise', '/add_exercise').row()
+	.text('Edit exercises', '/edit_exercises').row()
+	.text('Settings', '/settings');
 
 export const getEditOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
 	.text('✏️ Edit', 'editOption')

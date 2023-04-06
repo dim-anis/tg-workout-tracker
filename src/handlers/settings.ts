@@ -77,8 +77,12 @@ mainMenu.register(splitLengthMenu);
 
 composer.use(mainMenu);
 
-composer.command('settings', async ctx => {
-	await ctx.reply('⚙️ <b>Settings</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
-});
+composer
+	.command('settings', async ctx => {
+		await ctx.reply('⚙️ <b>Settings</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
+	})
+	.callbackQuery('/settings', async ctx => {
+		await ctx.reply('⚙️ <b>Settings</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
+	});
 
 export default composer;

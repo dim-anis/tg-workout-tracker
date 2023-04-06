@@ -215,8 +215,12 @@ function getLastWorkoutSetData(selectedExercise: string, nextWorkout: WorkoutTyp
 composer
 	.use(createConversation(handleNextWorkout));
 
-composer.callbackQuery('/next_workout', async ctx => {
-	await ctx.conversation.enter('handleNextWorkout');
-});
+composer
+	.callbackQuery('/next_workout', async ctx => {
+		await ctx.conversation.enter('handleNextWorkout');
+	})
+	.command('next_workout', async ctx => {
+		await ctx.conversation.enter('handleNextWorkout');
+	});
 
 export default composer;

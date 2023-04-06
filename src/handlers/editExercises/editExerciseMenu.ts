@@ -7,7 +7,7 @@ import editExerciseConversation from './editExerciseConversation';
 
 const composer = new Composer<MyContext>();
 
-const categoriesMenuText = '<b>Edit exercises</b>\n\n<i>Select a category:</i>';
+const categoriesMenuText = '✏️ <b>Edit exercises</b>\n\n<i>Select a category:</i>';
 const categoriesMenu = new Menu<MyContext>('categories');
 categoriesMenu.dynamic(async ctx => {
 	ctx.session.state.cmdName = 'editExercise';
@@ -165,6 +165,8 @@ categoriesMenu.register(exercisesMenu);
 
 composer.use(categoriesMenu);
 
-composer.command('edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
+composer
+	.command('edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}))
+	.callbackQuery('/edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
 
 export default composer;

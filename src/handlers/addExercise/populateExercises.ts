@@ -127,11 +127,12 @@ addExerciseMenu.register(populateExercisesMain);
 
 composer.use(addExerciseMenu);
 
-composer.callbackQuery('/add_exercise', async ctx => {
-	await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
-});
-composer.command('add_exercise', async ctx => {
-	await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
-});
+composer
+	.callbackQuery('/add_exercise', async ctx => {
+		await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+	})
+	.command('add_exercise', async ctx => {
+		await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+	});
 
 export default composer;

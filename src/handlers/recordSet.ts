@@ -94,11 +94,12 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 composer
 	.use(createConversation(handleRecordSet));
 
-composer.command('record_set', async ctx => {
-	await ctx.conversation.enter('handleRecordSet');
-});
-composer.callbackQuery('/record_set', async ctx => {
-	await ctx.conversation.enter('handleRecordSet');
-});
+composer
+	.command('record_set', async ctx => {
+		await ctx.conversation.enter('handleRecordSet');
+	})
+	.callbackQuery('/record_set', async ctx => {
+		await ctx.conversation.enter('handleRecordSet');
+	});
 
 export default composer;
