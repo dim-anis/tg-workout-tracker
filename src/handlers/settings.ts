@@ -80,8 +80,10 @@ composer.use(mainMenu);
 composer
 	.command('settings', async ctx => {
 		await ctx.reply('⚙️ <b>Settings</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
-	})
+	});
+composer
 	.callbackQuery('/settings', async ctx => {
+		await ctx.answerCallbackQuery();
 		await ctx.reply('⚙️ <b>Settings</b>', {reply_markup: mainMenu, parse_mode: 'HTML'});
 	});
 

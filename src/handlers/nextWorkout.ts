@@ -8,6 +8,7 @@ import {type WorkoutType} from '../models/workout';
 import {countSets, averageRpe} from './helpers/countSets';
 import {isSameDay} from 'date-fns';
 import {createOrUpdateUserWorkout} from '../models/user';
+import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts';
 
 const composer = new Composer<MyContext>();
 
@@ -216,11 +217,14 @@ composer
 	.use(createConversation(handleNextWorkout));
 
 composer
-	.callbackQuery('/next_workout', async ctx => {
-		await ctx.conversation.enter('handleNextWorkout');
-	})
-	.command('next_workout', async ctx => {
-		await ctx.conversation.enter('handleNextWorkout');
-	});
+	.callbackQuery(
+		'/next_workout',
+		userHasEnoughWorkouts,
+		async ctx => ctx.conversation.enter('handleNextWorkout'));
+composer
+	.command(
+		'next_workout',
+		userHasEnoughWorkouts,
+		async ctx => ctx.conversation.enter('handleNextWorkout'));
 
 export default composer;

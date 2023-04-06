@@ -6,6 +6,7 @@ import type {MyConversation, MyContext} from '../types/bot';
 import type {ExerciseType} from '../models/exercise';
 import {getMainMenu, getRpeOptions, getMenuFromStringArray, rpeValues} from '../config/keyboards';
 import {createOrUpdateUserWorkout} from '../models/user';
+import {userHasExercises} from '../middleware/userHasExercises';
 
 const composer = new Composer<MyContext>();
 
@@ -95,11 +96,14 @@ composer
 	.use(createConversation(handleRecordSet));
 
 composer
-	.command('record_set', async ctx => {
-		await ctx.conversation.enter('handleRecordSet');
-	})
-	.callbackQuery('/record_set', async ctx => {
-		await ctx.conversation.enter('handleRecordSet');
-	});
+	.command(
+		'record_set',
+		userHasExercises,
+		async ctx => ctx.conversation.enter('handleRecordSet'));
+composer
+	.callbackQuery(
+		'/record_set',
+		userHasExercises,
+		async ctx => ctx.conversation.enter('handleRecordSet'));
 
 export default composer;

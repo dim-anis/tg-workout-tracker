@@ -4,6 +4,7 @@ import {type MyContext} from '../../types/bot';
 import {deleteUserExercise} from '../../models/user';
 import {createConversation} from '@grammyjs/conversations';
 import editExerciseConversation from './editExerciseConversation';
+import {userHasExercises} from '../../middleware/userHasExercises';
 
 const composer = new Composer<MyContext>();
 
@@ -166,7 +167,17 @@ categoriesMenu.register(exercisesMenu);
 composer.use(categoriesMenu);
 
 composer
-	.command('edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}))
-	.callbackQuery('/edit_exercises', async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
+	.command(
+		'edit_exercises',
+		userHasExercises,
+		async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
+composer
+	.callbackQuery(
+		'/edit_exercises',
+		userHasExercises,
+		async ctx => {
+			await ctx.answerCallbackQuery();
+			await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
+		});
 
 export default composer;
