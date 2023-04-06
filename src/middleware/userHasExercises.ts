@@ -8,5 +8,6 @@ export async function userHasExercises(ctx: MyContext, next: NextFunction) {
 		return;
 	}
 
+	await ctx.answerCallbackQuery();
 	return sendNoExercisesAddedError(ctx);
 }

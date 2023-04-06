@@ -8,7 +8,6 @@ import editExerciseMenu from './editExercises/editExerciseMenu';
 import type {MyContext} from '../types/bot';
 import {userHasExercises} from '../middleware/userHasExercises';
 import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts';
-import {isNotInConversation} from '../middleware/isNotInConversation';
 
 const composer = new Composer<MyContext>();
 
@@ -16,8 +15,8 @@ composer.filter(ctx => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);
 composer.use(addExercise);
-composer.use(isNotInConversation, userHasExercises, recordSet);
-composer.use(isNotInConversation, userHasEnoughWorkouts, nextWorkout);
+composer.use(userHasExercises, recordSet);
+composer.use(userHasEnoughWorkouts, nextWorkout);
 composer.use(userHasExercises, editExerciseMenu);
 
 export default composer;

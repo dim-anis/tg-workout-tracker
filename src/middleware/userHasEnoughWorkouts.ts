@@ -10,5 +10,6 @@ export async function userHasEnoughWorkouts(ctx: MyContext, next: NextFunction) 
 		return;
 	}
 
+	await ctx.answerCallbackQuery();
 	return sendNotEnoughWorkoutsError(ctx);
 }
