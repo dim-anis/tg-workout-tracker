@@ -9,7 +9,7 @@ import {ArchivedWorkoutSchema, type ArchivedWorkoutType} from './archivedWorkout
 
 export type UserType = {
 	_id: mongoose.Types.ObjectId;
-	user_id: string;
+	user_id: number;
 	exercises: ExerciseType[];
 	recentWorkouts: WorkoutType[];
 	settings: {
@@ -20,7 +20,7 @@ export type UserType = {
 
 export const UserSchema = new mongoose.Schema<UserType>(
 	{
-		user_id: {type: String, required: true, unique: true},
+		user_id: {type: Number, required: true, unique: true},
 		exercises: {type: [ExerciseSchema], required: true},
 		recentWorkouts: {type: [WorkoutSchema], required: true},
 		settings: {
@@ -66,7 +66,7 @@ UserSchema.pre<UserType>('save', async function (next) {
 
 const User = mongoose.model<UserType>('User', UserSchema);
 
-const createOrUpdateUserWorkout = async (user_id: string, set: SetType) => {
+const createOrUpdateUserWorkout = async (user_id: number, set: SetType) => {
 	const user = await User.findOne({user_id});
 
 	if (!user) {
@@ -97,12 +97,12 @@ const createOrUpdateUserWorkout = async (user_id: string, set: SetType) => {
 	return updatedUser.recentWorkouts[0];
 };
 
-const getAllUserExercises = async (user_id: string) => {
+const getAllUserExercises = async (user_id: number) => {
 	const user = await User.findOne({user_id}).lean();
 	return user?.exercises;
 };
 
-const createUserExercise = async (user_id: string, exercise: ExerciseType | ExerciseType[]) => {
+const createUserExercise = async (user_id: number, exercise: ExerciseType | ExerciseType[]) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{
@@ -119,7 +119,7 @@ const createUserExercise = async (user_id: string, exercise: ExerciseType | Exer
 	return userUpdated;
 };
 
-const updateUserExercise = async (user_id: string, currName: string, editedExercise: ExerciseType) => {
+const updateUserExercise = async (user_id: number, currName: string, editedExercise: ExerciseType) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id, 'exercises.name': currName},
 		{
@@ -138,7 +138,7 @@ const updateUserExercise = async (user_id: string, currName: string, editedExerc
 	return userUpdated;
 };
 
-const deleteUserExercise = async (user_id: string, exerciseName: string) => {
+const deleteUserExercise = async (user_id: number, exerciseName: string) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{
@@ -156,7 +156,7 @@ const deleteUserExercise = async (user_id: string, exerciseName: string) => {
 	return userUpdated;
 };
 
-const updateUserSettings = async (user_id: string, splitLength: number, isMetric: boolean) => {
+const updateUserSettings = async (user_id: number, splitLength: number, isMetric: boolean) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{

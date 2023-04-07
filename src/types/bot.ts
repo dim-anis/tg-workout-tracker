@@ -13,6 +13,7 @@ export type SessionStorage = {
 	state: {
 		cmdName: string;
 		data: string;
+		lastMessageId: number;
 	};
 	exercises: {
 		fromDB: Set<string>;

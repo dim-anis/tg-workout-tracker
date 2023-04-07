@@ -33,6 +33,7 @@ async function runBot() {
 			state: {
 				cmdName: 'idle',
 				data: '',
+				lastMessageId: 0,
 			},
 			exercises: {
 				fromDB: new Set(),

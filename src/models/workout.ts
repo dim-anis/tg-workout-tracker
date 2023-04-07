@@ -5,6 +5,7 @@ import {type SetType, SetSchema} from './set';
 type WorkoutType = {
 	sets: SetType[];
 	avg_rpe: number;
+	isDeload: boolean;
 } & {updatedAt: Date; createdAt: Date};
 
 const WorkoutSchema = new Schema<WorkoutType>(
@@ -16,6 +17,11 @@ const WorkoutSchema = new Schema<WorkoutType>(
 		avg_rpe: {
 			type: Number,
 			default: 0,
+			required: true,
+		},
+		isDeload: {
+			type: Boolean,
+			default: false,
 			required: true,
 		},
 	},
