@@ -1,12 +1,11 @@
-/* eslint-disable no-await-in-loop */
 
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import type {ExerciseType} from '../models/exercise';
 import {getRpeOptions, getMenuFromStringArray, rpeValues} from '../config/keyboards';
 import {createOrUpdateUserWorkout} from '../models/user';
 import {userHasExercises} from '../middleware/userHasExercises';
+import {promptNumberWithRetry} from './helpers/promptNumberWithRetry';
 
 const composer = new Composer<MyContext>();
 
@@ -17,16 +16,23 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 
 	const {user_id, exercises} = ctx.dbchat;
 	const {id: chat_id} = ctx.chat;
+	const categories = new Set(exercises.map(exercise => exercise.category));
+
+	const exercisesByCategory = new Map<string, string[]>();
+
+	for (const category of categories) {
+		exercisesByCategory.set(category, []);
+	}
+
+	for (const exercise of exercises) {
+		exercisesByCategory.get(exercise.category)!.push(exercise.name);
+	}
 
 	try {
 		const typeOfWorkout = await getTypeOfWorkout(ctx, conversation);
-		const chosenExercise = await getExercise(ctx, conversation, exercises, chat_id);
+		const chosenExercise = await chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
 		const setData = await getSetData(ctx, conversation, chosenExercise, chat_id);
 		const updatedWorkout = await conversation.external(async () => createOrUpdateUserWorkout(user_id, setData));
-
-		if (!updatedWorkout) {
-			throw new Error('Failed to record a set!');
-		}
 
 		await ctx.api.editMessageText(
 			chat_id,
@@ -41,72 +47,58 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 		const option = data.split(':')[1];
 
 		if (option === 'yes') {
-			console.log('she said yes');
+			console.log('handle yes');
 		}
 	} catch (err: unknown) {
 		console.log(err);
 	}
 };
 
-async function getCategory(ctx: MyContext, conversation: MyConversation, categories: string[], chat_id: number) {
+async function chooseExercise(
+	ctx: MyContext,
+	conversation: MyConversation,
+	chat_id: number,
+	categories: Set<string>,
+	exercisesByCategory: Map<string, string[]>,
+): Promise<string> {
 	await ctx.api.editMessageText(
 		chat_id,
 		ctx.session.state.lastMessageId,
 		'<b>Record exercise</b>\n\n<i>Choose a category:</i>',
 		{
-			reply_markup: await getMenuFromStringArray(categories),
+			reply_markup: await getMenuFromStringArray([...categories]),
 			parse_mode: 'HTML',
 		},
 	);
 
-	const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(categories);
-	return data;
-}
+	const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery([...categories]);
 
-async function getExercise(ctx: MyContext, conversation: MyConversation, exercises: ExerciseType[], chat_id: number) {
-	const categories = [...new Set(exercises.map(exercise => exercise.category))];
-	let canContinue = false;
-	let chosenExercise = '';
+	await ctx.api.editMessageText(
+		chat_id,
+		ctx.session.state.lastMessageId,
+		`<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`,
+		{
+			reply_markup: await getMenuFromStringArray(exercisesByCategory.get(category)!, {addBackButton: true}),
+			parse_mode: 'HTML',
+		},
+	);
 
-	do {
-		const category = await getCategory(ctx, conversation, categories, chat_id);
-		const exercisesByCategory = exercises.filter(ex => ex.category === category).map(ex => ex.name);
+	const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery(['≪ Back', ...exercisesByCategory.get(category)!]);
 
-		await ctx.api.editMessageText(
-			chat_id,
-			ctx.session.state.lastMessageId,
-			`<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`,
-			{
-				reply_markup: await getMenuFromStringArray(exercisesByCategory, {addBackButton: true}),
-				parse_mode: 'HTML',
-			},
-		);
+	if (exercise === '≪ Back') {
+		return chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
+	}
 
-		const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery(['≪ Back', ...exercisesByCategory]);
-
-		if (exercise !== '≪ Back') {
-			canContinue = true;
-			chosenExercise = exercise;
-		}
-	} while (!canContinue);
-
-	return chosenExercise;
+	return exercise;
 }
 
 async function getSetData(ctx: MyContext, conversation: MyConversation, exercise: string, chat_id: number) {
-	await ctx.editMessageText(
-		`<b>${exercise.toUpperCase()}</b>\n\nType in the weight:`,
-		{parse_mode: 'HTML'},
-	);
-	const weight: number = await conversation.form.number(async ctx => ctx.reply('❌ <b>Must be a number!</b>\n\nTry again:', {parse_mode: 'HTML'}));
+	const weight = await promptNumberWithRetry(ctx, conversation, chat_id, `<b>${exercise.toUpperCase()}</b>\n\nType in the weight:`);
+	const repetitions = await promptNumberWithRetry(ctx, conversation, chat_id, `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs</i>\n\nType in the repetitions:`);
 
-	await ctx.reply(
-		`<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs</i>\n\nType in the repetitions:`,
-		{parse_mode: 'HTML'},
-	);
-	const repetitions: number = await conversation.form.int(async ctx => ctx.reply('❌ <b>Must be a number!</b>\n\nTry again:', {parse_mode: 'HTML'}));
-
-	await ctx.reply(
+	await ctx.api.editMessageText(
+		chat_id,
+		ctx.session.state.lastMessageId,
 		`<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`,
 		{parse_mode: 'HTML', reply_markup: await getRpeOptions()},
 	);
