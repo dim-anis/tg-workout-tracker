@@ -28,29 +28,36 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 		exercisesByCategory.get(exercise.category)!.push(exercise.name);
 	}
 
-	try {
-		const typeOfWorkout = await getTypeOfWorkout(ctx, conversation);
-		const chosenExercise = await chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
-		const setData = await getSetData(ctx, conversation, chosenExercise, chat_id);
-		const updatedWorkout = await conversation.external(async () => createOrUpdateUserWorkout(user_id, setData));
+	let recordMoreSets = true;
 
-		await ctx.api.editMessageText(
-			chat_id,
-			ctx.session.state.lastMessageId,
-			'<b>✅ Success!\n\nRecord one more set?</b>',
-			{
-				reply_markup: new InlineKeyboard().text('No', 'recordSet:no').text('Yes', 'recordSet:yes'),
+	while (recordMoreSets) {
+		try {
+			const typeOfWorkout = await getTypeOfWorkout(ctx, conversation);
+			const chosenExercise = await chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
+			const setData = await getSetData(ctx, conversation, chosenExercise, chat_id);
+			const updatedWorkout = await conversation.external(async () => createOrUpdateUserWorkout(user_id, setData));
+
+			await ctx.api.editMessageText(
+				chat_id,
+				ctx.session.state.lastMessageId,
+				'<b>✅ Success!\n\nRecord one more set?</b>',
+				{
+					reply_markup: new InlineKeyboard().text('No', 'recordSet:no').text('Yes', 'recordSet:yes'),
+					parse_mode: 'HTML',
+				},
+			);
+			const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(/recordSet:(no|yes)/);
+			const option = data.split(':')[1];
+
+			recordMoreSets = option === 'yes';
+
+			await ctx.api.editMessageText(chat_id, ctx.session.state.lastMessageId, '<b>✅ Success!</b>', {
+				reply_markup: undefined,
 				parse_mode: 'HTML',
-			},
-		);
-		const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(/recordSet:(no|yes)/);
-		const option = data.split(':')[1];
-
-		if (option === 'yes') {
-			console.log('handle yes');
+			});
+		} catch (err: unknown) {
+			console.log(err);
 		}
-	} catch (err: unknown) {
-		console.log(err);
 	}
 };
 
