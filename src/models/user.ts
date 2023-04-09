@@ -4,7 +4,7 @@ import {WorkoutSchema, Workout, type WorkoutType} from './workout';
 import {ExerciseSchema, type ExerciseType} from './exercise';
 import {type SetType} from './set';
 import isSameDay from 'date-fns/isSameDay';
-import {averageRpe} from '../handlers/helpers/countSets';
+import {getAverageRPE} from '../handlers/helpers/workoutStats';
 import {ArchivedWorkoutSchema, type ArchivedWorkoutType} from './archivedWorkout';
 
 export type UserType = {
@@ -88,7 +88,7 @@ const createOrUpdateUserWorkout = async (user_id: number, set: SetType) => {
 		return updatedUser.recentWorkouts[0];
 	}
 
-	const newAvgRpe = averageRpe(user.recentWorkouts[0].sets.concat(set));
+	const newAvgRpe = getAverageRPE(user.recentWorkouts[0].sets.concat(set));
 	user.recentWorkouts[0].sets.push(set);
 	user.recentWorkouts[0].avg_rpe = newAvgRpe;
 
