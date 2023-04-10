@@ -2,57 +2,52 @@ import {type MyConversation, type MyContext} from '../../types/bot';
 import {getYesNoOptions} from '../../config/keyboards';
 import {InlineKeyboard} from 'grammy';
 import {updateUserExercise} from '../../models/user';
-import waitForTextAndRemove from '../../handlers/helpers/waitForTextAndRemove';
+import {promptUserForExerciseName, promptUserForYesNo} from '../../handlers/helpers/promptUser';
+import {exerciseCategories} from '../../config/exercises';
 
-const muscleGroups = ['Legs', 'Chest', 'Back', 'Biceps', 'Triceps'];
+function getExerciseCategoriesMenu(categories: string[]) {
+	const categoryOptionsKbd = new InlineKeyboard();
+	for (const [index, cat] of exerciseCategories.entries()) {
+		if (index % 3 === 0) {
+			categoryOptionsKbd.row();
+		}
+
+		categoryOptionsKbd
+			.text(cat);
+	}
+
+	return categoryOptionsKbd;
+}
 
 export default async function editExerciseConversation(conversation: MyConversation, ctx: MyContext) {
-	const currName = ctx.session.state.data;
-	await ctx.editMessageText(`<b>EDIT NAME\n\n${currName.toUpperCase()} => ...</b>\n\nType in the new name:`, {
-		parse_mode: 'HTML',
-		reply_markup: undefined,
-	});
-
-	const name = await waitForTextAndRemove(conversation, ctx);
-
-	if (!name) {
+	if (!ctx.chat) {
 		return;
 	}
 
-	await ctx.editMessageText(
-		`<b>ADD ${name.toUpperCase()}</b>\n\nIs it a compound exercise?\n\n<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>`,
-		{
-			parse_mode: 'HTML',
-			reply_markup: await getYesNoOptions(),
-		},
-	);
+	const currName = ctx.session.state.data;
+	const {lastMessageId} = ctx.session.state;
+	const {id: chat_id} = ctx.chat;
 
-	const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['yesOption', 'noOption']);
+	const newNameText = `<b>Edit ${currName.toLocaleUpperCase()}</b>\n\nType in the new name:`;
+	const newNameOptions = {parse_mode: 'HTML', reply_markup: undefined};
+	const newName = await promptUserForExerciseName(ctx, conversation, chat_id, lastMessageId, newNameText, newNameOptions);
 
-	let is_compound: boolean;
-	if (data === 'yesOption') {
-		is_compound = true;
-	} else {
-		is_compound = false;
-	}
+	const isCompoundText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\n`
+		+ 'Is it a compound exercise?\n\n'
+		+ '<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>';
+	const isCompoundTextOptions = {parse_mode: 'HTML', reply_markup: await getYesNoOptions()};
+	const isCompound = await promptUserForYesNo(ctx, conversation, chat_id, lastMessageId, isCompoundText, isCompoundTextOptions);
 
-	const muscleGroupsKbd = new InlineKeyboard();
-	muscleGroups.forEach(group => muscleGroupsKbd.text(group).row());
+	const is_compound = isCompound.toLowerCase().trim() === 'yes' || isCompound.toLowerCase().trim() === 'yesoption';
 
-	await ctx.editMessageText(
-		`<b>ADD ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`,
-		{
-			parse_mode: 'HTML',
-			reply_markup: muscleGroupsKbd,
-		},
-	);
-
-	const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(muscleGroups);
+	const categoryText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
+	const categoryOptions = {parse_mode: 'HTML', reply_markup: getExerciseCategoriesMenu(exerciseCategories)};
+	const category = await promptUserForExerciseName(ctx, conversation, chat_id, lastMessageId, categoryText, categoryOptions);
 
 	const createdExercise = await conversation.external(async () => updateUserExercise(
 		ctx.dbchat.user_id,
 		currName,
-		{name, category, is_compound},
+		{name: newName, category, is_compound},
 	));
 
 	if (!createdExercise) {
@@ -60,7 +55,7 @@ export default async function editExerciseConversation(conversation: MyConversat
 	}
 
 	await ctx.editMessageText(
-		`👌 <b>${name.toUpperCase()}</b> updated!`,
+		`👌 <b>${newName.toUpperCase()}</b> updated!`,
 		{
 			parse_mode: 'HTML',
 		},

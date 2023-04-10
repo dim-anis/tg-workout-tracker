@@ -57,8 +57,6 @@ populateExercisesMain.dynamic(async () => {
 			async ctx => {
 				const {toAdd} = ctx.session.exercises;
 				const exercisesToAdd = defaultExercises.filter(exObj => [...toAdd].includes(exObj.name));
-				console.log(exercisesToAdd);
-				console.log(`Preloading ${toAdd.size} exercises... for user ${ctx.dbchat.user_id}`);
 				const r = await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
 				ctx.dbchat.exercises.concat(exercisesToAdd);
 
@@ -130,11 +128,13 @@ composer.use(addExerciseMenu);
 composer
 	.callbackQuery('/add_exercise', async ctx => {
 		await ctx.answerCallbackQuery();
-		await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+		const {message_id} = await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+		ctx.session.state.lastMessageId = message_id;
 	});
 composer
 	.command('add_exercise', async ctx => {
-		await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+		const {message_id} = await ctx.reply('📋 <b>Add exercise</b>', {reply_markup: addExerciseMenu, parse_mode: 'HTML'});
+		ctx.session.state.lastMessageId = message_id;
 	});
 
 export default composer;

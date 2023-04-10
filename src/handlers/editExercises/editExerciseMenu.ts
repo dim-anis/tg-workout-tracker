@@ -170,14 +170,18 @@ composer
 	.command(
 		'edit_exercises',
 		userHasExercises,
-		async ctx => ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'}));
+		async ctx => {
+			const {message_id} = await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
+			ctx.session.state.lastMessageId = message_id;
+		});
 composer
 	.callbackQuery(
 		'/edit_exercises',
 		userHasExercises,
 		async ctx => {
 			await ctx.answerCallbackQuery();
-			await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
+			const {message_id} = await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
+			ctx.session.state.lastMessageId = message_id;
 		});
 
 export default composer;

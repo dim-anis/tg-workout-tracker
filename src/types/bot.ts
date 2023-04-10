@@ -21,6 +21,26 @@ export type SessionStorage = {
 	};
 };
 
+// Export type MemorySessionStorage = {
+// 	exercises: {
+// 		fromDB: Set<string>;
+// 		toAdd: Set<string>;
+// 	};
+// };
+
+// export type MongoSessionStorage = {
+// 	state: {
+// 		cmdName: string;
+// 		data: string;
+// 		lastMessageId: number;
+// 	};
+// };
+
+// export type SessionData = {
+// 	memorySession: MemorySessionStorage;
+// 	storageSession: MongoSessionStorage;
+// };
+
 export type MyContext = GrammyContext & SessionFlavor<SessionStorage> & ConversationFlavor & {dbchat: UserType};
 
 export type MyConversation = Conversation<MyContext>;

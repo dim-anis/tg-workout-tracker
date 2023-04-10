@@ -47,6 +47,28 @@ async function runBot() {
 		// Storage: new MongoStorage.MongoDBAdapter<SessionStorage>({collection}),
 	}));
 
+	// Bot.use(session({
+	// 	type: 'multi',
+	// 	memorySession: {
+	// 		initial: () => ({
+	// 			exercises: {
+	// 				fromDB: new Set(),
+	// 				toAdd: new Set(),
+	// 			},
+	// 		}),
+	// 	},
+	// 	storageSession: {
+	// 		initial: () => ({
+	// 			state: {
+	// 				cmdName: '',
+	// 				data: '',
+	// 				lastMessageId: 0,
+	// 			},
+	// 		}),
+	// 		// ! storage: new MongoStorage.MongoDBAdapter<MongoSessionStorage>({collection}),
+	// 	},
+	// }));
+
 	bot.command('cancel', async (ctx, next) => {
 		if (ctx.conversation) {
 			await ctx.conversation.exit();

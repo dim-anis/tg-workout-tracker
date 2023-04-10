@@ -3,7 +3,21 @@ import type {MyConversation, MyContext} from '../../types/bot';
 import {getYesNoOptions} from '../../config/keyboards';
 import {exerciseCategories} from '../../config/exercises';
 import {createUserExercise} from '../../models/user';
-import waitForTextAndRemove from '../helpers/waitForTextAndRemove';
+import {promptUserForExerciseName, promptUserForYesNo} from '../helpers/promptUser';
+
+function getExerciseCategoriesMenu(categories: string[]) {
+	const categoryOptionsKbd = new InlineKeyboard();
+	for (const [index, cat] of exerciseCategories.entries()) {
+		if (index % 3 === 0) {
+			categoryOptionsKbd.row();
+		}
+
+		categoryOptionsKbd
+			.text(cat);
+	}
+
+	return categoryOptionsKbd;
+}
 
 export default async function handleAddExercise(conversation: MyConversation, ctx: MyContext) {
 	if (!ctx.chat) {
@@ -11,56 +25,25 @@ export default async function handleAddExercise(conversation: MyConversation, ct
 	}
 
 	const {user_id} = ctx.dbchat;
+	const {lastMessageId} = ctx.session.state;
+	const {id: chat_id} = ctx.chat;
 
 	try {
-		await ctx.editMessageText(
-			'📋 <b>ADD NEW EXERCISE</b>\n\nType in the name:', {
-				parse_mode: 'HTML',
-				reply_markup: undefined,
-			});
+		const nameText = '📋 <b>Add new exercise</b>\n\nType in the name:';
+		const nameOptions = {parse_mode: 'HTML', reply_markup: undefined};
+		const name = await promptUserForExerciseName(ctx, conversation, chat_id, lastMessageId, nameText, nameOptions);
 
-		const name = await waitForTextAndRemove(conversation, ctx);
+		const isCompoundText = `📋 <b>Add ${name.toUpperCase()}</b>\n\n`
+		+ 'Is it a compound exercise?\n\n'
+		+ '<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>';
+		const isCompoundTextOptions = {parse_mode: 'HTML', reply_markup: await getYesNoOptions()};
+		const isCompound = await promptUserForYesNo(ctx, conversation, chat_id, lastMessageId, isCompoundText, isCompoundTextOptions);
 
-		if (!name) {
-			return;
-		}
+		const is_compound = isCompound.toLowerCase().trim() === 'yes' || isCompound.toLowerCase().trim() === 'yesoption';
 
-		await ctx.editMessageText(
-			`📋 <b>ADD ${name.toUpperCase()}</b>\n\nIs it a compound exercise?\n\n<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>`,
-			{
-				parse_mode: 'HTML',
-				reply_markup: await getYesNoOptions(),
-			},
-		);
-
-		const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['yesOption', 'noOption']);
-
-		let is_compound: boolean;
-		if (data === 'yesOption') {
-			is_compound = true;
-		} else {
-			is_compound = false;
-		}
-
-		const categoryOptions = new InlineKeyboard();
-		for (const [index, cat] of exerciseCategories.entries()) {
-			if (index % 3 === 0) {
-				categoryOptions.row();
-			}
-
-			categoryOptions
-				.text(cat);
-		}
-
-		await ctx.editMessageText(
-			`📋 <b>ADD ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`,
-			{
-				parse_mode: 'HTML',
-				reply_markup: categoryOptions,
-			},
-		);
-
-		const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery(exerciseCategories);
+		const categoryText = `📋 <b>Add ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
+		const categoryOptions = {parse_mode: 'HTML', reply_markup: getExerciseCategoriesMenu(exerciseCategories)};
+		const category = await promptUserForExerciseName(ctx, conversation, chat_id, lastMessageId, categoryText, categoryOptions); // <- same logic as in promptUserForExerciseName
 
 		const updatedUser = await conversation.external(async () => createUserExercise(
 			user_id,
@@ -74,8 +57,10 @@ export default async function handleAddExercise(conversation: MyConversation, ct
 		const newExericse = updatedUser.exercises[updatedUser.exercises.length - 1];
 		ctx.dbchat.exercises.push(newExericse);
 
-		await ctx.editMessageText(
-			`📋 <b>ADD NEW EXERCISE</b>\n\nYou've added <b>${name.toUpperCase()}</b> to your exercise list!`,
+		await ctx.api.editMessageText(
+			chat_id,
+			lastMessageId,
+			`📋 <b>Add new exercise</b>\n\nYou've added <b>${name.toUpperCase()}</b> to your exercise list!`,
 			{
 				parse_mode: 'HTML',
 			},

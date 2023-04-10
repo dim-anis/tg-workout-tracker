@@ -18,7 +18,7 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 	}
 
 	const {id: chat_id} = ctx.chat;
-	const {splitLength, isMetric} = conversation.session.userSettings;
+	const {splitLength, isMetric} = ctx.dbchat.settings;
 	const {recentWorkouts} = ctx.dbchat;
 	// Make it an option in the settings
 	const mesocycleLength = splitLength * 4;
@@ -60,9 +60,13 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 			const {callbackQuery: {data: selectedExercise}} = await conversation.waitForCallbackQuery(previousWorkoutExercises);
 			const {previousWeight, previousReps, hitAllReps} = getPreviousWorkoutSetData(selectedExercise, previousWorkout);
 
-			updatedCurrentWorkout = await recordExercise(conversation, ctx, chat_id, message_id, selectedExercise, previousWeight, previousReps, hitAllReps);
+			const exerciseParams = {selectedExercise, previousWeight, previousReps, hitAllReps};
 
-			await ctx.editMessageText(
+			updatedCurrentWorkout = await recordExercise(conversation, ctx, chat_id, message_id, exerciseParams);
+
+			await ctx.api.editMessageText(
+				chat_id,
+				ctx.session.state.lastMessageId,
 				'Would you like to finish this workout?',
 				{reply_markup: await getYesNoOptions()},
 			);
@@ -74,7 +78,12 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 		// Calculate the stats here and send in a message
 		const workoutStatsText = getWorkoutStatsText(updatedCurrentWorkout, workoutNumber, mesocycleLength);
-		await ctx.editMessageText(workoutStatsText, {parse_mode: 'HTML'});
+		await ctx.api.editMessageText(
+			chat_id,
+			ctx.session.state.lastMessageId,
+			workoutStatsText,
+			{parse_mode: 'HTML'},
+		);
 	} catch (err: unknown) {
 		console.log(err);
 	}
@@ -131,16 +140,22 @@ async function recordSet(
 	return updatedWorkout;
 }
 
+type RecordExerciseParams = {
+	selectedExercise: string;
+	previousWeight: number;
+	previousReps: number;
+	hitAllReps: boolean;
+};
+
 async function recordExercise(
 	conversation: MyConversation,
 	ctx: MyContext,
 	chat_id: number,
 	message_id: number,
-	selectedExercise: string,
-	previousWeight: number,
-	previousReps: number,
-	hitAllReps: boolean,
+	exerciseParams: RecordExerciseParams,
 ): Promise<WorkoutType> {
+	const {selectedExercise, previousWeight, previousReps, hitAllReps} = exerciseParams;
+
 	let canContinue = false;
 	let updatedWorkout;
 	let setCount = 0;
@@ -159,8 +174,12 @@ async function recordExercise(
 			.text('Finish', 'stopRecording')
 			.text('+ One More', 'recordOneMore');
 
-		await ctx.editMessageText(
-			`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\n${weight} kgs x ${repetitions} @ ${rpe}RPE\n\n✅ Set was successfully recorded`,
+		await ctx.api.editMessageText(
+			chat_id,
+			message_id,
+			`<b>${selectedExercise} ${'•'.repeat(setCount)}</b>\n\n`
+			+ `${weight} kgs x ${repetitions} @ ${rpe}RPE\n\n`
+			+ '✅ Set was successfully recorded',
 			{reply_markup: replyKbd, parse_mode: 'HTML'},
 		);
 

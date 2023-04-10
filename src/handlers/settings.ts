@@ -29,12 +29,6 @@ const mainMenu = new Menu<MyContext>('main')
 	.text(
 		'✅ Submit',
 		async ctx => {
-			const {splitLength, isMetric} = ctx.session.userSettings;
-			const updatedUser = await updateUserSettings(ctx.dbchat.user_id, splitLength, isMetric);
-			if (!updatedUser) {
-				await ctx.editMessageText('😔 Failed to update the settings, try again', {reply_markup: undefined});
-			}
-
 			await ctx.editMessageText('👌 Settings saved!', {reply_markup: undefined});
 		},
 	);
@@ -42,9 +36,11 @@ const mainMenu = new Menu<MyContext>('main')
 const splitLengthMenu = new Menu<MyContext>('split-length');
 for (let i = 1; i < 8; i++) {
 	splitLengthMenu.text(
-		ctx => ctx.session.userSettings.splitLength === i ? `● ${i}` : `○ ${i}`,
-		ctx => {
-			ctx.session.userSettings.splitLength = i;
+		ctx => ctx.dbchat.settings.splitLength === i ? `● ${i}` : `○ ${i}`,
+		async ctx => {
+			ctx.dbchat.settings.splitLength = i;
+			const {splitLength, isMetric} = ctx.dbchat.settings;
+			const updatedUser = await updateUserSettings(ctx.dbchat.user_id, splitLength, isMetric);
 			ctx.menu.update();
 		},
 	);
@@ -56,16 +52,20 @@ splitLengthMenu
 
 const settingsUnitMenu = new Menu<MyContext>('settings-unit')
 	.text(
-		ctx => ctx.session.userSettings.isMetric ? '● Metric (kg)' : '○ Metric (kg)',
-		ctx => {
-			ctx.session.userSettings.isMetric = true;
+		ctx => ctx.dbchat.settings.isMetric ? '● Metric (kg)' : '○ Metric (kg)',
+		async ctx => {
+			ctx.dbchat.settings.isMetric = true;
+			const {splitLength, isMetric} = ctx.dbchat.settings;
+			const updatedUser = await updateUserSettings(ctx.dbchat.user_id, splitLength, isMetric);
 			ctx.menu.update();
 		},
 	)
 	.text(
-		ctx => ctx.session.userSettings.isMetric ? '○ Imperial (lb)' : '● Imperial (lb)',
-		ctx => {
-			ctx.session.userSettings.isMetric = false;
+		ctx => ctx.dbchat.settings.isMetric ? '○ Imperial (lb)' : '● Imperial (lb)',
+		async ctx => {
+			ctx.dbchat.settings.isMetric = false;
+			const {splitLength, isMetric} = ctx.dbchat.settings;
+			const updatedUser = await updateUserSettings(ctx.dbchat.user_id, splitLength, isMetric);
 			ctx.menu.update();
 		},
 	)
