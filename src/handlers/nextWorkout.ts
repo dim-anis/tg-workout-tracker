@@ -95,7 +95,7 @@ async function getWeight(ctx: MyContext, conversation: MyConversation, chat_id: 
 	+ `Last working weight: <b>${previousWeight}kg</b>\n\n`
 	+ `${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`;
 
-	const options = {reply_markup: await getWeightOptions(), parse_mode: 'HTML'};
+	const options = {reply_markup: await getWeightOptions(previousWeight, 'nextWorkout'), parse_mode: 'HTML'};
 
 	return promptUserForWeight(ctx, conversation, chat_id, message_id, weightText, options);
 }
@@ -106,7 +106,7 @@ async function getRepetitions(ctx: MyContext, conversation: MyConversation, chat
 	+ `Expected number of repetitions: <b>${previousReps}</b>\n\n`
 	+ `${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`;
 
-	const options = {reply_markup: await getRepOptions(), parse_mode: 'HTML'};
+	const options = {reply_markup: await getRepOptions(previousReps, 'nextWorkout'), parse_mode: 'HTML'};
 
 	return promptUserForRepetitions(ctx, conversation, chat_id, message_id, repetitionsText, options);
 }
@@ -115,7 +115,7 @@ async function getRPE(ctx: MyContext, conversation: MyConversation, chat_id: num
 	const rpeText = `<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\n`
 	+ 'Please enter the RPE\n\nHow hard was this set?';
 
-	const options = {reply_markup: await getRpeOptions(), parse_mode: 'HTML'};
+	const options = {reply_markup: await getRpeOptions('nextWorkout'), parse_mode: 'HTML'};
 
 	return promptUserForRPE(ctx, conversation, chat_id, message_id, rpeText, options);
 }
@@ -207,7 +207,8 @@ function getPreviousWorkout(recentWorkouts: WorkoutType[], splitLength: number) 
 	}
 
 	if (workoutNumber === splitLength - 1) {
-		throw new Error('No deload workout found');
+		// Throw new Error('No deload workout found');
+		return recentWorkouts[workoutNumber];
 	}
 
 	return recentWorkouts[workoutNumber];

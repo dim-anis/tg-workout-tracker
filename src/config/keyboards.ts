@@ -1,20 +1,28 @@
 import {InlineKeyboard} from 'grammy';
 
+const isEveryThirdButton = (index: number) => (index + 1) % 3 === 0;
 export const rpeValues = [9, 9.5, 10, 7.5, 8, 8.5, 6, 6.5, 7];
 
-export const getRpeOptions = async (): Promise<InlineKeyboard> => {
+const getRpeOptionColor = (value: number): string => {
+	if (value >= 9) {
+		return '🔴';
+	}
+
+	if (value >= 7.5) {
+		return '🟠';
+	}
+
+	return '🟡';
+};
+
+export const getRpeOptions = async (prefix = ''): Promise<InlineKeyboard> => {
 	const keyboard = new InlineKeyboard();
 
 	for (const [index, value] of rpeValues.entries()) {
-		if (value >= 9) {
-			keyboard.text(`🔴 ${value}`, `${value}`);
-		} else if (value < 9 && value >= 7.5) {
-			keyboard.text(`🟠 ${value}`, `${value}`);
-		} else {
-			keyboard.text(`🟡 ${value}`, `${value}`);
-		}
+		const color = getRpeOptionColor(value);
+		keyboard.text(`${color} ${value}`, `${prefix}:${value}`);
 
-		if ((index + 1) % 3 === 0) {
+		if (isEveryThirdButton(index)) {
 			keyboard.row();
 		}
 	}
@@ -22,25 +30,53 @@ export const getRpeOptions = async (): Promise<InlineKeyboard> => {
 	return keyboard;
 };
 
-export const getWeightOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('+1', '1')
-	.text('+2.5', '2.5')
-	.text('+5', '5').row()
-	.text('-1')
-	.text('-2.5')
-	.text('-5').row()
-	.text('✏️ Custom', 'customWeightValue')
-	.text('Use same', '0');
+export const getWeightOptions = async (prevWeight: number, prefix = ''): Promise<InlineKeyboard> => {
+	const increments = [1, 2.5, 5, -1, -2.5, -5];
+	const keyboard = new InlineKeyboard();
 
-export const getRepOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('+1', '1')
-	.text('+2', '2')
-	.text('+3', '3').row()
-	.text('-1')
-	.text('-2')
-	.text('-3').row()
-	.text('✏️ Custom', 'customRepValue')
-	.text('Use same', '0');
+	for (const [index, value] of increments.entries()) {
+		const newWeight = prevWeight + value;
+
+		const buttonLabel = value > 0 ? `+ ${value}` : `${value}`;
+		const buttonData = `${prefix}:${newWeight}`;
+		keyboard.text(buttonLabel, buttonData);
+
+		if (isEveryThirdButton(index)) {
+			keyboard.row();
+		}
+	}
+
+	const defaultButtonLabel = 'Use same';
+	const defaultButtonData = `${prefix}:${prevWeight}`;
+	keyboard
+		.text(defaultButtonLabel, defaultButtonData);
+
+	return keyboard;
+};
+
+export const getRepOptions = async (prevReps: number, prefix = ''): Promise<InlineKeyboard> => {
+	const increments = [1, 2, 3, -1, -2, -3];
+	const keyboard = new InlineKeyboard();
+
+	for (const [index, value] of increments.entries()) {
+		const newReps = prevReps + value;
+
+		const buttonLabel = value > 0 ? `+ ${value}` : `${value}`;
+		const buttonData = `${prefix}:${newReps}`;
+		keyboard.text(buttonLabel, buttonData);
+
+		if (isEveryThirdButton(index)) {
+			keyboard.row();
+		}
+	}
+
+	const defaultButtonLabel = 'Use same';
+	const defaultButtonData = `${prefix}:${prevReps}`;
+	keyboard
+		.text(defaultButtonLabel, defaultButtonData);
+
+	return keyboard;
+};
 
 export const getMainMenu = async (): Promise<InlineKeyboard> => new InlineKeyboard()
 	.text('Next workout', '/next_workout').row()

@@ -104,7 +104,8 @@ export async function promptUserForNumber(
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
 	if (ctx.callbackQuery) {
-		return Number(ctx.callbackQuery.data);
+		const value = ctx.callbackQuery.data?.split(':')[1];
+		return Number(value);
 	}
 
 	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);

@@ -110,7 +110,7 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 	const repetitionsText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs</i>\n\nType in the repetitions:`;
 	const repetitions = await promptUserForRepetitions(ctx, conversation, chat_id, lastMessageId, repetitionsText, repetitionsTextOptions);
 
-	const rpeTextOptions = {parse_mode: 'HTML', reply_markup: await getRpeOptions()};
+	const rpeTextOptions = {parse_mode: 'HTML', reply_markup: await getRpeOptions('recordSet')};
 	const rpeText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`;
 	const rpe = await promptUserForRPE(ctx, conversation, chat_id, lastMessageId, rpeText, rpeTextOptions);
 
