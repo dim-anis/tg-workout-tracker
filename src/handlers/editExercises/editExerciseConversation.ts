@@ -35,10 +35,10 @@ export default async function editExerciseConversation(conversation: MyConversat
 	const isCompoundText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\n`
 		+ 'Is it a compound exercise?\n\n'
 		+ '<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>';
-	const isCompoundTextOptions = {parse_mode: 'HTML', reply_markup: await getYesNoOptions()};
+	const isCompoundTextOptions = {parse_mode: 'HTML', reply_markup: await getYesNoOptions('editExercise')};
 	const isCompound = await promptUserForYesNo(ctx, conversation, chat_id, lastMessageId, isCompoundText, isCompoundTextOptions);
 
-	const is_compound = isCompound.toLowerCase().trim() === 'yes' || isCompound.toLowerCase().trim() === 'yesoption';
+	const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
 	const categoryText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
 	const categoryOptions = {parse_mode: 'HTML', reply_markup: getExerciseCategoriesMenu(exerciseCategories)};

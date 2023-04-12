@@ -5,6 +5,7 @@ import {createConversation} from '@grammyjs/conversations';
 import handleAddExercise from './addExerciseConversation';
 import {defaultExercises} from '../../config/exercises';
 import {createUserExercise} from '../../models/user';
+import {backButton, checkedButton, uncheckedButton} from '../../config/keyboards';
 
 const composer = new Composer<MyContext>();
 
@@ -31,7 +32,7 @@ populateExercisesMain.dynamic(async () => {
 	const categories = new Set(defaultExercises.map(ex => ex.category));
 
 	const range = new MenuRange<MyContext>()
-		.back('<< Back')
+		.back(backButton)
 		.row();
 
 	for (const cat of categories) {
@@ -85,7 +86,7 @@ async function createExerciseMenu(category: string) {
 
 	range
 		.back(
-			{text: '⬅️ Back', payload: category},
+			{text: backButton, payload: category},
 			async ctx => {
 				await ctx.editMessageText(populateMainText, {parse_mode: 'HTML'});
 			},
@@ -97,7 +98,7 @@ async function createExerciseMenu(category: string) {
 			.text(
 				{
 					text: ctx =>
-						ctx.session.exercises.fromDB.has(exercise.name) || ctx.session.exercises.toAdd.has(exercise.name) ? `${exercise.name} ■` : `${exercise.name} □`,
+						ctx.session.exercises.fromDB.has(exercise.name) || ctx.session.exercises.toAdd.has(exercise.name) ? `${exercise.name} ${checkedButton}` : `${exercise.name} ${uncheckedButton}`,
 					payload: category,
 				},
 				async ctx => {

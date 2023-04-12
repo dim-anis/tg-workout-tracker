@@ -135,7 +135,8 @@ export async function promptUserForText(
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
 	if (ctx.callbackQuery) {
-		return ctx.callbackQuery.data!;
+		const value = ctx.callbackQuery.data?.split(':')[1];
+		return value!;
 	}
 
 	await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);

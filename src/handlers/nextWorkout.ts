@@ -2,13 +2,13 @@
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
+import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions, checkedButton} from '../config/keyboards';
 import {type WorkoutType} from '../models/workout';
 import {countSets, getWorkoutStatsText} from './helpers/workoutStats';
 import {isSameDay} from 'date-fns';
 import {createOrUpdateUserWorkout} from '../models/user';
 import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts';
-import {promptUserForWeight, promptUserForRepetitions, promptUserForRPE} from './helpers/promptUser';
+import {promptUserForWeight, promptUserForRepetitions, promptUserForRPE, promptUserForYesNo} from './helpers/promptUser';
 
 const composer = new Composer<MyContext>();
 
@@ -64,16 +64,11 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 
 			updatedCurrentWorkout = await recordExercise(conversation, ctx, chat_id, message_id, exerciseParams);
 
-			await ctx.api.editMessageText(
-				chat_id,
-				ctx.session.state.lastMessageId,
-				'Would you like to finish this workout?',
-				{reply_markup: await getYesNoOptions()},
-			);
+			const finishWorkoutText = 'Would you like to finish this workout?';
+			const finishWorkoutOptions = {reply_markup: await getYesNoOptions('nextWorkout')};
+			const finishWorkout = await promptUserForYesNo(ctx, conversation, chat_id, message_id, finishWorkoutText, finishWorkoutOptions);
 
-			const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['noOption', 'yesOption']);
-
-			workoutFinished = (data === 'yesOption');
+			workoutFinished = (finishWorkout === 'yes');
 		} while (!workoutFinished);
 
 		// Calculate the stats here and send in a message
@@ -90,7 +85,7 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 };
 
 async function getWeight(ctx: MyContext, conversation: MyConversation, chat_id: number, message_id: number, selectedExercise: string, previousWeight: number, hitAllReps: boolean, setCount: number) {
-	const weightText = `<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\n`
+	const weightText = `<b>${selectedExercise.toUpperCase()} ${checkedButton.repeat(setCount)}</b>\n\n`
 	+ 'Please enter the weight\n\n'
 	+ `Last working weight: <b>${previousWeight}kg</b>\n\n`
 	+ `${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`;

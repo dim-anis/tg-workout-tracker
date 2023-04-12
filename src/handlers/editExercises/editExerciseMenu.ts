@@ -5,6 +5,7 @@ import {deleteUserExercise} from '../../models/user';
 import {createConversation} from '@grammyjs/conversations';
 import editExerciseConversation from './editExerciseConversation';
 import {userHasExercises} from '../../middleware/userHasExercises';
+import {backButton} from '../../config/keyboards';
 
 const composer = new Composer<MyContext>();
 
@@ -54,7 +55,7 @@ async function createExerciseMenu(ctx: MyContext, category: string) {
 
 	range
 		.back(
-			{text: '⬅️ Back', payload: category},
+			{text: backButton, payload: category},
 			async ctx => {
 				await ctx.editMessageText(categoriesMenuText, {parse_mode: 'HTML'});
 			},
@@ -94,7 +95,7 @@ selectExerciseMenu.dynamic(async ctx => {
 async function createSelectExerciseMenu(category: string, exercise: string) {
 	return new MenuRange<MyContext>()
 		.back(
-			{text: '⬅️ Back', payload: category},
+			{text: backButton, payload: category},
 			async ctx => {
 				await ctx.editMessageText(exercisesMenuText(category), {
 					parse_mode: 'HTML',

@@ -2,7 +2,7 @@
 
 import {type MyContext, type MyConversation} from '../../types/bot';
 import {type ExerciseType} from 'models/exercise';
-import {getMenuFromStringArray} from '../../config/keyboards';
+import {backButton, getMenuFromStringArray} from '../../config/keyboards';
 
 export async function getCategory(ctx: MyContext, conversation: MyConversation, categories: string[], chat_id: number, message_id: number) {
 	await ctx.api.editMessageText(
@@ -37,9 +37,9 @@ export async function getExercise(ctx: MyContext, conversation: MyConversation, 
 			},
 		);
 
-		const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery(['≪ Back', ...exercisesByCategory]);
+		const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery([backButton, ...exercisesByCategory]);
 
-		if (exercise !== '≪ Back') {
+		if (exercise !== backButton) {
 			canContinue = true;
 			chosenExercise = exercise;
 		}

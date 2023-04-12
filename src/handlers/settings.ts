@@ -2,6 +2,7 @@ import {Composer} from 'grammy';
 import type {MyContext} from '../types/bot';
 import {Menu} from '@grammyjs/menu';
 import {updateUserSettings} from '../models/user';
+import {checkedButton, uncheckedButton} from '../config/keyboards';
 
 const composer = new Composer<MyContext>();
 
@@ -36,7 +37,7 @@ const mainMenu = new Menu<MyContext>('main')
 const splitLengthMenu = new Menu<MyContext>('split-length');
 for (let i = 1; i < 8; i++) {
 	splitLengthMenu.text(
-		ctx => ctx.dbchat.settings.splitLength === i ? `● ${i}` : `○ ${i}`,
+		ctx => ctx.dbchat.settings.splitLength === i ? `${checkedButton} ${i}` : `${uncheckedButton} ${i}`,
 		async ctx => {
 			ctx.dbchat.settings.splitLength = i;
 			const {splitLength, isMetric} = ctx.dbchat.settings;
@@ -52,7 +53,7 @@ splitLengthMenu
 
 const settingsUnitMenu = new Menu<MyContext>('settings-unit')
 	.text(
-		ctx => ctx.dbchat.settings.isMetric ? '● Metric (kg)' : '○ Metric (kg)',
+		ctx => ctx.dbchat.settings.isMetric ? `${checkedButton} Metric (kg)` : `${uncheckedButton} Metric (kg)`,
 		async ctx => {
 			ctx.dbchat.settings.isMetric = true;
 			const {splitLength, isMetric} = ctx.dbchat.settings;
@@ -61,7 +62,7 @@ const settingsUnitMenu = new Menu<MyContext>('settings-unit')
 		},
 	)
 	.text(
-		ctx => ctx.dbchat.settings.isMetric ? '○ Imperial (lb)' : '● Imperial (lb)',
+		ctx => ctx.dbchat.settings.isMetric ? `${uncheckedButton} Imperial (lb)` : `${checkedButton} Imperial (lb)`,
 		async ctx => {
 			ctx.dbchat.settings.isMetric = false;
 			const {splitLength, isMetric} = ctx.dbchat.settings;

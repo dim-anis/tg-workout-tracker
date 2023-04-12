@@ -2,7 +2,7 @@
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import {getRpeOptions, getMenuFromStringArray} from '../config/keyboards';
+import {getRpeOptions, getMenuFromStringArray, backButton} from '../config/keyboards';
 import {createOrUpdateUserWorkout} from '../models/user';
 import {userHasExercises} from '../middleware/userHasExercises';
 import {promptUserForRPE, promptUserForRepetitions, promptUserForWeight} from './helpers/promptUser';
@@ -90,9 +90,9 @@ async function chooseExercise(
 		},
 	);
 
-	const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery(['≪ Back', ...exercisesByCategory.get(category)!]);
+	const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery([backButton, ...exercisesByCategory.get(category)!]);
 
-	if (exercise === '≪ Back') {
+	if (exercise === backButton) {
 		return chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
 	}
 

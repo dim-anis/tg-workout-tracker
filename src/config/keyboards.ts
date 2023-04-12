@@ -1,6 +1,11 @@
 import {InlineKeyboard} from 'grammy';
 
+export const backButton = '◀ Back';
+export const checkedButton = '■';
+export const uncheckedButton = '□';
+
 const isEveryThirdButton = (index: number) => (index + 1) % 3 === 0;
+
 export const rpeValues = [9, 9.5, 10, 7.5, 8, 8.5, 6, 6.5, 7];
 
 const getRpeOptionColor = (value: number): string => {
@@ -46,7 +51,7 @@ export const getWeightOptions = async (prevWeight: number, prefix = ''): Promise
 		}
 	}
 
-	const defaultButtonLabel = 'Use same';
+	const defaultButtonLabel = '🆗 Use same';
 	const defaultButtonData = `${prefix}:${prevWeight}`;
 	keyboard
 		.text(defaultButtonLabel, defaultButtonData);
@@ -70,7 +75,7 @@ export const getRepOptions = async (prevReps: number, prefix = ''): Promise<Inli
 		}
 	}
 
-	const defaultButtonLabel = 'Use same';
+	const defaultButtonLabel = '🆗 Use same';
 	const defaultButtonData = `${prefix}:${prevReps}`;
 	keyboard
 		.text(defaultButtonLabel, defaultButtonData);
@@ -89,9 +94,9 @@ export const getEditOptions = async (): Promise<InlineKeyboard> => new InlineKey
 	.text('✏️ Edit', 'editOption')
 	.text('✅ Ok', 'okOption');
 
-export const getYesNoOptions = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('No', 'noOption')
-	.text('Yes', 'yesOption');
+export const getYesNoOptions = async (prefix = ''): Promise<InlineKeyboard> => new InlineKeyboard()
+	.text('No', `${prefix}:no`)
+	.text('Yes', `${prefix}:yes`);
 
 export const getNumberRange = async (number: number): Promise<InlineKeyboard> => {
 	const keyboard = new InlineKeyboard();
@@ -105,7 +110,7 @@ export const getNumberRange = async (number: number): Promise<InlineKeyboard> =>
 export const getMenuFromStringArray = async (labels: string[], options?: {addBackButton: boolean}) => {
 	const keyboard = new InlineKeyboard();
 	if (options?.addBackButton) {
-		keyboard.text('≪ Back').row();
+		keyboard.text(backButton).row();
 	}
 
 	for (const label of labels) {
@@ -114,7 +119,3 @@ export const getMenuFromStringArray = async (labels: string[], options?: {addBac
 
 	return keyboard;
 };
-
-export const getRecordSetButton = async (): Promise<InlineKeyboard> => new InlineKeyboard()
-	.text('Cancel', 'cancel')
-	.text('Record a set?', '/record_set');
