@@ -17,17 +17,22 @@ export function getTotalVolume(setsArray: WorkoutType['sets']) {
 }
 
 export function getWorkoutStatsText(workout: WorkoutType, workoutNumber: number, mesocycleLength: number) {
+	const dateString = new Date().toLocaleDateString();
 	const {createdAt, updatedAt} = workout;
-	const {hours, minutes} = intervalToDuration({
+	const {hours, minutes, seconds} = intervalToDuration({
 		start: new Date(createdAt),
 		end: new Date(updatedAt),
 	});
+	const totalDurationString = `${hours ? hours + 'h' : ''} ${minutes ? minutes + 'min' : ''} ${seconds ? seconds + 's' : ''}`;
 	const avgRpe = getAverageRPE(workout.sets);
 	const totalVolume = getTotalVolume(workout.sets).toLocaleString();
-	const statsText = `<b>Workout Stats</b>\n\nWorkout number: <b>${workoutNumber}/${mesocycleLength}</b>\n`
-	+ `Total volume: <b>${totalVolume}kgs</b>\n`
-	+ `Total duration: <b>${hours ? `${hours}h` : ''} ${minutes ? `${minutes}min` : ''}</b>\n`
-	+ `Average RPE: <b>${avgRpe}</b>`;
+	
+	const statsText = `<b>Workout Stats</b>\n\n`
+	+ `🔢 Workout number: <b>${workoutNumber}/${mesocycleLength}</b>\n`
+	+ `📅 Date: <b>${dateString}</b>\n`
+	+ `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n`
+	+ `⏱️ Total duration: <b>${totalDurationString}</b>\n`
+	+ `⭐ Average RPE: <b>${avgRpe}</b>`;
 
 	return statsText;
 }

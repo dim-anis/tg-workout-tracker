@@ -41,11 +41,11 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 			const setCountMap = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout.sets) : todaysSetCountMap;
 			const exerciseOptions = new InlineKeyboard();
 
-			for (const exercise of previousWorkoutExercises) {
+			for (const exerciseName of previousWorkoutExercises) {
 				exerciseOptions
 					.text(
-						`${exercise} ${'•'.repeat(setCountMap[exercise])}`,
-						exercise,
+						`${exerciseName} ${'•'.repeat(setCountMap[exerciseName])}`,
+						exerciseName,
 					)
 					.row();
 			}
@@ -88,7 +88,7 @@ async function getWeight(ctx: MyContext, conversation: MyConversation, chat_id: 
 	const weightText = `<b>${selectedExercise.toUpperCase()} ${checkedButton.repeat(setCount)}</b>\n\n`
 	+ 'Please enter the weight\n\n'
 	+ `Last working weight: <b>${previousWeight}kg</b>\n\n`
-	+ `${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`;
+	+ `${hitAllReps ? '✅' : '❌ didn\'t'} hit all reps last time`;
 
 	const options = {reply_markup: await getWeightOptions(previousWeight, 'nextWorkout'), parse_mode: 'HTML'};
 
@@ -99,7 +99,7 @@ async function getRepetitions(ctx: MyContext, conversation: MyConversation, chat
 	const repetitionsText = `<b>${selectedExercise.toUpperCase()} ${'•'.repeat(setCount)}</b>\n\n`
 	+ 'Please enter the repetitions\n\n'
 	+ `Expected number of repetitions: <b>${previousReps}</b>\n\n`
-	+ `${hitAllReps ? '🟢' : '🔴 didn\'t'} hit all reps last time`;
+	+ `${hitAllReps ? '✅' : '❌ didn\'t'} hit all reps last time`;
 
 	const options = {reply_markup: await getRepOptions(previousReps, 'nextWorkout'), parse_mode: 'HTML'};
 
