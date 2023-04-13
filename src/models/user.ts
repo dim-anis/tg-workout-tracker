@@ -15,6 +15,7 @@ export type UserType = {
 	settings: {
 		isMetric: boolean;
 		splitLength: number;
+		mesocycleLength: number;
 	};
 };
 
@@ -26,6 +27,7 @@ export const UserSchema = new mongoose.Schema<UserType>(
 		settings: {
 			isMetric: {type: Boolean, default: true},
 			splitLength: {type: Number, default: 3},
+			mesocycleLength: {type: Number, default: 5},
 		},
 	},
 	{
@@ -156,13 +158,14 @@ const deleteUserExercise = async (user_id: number, exerciseName: string) => {
 	return userUpdated;
 };
 
-const updateUserSettings = async (user_id: number, splitLength: number, isMetric: boolean) => {
+const updateUserSettings = async (user_id: number, splitLength: number, mesocycleLength: number, isMetric: boolean) => {
 	const userUpdated = await User.findOneAndUpdate(
 		{user_id},
 		{
 			$set: {
 				settings: {
 					splitLength,
+					mesocycleLength,
 					isMetric,
 				},
 			},
