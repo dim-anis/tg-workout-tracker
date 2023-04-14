@@ -69,34 +69,32 @@ UserSchema.pre<UserType>('save', async function (next) {
 const User = mongoose.model<UserType>('User', UserSchema);
 
 const createOrUpdateUserWorkout = async (user_id: number, set: SetType) => {
-	const user = await User.findOne({user_id});
+	const user = await User.findOne({ user_id });
 
-	if (!user) {
-		throw new Error('User does not exist');
-	}
+  if (!user) {
+    throw new Error('User does not exist');
+  }
 
-	const today = new Date();
-	const existingWorkout = user.recentWorkouts.find(workout => isSameDay(workout.createdAt, today));
+  const today = new Date();
+  let mostRecentWorkout = user.recentWorkouts[0];
 
-	if (!existingWorkout) {
-		const newWorkout = new Workout({
-			sets: set,
-			avg_rpe: set.rpe,
-		});
+  if (!mostRecentWorkout || !isSameDay(mostRecentWorkout.createdAt, today)) {
+    mostRecentWorkout = new Workout({
+      sets: [set],
+      avg_rpe: set.rpe,
+    });
 
-		user.recentWorkouts.unshift(newWorkout);
-		const updatedUser = (await user.save()).toObject();
+    user.recentWorkouts.unshift(mostRecentWorkout);
+  } else {
+    const newAvgRpe = getAverageRPE(mostRecentWorkout.sets.concat(set));
+    mostRecentWorkout.sets.push(set);
+    mostRecentWorkout.avg_rpe = newAvgRpe;
+  }
 
-		return updatedUser.recentWorkouts[0];
-	}
-
-	const newAvgRpe = getAverageRPE(user.recentWorkouts[0].sets.concat(set));
-	user.recentWorkouts[0].sets.push(set);
-	user.recentWorkouts[0].avg_rpe = newAvgRpe;
-
-	const updatedUser = (await user.save()).toObject();
-
-	return updatedUser.recentWorkouts[0];
+  const updatedUser = await user.save();
+	const plainUserObject = updatedUser.toObject();
+	
+  return plainUserObject.recentWorkouts[0];
 };
 
 const getAllUserExercises = async (user_id: number) => {
