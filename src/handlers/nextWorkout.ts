@@ -20,18 +20,14 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 	const {id: chat_id} = ctx.chat;
 	const {splitLength, isMetric} = ctx.dbchat.settings;
 	const {recentWorkouts} = ctx.dbchat;
-	// Make it an option in the settings
-	const mesocycleLength = splitLength * 4;
 
 	try {
-		const isSameDayWorkout = isSameDay(recentWorkouts[0]?.createdAt && recentWorkouts[0].createdAt, new Date());
-		const firstWorkoutThisMesoIndex = recentWorkouts.findIndex(workout => workout.avg_rpe <= 6) + 1;
-		const workoutNumber = isSameDayWorkout ? firstWorkoutThisMesoIndex - 1 : firstWorkoutThisMesoIndex;
-		const hasOneMicro = workoutNumber > splitLength;
+		const workoutCount = calculateWorkoutCount(recentWorkouts);
+		const isSameDayWorkout = isSameDay(recentWorkouts[0]?.createdAt, Date.now());
 
 		const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
 		const previousWorkoutExercises = [...new Set(previousWorkout.sets.map(set => set.exercise))];
-		const workoutTitle = `<b>WORKOUT [ ${workoutNumber} / ${mesocycleLength} ] of CURRENT MESOCYCLE</b>\n\n<i>Select an exercise:</i>`;
+		const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
 
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
@@ -72,7 +68,7 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 		} while (!workoutFinished);
 
 		// Calculate the stats here and send in a message
-		const workoutStatsText = getWorkoutStatsText(updatedCurrentWorkout, workoutNumber, mesocycleLength);
+		const workoutStatsText = getWorkoutStatsText(updatedCurrentWorkout, workoutCount);
 		await ctx.api.editMessageText(
 			chat_id,
 			ctx.session.state.lastMessageId,
@@ -191,9 +187,8 @@ function getPreviousWorkout(recentWorkouts: WorkoutType[], splitLength: number) 
 	let workoutNumber = splitLength - 1;
 	const workoutCandidate = recentWorkouts[workoutNumber];
 
-	// TODO: refactor the model and add 'isDeload' field instead of ambiguous avg_rpe <= 6
-	if (workoutCandidate.avg_rpe <= 6) {
-		workoutNumber = recentWorkouts.findIndex(workout => workout.avg_rpe > 6);
+	if (workoutCandidate.isDeload) {
+		workoutNumber = recentWorkouts.findIndex(workout => !workout.isDeload);
 		workoutNumber = workoutNumber === -1 ? splitLength - 1 : workoutNumber;
 	}
 
@@ -223,6 +218,18 @@ function getPreviousWorkoutSetData(selectedExercise: string, previousWorkout: Wo
 
 	return {previousWeight, previousReps, hitAllReps};
 }
+
+function findMesoStartIndex(workouts: WorkoutType[]) {
+  const deloadIndex = workouts.findIndex(workout => workout.isDeload);
+	return deloadIndex !== -1 ? deloadIndex - 1 : undefined;
+}
+
+const calculateWorkoutCount = (workouts: WorkoutType[]) => {
+  const deloadIndex = workouts.findIndex((w) => w.isDeload);
+  const start = deloadIndex === -1 ? 0 : deloadIndex + 1;
+  const count = workouts.slice(start).length;
+  return count + 1;
+};
 
 composer
 	.use(createConversation(handleNextWorkout));

@@ -16,7 +16,7 @@ export function getTotalVolume(setsArray: WorkoutType['sets']) {
 	return setsArray.reduce((totalVolume, set) => totalVolume + (set.weight * set.repetitions), 0);
 }
 
-export function getWorkoutStatsText(workout: WorkoutType, workoutNumber: number, mesocycleLength: number) {
+export function getWorkoutStatsText(workout: WorkoutType, workoutCount: number) {
 	const dateString = new Date().toLocaleDateString();
 	const {createdAt, updatedAt} = workout;
 	const {hours, minutes, seconds} = intervalToDuration({
@@ -28,7 +28,7 @@ export function getWorkoutStatsText(workout: WorkoutType, workoutNumber: number,
 	const totalVolume = getTotalVolume(workout.sets).toLocaleString();
 	
 	const statsText = `<b>Workout Stats</b>\n\n`
-	+ `🔢 Workout number: <b>${workoutNumber}/${mesocycleLength}</b>\n`
+	+ `🔢 Workout number: <b>${workoutCount}</b>\n`
 	+ `📅 Date: <b>${dateString}</b>\n`
 	+ `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n`
 	+ `⏱️ Total duration: <b>${totalDurationString}</b>\n`
