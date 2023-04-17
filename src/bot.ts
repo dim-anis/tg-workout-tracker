@@ -69,17 +69,12 @@ async function runBot() {
 	// 	},
 	// }));
 
-	bot.command('cancel', async (ctx, next) => {
-		if (ctx.conversation) {
-			await ctx.conversation.exit();
-			await ctx.reply('Left the conversation');
-		}
-
-		await next();
-	});
-
 	bot.use(attachUser);
 	bot.use(conversations());
+	bot.command('cancel', async ctx => {
+		await ctx.conversation.exit();
+		await ctx.reply('Left the conversation');
+	});
 	bot.use(handlers);
 
 	bot.on('callback_query:data', async ctx => {
