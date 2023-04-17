@@ -1,11 +1,12 @@
 /* eslint-disable no-await-in-loop */
-import {Composer, InlineKeyboard} from 'grammy';
+import {Composer} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
 import type {MyConversation, MyContext} from '../types/bot';
-import {getRpeOptions, getMenuFromStringArray, backButton} from '../config/keyboards';
+import {getRpeOptions, getMenuFromStringArray, backButton, getYesNoOptions} from '../config/keyboards';
 import {createOrUpdateUserWorkout} from '../models/user';
 import {userHasExercises} from '../middleware/userHasExercises';
-import {promptUserForRPE, promptUserForRepetitions, promptUserForWeight} from './helpers/promptUser';
+import {promptUserForRPE, promptUserForRepetitions, promptUserForWeight, promptUserForYesNo} from './helpers/promptUser';
+import { successMessages } from './helpers/successMessages';
 
 const composer = new Composer<MyContext>();
 
@@ -32,29 +33,18 @@ const handleRecordSet = async (conversation: MyConversation, ctx: MyContext) => 
 
 	while (recordMoreSets) {
 		try {
-			const typeOfWorkout = await getTypeOfWorkout(ctx, conversation);
+			const {lastMessageId} = conversation.session.state;
+			const isDeload = await isDeloadWorkout(ctx, conversation);
 			const chosenExercise = await chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);
 			const setData = await getSetData(ctx, conversation, chosenExercise, chat_id);
-			const updatedWorkout = await conversation.external(async () => createOrUpdateUserWorkout(user_id, setData));
+			const updatedWorkout = await conversation.external(async () => createOrUpdateUserWorkout(user_id, setData, isDeload));
 
-			await ctx.api.editMessageText(
-				chat_id,
-				ctx.session.state.lastMessageId,
-				'<b>✅ Success!\n\nRecord one more set?</b>',
-				{
-					reply_markup: new InlineKeyboard().text('No', 'recordSet:no').text('Yes', 'recordSet:yes'),
-					parse_mode: 'HTML',
-				},
-			);
-			const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(/recordSet:(no|yes)/);
-			const option = data.split(':')[1];
+			const successOptions = {reply_markup: await getYesNoOptions('recordSet'), parse_mode: 'HTML'};
+			const recordOneMoreSet = await promptUserForYesNo(ctx, conversation, chat_id, lastMessageId, successMessages.onRecordSetSuccess, successOptions);
 
-			recordMoreSets = option === 'yes';
+			recordMoreSets = (recordOneMoreSet === 'yes');
 
-			await ctx.api.editMessageText(chat_id, ctx.session.state.lastMessageId, '<b>✅ Success!</b>', {
-				reply_markup: undefined,
-				parse_mode: 'HTML',
-			});
+			await ctx.api.deleteMessage(chat_id, lastMessageId);
 		} catch (err: unknown) {
 			console.log(err);
 		}
@@ -68,9 +58,10 @@ async function chooseExercise(
 	categories: Set<string>,
 	exercisesByCategory: Map<string, string[]>,
 ): Promise<string> {
+	const {lastMessageId} = conversation.session.state;
 	await ctx.api.editMessageText(
 		chat_id,
-		ctx.session.state.lastMessageId,
+		lastMessageId,
 		'<b>Record exercise</b>\n\n<i>Choose a category:</i>',
 		{
 			reply_markup: await getMenuFromStringArray([...categories]),
@@ -82,7 +73,7 @@ async function chooseExercise(
 
 	await ctx.api.editMessageText(
 		chat_id,
-		ctx.session.state.lastMessageId,
+		lastMessageId,
 		`<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`,
 		{
 			reply_markup: await getMenuFromStringArray(exercisesByCategory.get(category)!, {addBackButton: true}),
@@ -100,11 +91,11 @@ async function chooseExercise(
 }
 
 async function getSetData(ctx: MyContext, conversation: MyConversation, exercise: string, chat_id: number) {
-	const {lastMessageId} = ctx.session.state;
+	const {lastMessageId} = conversation.session.state;
 
 	const weightTextOptions = {parse_mode: 'HTML'};
 	const weightText = `<b>${exercise.toUpperCase()}</b>\n\nType in the weight:`;
-	const weight = await promptUserForWeight(ctx, conversation, chat_id, ctx.session.state.lastMessageId, weightText, weightTextOptions);
+	const weight = await promptUserForWeight(ctx, conversation, chat_id, lastMessageId, weightText, weightTextOptions);
 
 	const repetitionsTextOptions = {parse_mode: 'HTML'};
 	const repetitionsText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs</i>\n\nType in the repetitions:`;
@@ -117,16 +108,16 @@ async function getSetData(ctx: MyContext, conversation: MyConversation, exercise
 	return {exercise, weight, repetitions, rpe};
 }
 
-async function getTypeOfWorkout(ctx: MyContext, conversation: MyConversation) {
-	const {message_id} = await ctx.reply('<b>Type of workout</b>\n\nIs it a deload or a regular workout?', {
+export async function isDeloadWorkout(ctx: MyContext, conversation: MyConversation) {
+	const {message_id} = await ctx.reply('Is it a <b>deload workout</b>?', {
 		parse_mode: 'HTML',
-		reply_markup: new InlineKeyboard().text('Deload', 'recordSet:deload').text('Regular', 'recordSet:regular'),
+		reply_markup: await getYesNoOptions('recordSet'),
 	});
 
-	ctx.session.state.lastMessageId = message_id;
+	conversation.session.state.lastMessageId = message_id;
 
-	const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['recordSet:deload', 'recordSet:regular']);
-	return data.split(':')[1];
+	const {callbackQuery: {data}} = await conversation.waitForCallbackQuery(['recordSet:yes', 'recordSet:no']);
+	return data.split(':')[1] === 'yes' ? true : false;
 }
 
 composer

@@ -68,7 +68,7 @@ UserSchema.pre<UserType>('save', async function (next) {
 
 const User = mongoose.model<UserType>('User', UserSchema);
 
-const createOrUpdateUserWorkout = async (user_id: number, set: SetType) => {
+const createOrUpdateUserWorkout = async (user_id: number, set: SetType, isDeload: boolean) => {
 	const user = await User.findOne({ user_id });
 
   if (!user) {
@@ -82,6 +82,7 @@ const createOrUpdateUserWorkout = async (user_id: number, set: SetType) => {
     mostRecentWorkout = new Workout({
       sets: [set],
       avg_rpe: set.rpe,
+			isDeload
     });
 
     user.recentWorkouts.unshift(mostRecentWorkout);

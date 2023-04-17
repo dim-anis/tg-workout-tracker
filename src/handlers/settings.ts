@@ -2,7 +2,7 @@ import {Composer} from 'grammy';
 import type {MyContext} from '../types/bot';
 import {Menu, type MenuFlavor} from '@grammyjs/menu';
 import {updateUserSettings} from '../models/user';
-import {checkedButton, uncheckedButton} from '../config/keyboards';
+import {checkedSquare, uncheckedSquare} from '../config/keyboards';
 import {type UserType} from '../models/user';
 
 const mesocycleLengths = [4, 5, 6];
@@ -51,7 +51,7 @@ const mainMenu = new Menu<MyContext>('main')
 const splitLengthMenu = new Menu<MyContext>('split-length');
 for (let length = 1; length < 8; length++) {
 	splitLengthMenu.text(
-		ctx => ctx.dbchat.settings.splitLength === length ? `${checkedButton} ${length}` : `${uncheckedButton} ${length}`,
+		ctx => ctx.dbchat.settings.splitLength === length ? `${checkedSquare} ${length}` : `${uncheckedSquare} ${length}`,
 		async ctx => updateSettings(ctx, 'splitLength', length),
 	);
 }
@@ -64,7 +64,7 @@ const mesocycleLengthMenu = new Menu<MyContext>('mesocycle-length');
 for (const lengthOption of mesocycleLengths) {
 	mesocycleLengthMenu
 		.text(
-			ctx => ctx.dbchat.settings.mesocycleLength === lengthOption ? `${checkedButton} ${lengthOption}` : `${uncheckedButton} ${lengthOption}`,
+			ctx => ctx.dbchat.settings.mesocycleLength === lengthOption ? `${checkedSquare} ${lengthOption}` : `${uncheckedSquare} ${lengthOption}`,
 			async ctx => updateSettings(ctx, 'mesocycleLength', lengthOption),
 		);
 }
@@ -75,11 +75,11 @@ mesocycleLengthMenu
 
 const settingsUnitMenu = new Menu<MyContext>('settings-unit')
 	.text(
-		ctx => ctx.dbchat.settings.isMetric ? `${checkedButton} Metric (kg)` : `${uncheckedButton} Metric (kg)`,
+		ctx => ctx.dbchat.settings.isMetric ? `${checkedSquare} Metric (kg)` : `${uncheckedSquare} Metric (kg)`,
 		async ctx => updateSettings(ctx, 'isMetric', true),
 	)
 	.text(
-		ctx => ctx.dbchat.settings.isMetric ? `${uncheckedButton} Imperial (lb)` : `${checkedButton} Imperial (lb)`,
+		ctx => ctx.dbchat.settings.isMetric ? `${uncheckedSquare} Imperial (lb)` : `${checkedSquare} Imperial (lb)`,
 		async ctx => updateSettings(ctx, 'isMetric', false),
 	)
 	.row()

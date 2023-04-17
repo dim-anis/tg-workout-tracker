@@ -5,7 +5,7 @@ import {createConversation} from '@grammyjs/conversations';
 import handleAddExercise from './addExerciseConversation';
 import {defaultExercises} from '../../config/exercises';
 import {createUserExercise} from '../../models/user';
-import {backButton, checkedButton, uncheckedButton} from '../../config/keyboards';
+import {backButton, checkedSquare, uncheckedSquare} from '../../config/keyboards';
 
 const composer = new Composer<MyContext>();
 
@@ -98,7 +98,7 @@ async function createExerciseMenu(category: string) {
 			.text(
 				{
 					text: ctx =>
-						ctx.session.exercises.fromDB.has(exercise.name) || ctx.session.exercises.toAdd.has(exercise.name) ? `${exercise.name} ${checkedButton}` : `${exercise.name} ${uncheckedButton}`,
+						ctx.session.exercises.fromDB.has(exercise.name) || ctx.session.exercises.toAdd.has(exercise.name) ? `${exercise.name} ${checkedSquare}` : `${exercise.name} ${uncheckedSquare}`,
 					payload: category,
 				},
 				async ctx => {

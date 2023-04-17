@@ -1,15 +1,15 @@
 import {type MyContext, type MyConversation} from 'types/bot';
 
 const errorMessages = {
-	input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No"</b>',
-	input_too_long: '\n\n❌ <b>Input is too long. Max length is 50 characters</b>',
-	input_contains_special_chars: 'Input contains special characters. Only alphanumeric characters are allowed',
-	input_is_not_a_number: '\n\n❌ <b>Input must be a number</b>',
-	input_is_out_of_range_weight: '\n\n❌ <b>Input is out of range. Must be between 1 and 999</b>',
-	input_is_out_of_range_rpe: '\n\n❌ <b>Input is out of range. Must be between 6.0 and 10.0</b>',
-	input_is_out_of_range_repetitions: '\n\n❌ <b>Input is out of range. Must be between 1 and 99</b>',
-	input_is_not_a_multiple_of_half: '\n\n❌ <b>Input must be a multiple of 0.5 (5.5, 6, 6.5, etc.)/b>',
-	input_is_not_an_integer: '\n\n❌ <b>Input must be an integer</b>\n',
+	input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
+	input_too_long: '\n\n❌ <b>Input is too long. Max length is 50 characters.</b>',
+	input_contains_special_chars: '\n\n❌ Input contains special characters. Only alphanumeric characters are allowed.',
+	input_is_not_a_number: '\n\n❌ <b>Input must be a number.</b>',
+	input_is_out_of_range_weight: '\n\n❌ <b>Input is out of range. Must be between 1 and 999.</b>',
+	input_is_out_of_range_rpe: '\n\n❌ <b>Input is out of range. Must be between 6.0 and 10.0.</b>',
+	input_is_out_of_range_repetitions: '\n\n❌ <b>Input is out of range. Must be between 1 and 99.</b>',
+	input_is_not_a_multiple_of_half: '\n\n❌ <b>Input must be a multiple of 0.5 (5.5, 6, 6.5, etc.)./b>',
+	input_is_not_an_integer: '\n\n❌ <b>Input must be an integer.</b>\n',
 };
 
 function updateMessageWithError(message: string, error = '') {
@@ -98,7 +98,6 @@ export async function promptUserForNumber(
 	message_id: number,
 	message: string,
 	options: any): Promise<number> {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 	await ctx.api.editMessageText(chat_id, message_id, message, options);
 
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
@@ -129,8 +128,7 @@ export async function promptUserForText(
 	message: string,
 	options: any,
 ): Promise<string> {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-	const result = await ctx.api.editMessageText(chat_id, message_id, message, options);
+	await ctx.api.editMessageText(chat_id, message_id, message, options);
 
 	ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 

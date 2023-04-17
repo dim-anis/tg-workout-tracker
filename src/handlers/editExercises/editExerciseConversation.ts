@@ -24,8 +24,8 @@ export default async function editExerciseConversation(conversation: MyConversat
 		return;
 	}
 
-	const currName = ctx.session.state.data;
-	const {lastMessageId} = ctx.session.state;
+	const currName = conversation.session.state.data;
+	const {lastMessageId} = conversation.session.state;
 	const {id: chat_id} = ctx.chat;
 
 	const newNameText = `<b>Edit ${currName.toLocaleUpperCase()}</b>\n\nType in the new name:`;
