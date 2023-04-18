@@ -61,6 +61,7 @@ UserSchema.pre<UserType>('save', async function (next) {
 		avg_rpe: workoutToArchive.avg_rpe,
 		created: workoutToArchive.createdAt,
 		updated: workoutToArchive.updatedAt,
+		isDeload: workoutToArchive.isDeload
 	});
 
 	await archivedWorkout.save();

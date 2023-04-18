@@ -10,6 +10,7 @@ const errorMessages = {
 	input_is_out_of_range_repetitions: '\n\n❌ <b>Input is out of range. Must be between 1 and 99.</b>',
 	input_is_not_a_multiple_of_half: '\n\n❌ <b>Input must be a multiple of 0.5 (5.5, 6, 6.5, etc.)./b>',
 	input_is_not_an_integer: '\n\n❌ <b>Input must be an integer.</b>\n',
+	input_is_not_defined: '\n\n❌ <b>Input isn\'t one of the given options.</b>\n',
 };
 
 function updateMessageWithError(message: string, error = '') {
@@ -88,6 +89,15 @@ export function validateYesNoInput(input: string): string | undefined {
 	}
 
 	return undefined;
+}
+
+function createPredefinedStringValidator(validTextOptions: string[]): (input: string) => string | undefined {
+  return (input: string) => {
+    if (!validTextOptions.includes(input)) {
+      return 'input_is_not_defined';
+    }
+    return undefined;
+  };
 }
 
 export async function promptUserForNumber(
@@ -198,4 +208,17 @@ export async function promptUserForYesNo(
 	options: any,
 ): Promise<string> {
 	return promptUserForText(ctx, conversation, validateYesNoInput, chat_id, message_id, message, options);
+}
+
+export async function promptUserForPredefinedString(
+	ctx: MyContext,
+	conversation: MyConversation,
+	chat_id: number,
+	message_id: number,
+	message: string,
+	options: any,
+	validTextOptions: string[]): Promise<string> {
+	const validatorFunc = createPredefinedStringValidator(validTextOptions);
+
+	return promptUserForText(ctx, conversation, validatorFunc, chat_id, message_id, message, options);
 }

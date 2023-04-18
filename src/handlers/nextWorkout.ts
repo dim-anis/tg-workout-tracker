@@ -180,7 +180,7 @@ async function recordExercise(
 		+ successMessages.onRecordSetSuccess;
 		const successOptions = {reply_markup: await getYesNoOptions('nextWorkout'), parse_mode: 'HTML'};
 		const recordOneMoreSet = await promptUserForYesNo(ctx, conversation, chat_id, message_id, successText, successOptions);
-
+		conversation.log(recordOneMoreSet);
 		stopRecording = (recordOneMoreSet === 'no');
 	} while (!stopRecording);
 
@@ -202,7 +202,6 @@ function getPreviousWorkout(recentWorkouts: WorkoutType[], splitLength: number) 
 	}
 
 	if (workoutNumber === splitLength - 1) {
-		// Throw new Error('No deload workout found');
 		return recentWorkouts[workoutNumber];
 	}
 
@@ -217,6 +216,7 @@ function getPreviousWorkoutSetData(selectedExercise: string, previousWorkout: Wo
 		return null;
 	}
 
+	// if isDeload => cut sets, reps in 2, later cut weight in 2, possibly make choosing type of deload an option in settings
 	const previousWeight = allSets[allSets.length - 1].weight;
 	const previousReps = allSets[allSets.length - 1].repetitions;
 	const hitAllReps = allSets.every(set => set.repetitions >= previousReps);

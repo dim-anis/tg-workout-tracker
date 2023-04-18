@@ -109,14 +109,21 @@ export const getNumberRange = async (number: number): Promise<InlineKeyboard> =>
 	return keyboard;
 };
 
-export const getMenuFromStringArray = async (labels: string[], options?: {addBackButton: boolean}) => {
+export const getMenuFromStringArray = async (labels: string[], prefix = '', options?: {addBackButton?: boolean, nColumns?: number}) => {
+	const { addBackButton = false, nColumns = 1} = options || {};
+
 	const keyboard = new InlineKeyboard();
-	if (options?.addBackButton) {
-		keyboard.text(backButton).row();
+	if (addBackButton) {
+		keyboard.text(backButton, `${prefix}:${backButton}`).row();
 	}
 
-	for (const label of labels) {
-		keyboard.text(label).row();
+	for (const [index, label] of labels.entries()) {
+		if (index % nColumns === 0) {
+			keyboard.row();
+		}
+		
+		keyboard
+			.text(label, `${prefix}:${label}`)
 	}
 
 	return keyboard;

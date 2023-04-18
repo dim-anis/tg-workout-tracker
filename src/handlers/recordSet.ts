@@ -5,7 +5,7 @@ import type {MyConversation, MyContext} from '../types/bot';
 import {getRpeOptions, getMenuFromStringArray, backButton, getYesNoOptions} from '../config/keyboards';
 import {createOrUpdateUserWorkout} from '../models/user';
 import {userHasExercises} from '../middleware/userHasExercises';
-import {promptUserForRPE, promptUserForRepetitions, promptUserForWeight, promptUserForYesNo} from './helpers/promptUser';
+import {promptUserForPredefinedString, promptUserForRPE, promptUserForRepetitions, promptUserForWeight, promptUserForYesNo} from './helpers/promptUser';
 import { successMessages } from './helpers/successMessages';
 
 const composer = new Composer<MyContext>();
@@ -59,29 +59,38 @@ async function chooseExercise(
 	exercisesByCategory: Map<string, string[]>,
 ): Promise<string> {
 	const {lastMessageId} = conversation.session.state;
-	await ctx.api.editMessageText(
-		chat_id,
-		lastMessageId,
-		'<b>Record exercise</b>\n\n<i>Choose a category:</i>',
-		{
-			reply_markup: await getMenuFromStringArray([...categories]),
-			parse_mode: 'HTML',
-		},
+
+	const chooseCategoryText = '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
+	const chooseCategoryOptions = {
+		reply_markup: await getMenuFromStringArray([...categories], 'recordSet'),
+		parse_mode: 'HTML',
+	};
+
+	const category = await promptUserForPredefinedString(
+		ctx, 
+		conversation, 
+		chat_id, 
+		lastMessageId, 
+		chooseCategoryText, 
+		chooseCategoryOptions, 
+		[...categories]
 	);
 
-	const {callbackQuery: {data: category}} = await conversation.waitForCallbackQuery([...categories]);
+	const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
+	const chooseExerciseOptions = {
+		reply_markup: await getMenuFromStringArray(exercisesByCategory.get(category)!, 'recordSet', {addBackButton: true}), 
+		parse_mode: 'HTML',
+	};
 
-	await ctx.api.editMessageText(
-		chat_id,
-		lastMessageId,
-		`<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`,
-		{
-			reply_markup: await getMenuFromStringArray(exercisesByCategory.get(category)!, {addBackButton: true}),
-			parse_mode: 'HTML',
-		},
+	const exercise = await promptUserForPredefinedString(
+		ctx, 
+		conversation, 
+		chat_id, 
+		lastMessageId, 
+		chooseExerciseText, 
+		chooseExerciseOptions, 
+		[backButton, ...exercisesByCategory.get(category)!]
 	);
-
-	const {callbackQuery: {data: exercise}} = await conversation.waitForCallbackQuery([backButton, ...exercisesByCategory.get(category)!]);
 
 	if (exercise === backButton) {
 		return chooseExercise(ctx, conversation, chat_id, categories, exercisesByCategory);

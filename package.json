@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "nodemon --exec ts-node ./src/bot.ts",
     "build-dist": "./node_modules/typescript/bin/tsc",
-    "trasnpiled": "node ./out/bot.js",
+    "trasnpiled": "node ./build/bot.js",
     "build": "tsc --build"
   },
   "repository": {
