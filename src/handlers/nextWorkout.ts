@@ -169,8 +169,6 @@ async function recordExercise(
 			throw new Error('Failed to record set to DB!');
 		}
 
-		ctx.dbchat.recentWorkouts.unshift(updatedWorkout);
-
 		setCount = countSets(updatedWorkout.sets)[selectedExercise];
 		const lastRecordedSet = updatedWorkout.sets[updatedWorkout.sets.length - 1];
 		const {weight, repetitions, rpe} = lastRecordedSet;
@@ -180,7 +178,7 @@ async function recordExercise(
 		+ successMessages.onRecordSetSuccess;
 		const successOptions = {reply_markup: await getYesNoOptions('nextWorkout'), parse_mode: 'HTML'};
 		const recordOneMoreSet = await promptUserForYesNo(ctx, conversation, chat_id, message_id, successText, successOptions);
-		conversation.log(recordOneMoreSet);
+
 		stopRecording = (recordOneMoreSet === 'no');
 	} while (!stopRecording);
 

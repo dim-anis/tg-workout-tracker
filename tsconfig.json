@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["ES2020"],
-    "module": "ESNext",
-    "target": "ES2022",
+    "lib": [
+      "es2020"
+    ],
+    "module": "esnext",
+    "target": "es2022",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,15 +16,17 @@
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
-    "paths":  {
-      "*": ["src/*"]
-    },
+    "paths": {
+      "*": [
+        "src/*"
+      ]
+    }
   },
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
   "include": [
-    "./src/**/*",
+    "./src/**/*"
   ]
 }
