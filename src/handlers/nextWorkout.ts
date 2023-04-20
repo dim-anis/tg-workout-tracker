@@ -1,15 +1,15 @@
 import {Composer, InlineKeyboard} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
-import type {MyConversation, MyContext} from '../types/bot';
-import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards';
-import {type WorkoutType} from '../models/workout';
-import {countSets, getWorkoutStatsText} from './helpers/workoutStats';
+import type {MyConversation, MyContext} from '../types/bot.js';
+import {getRpeOptions, getRepOptions, getWeightOptions, getYesNoOptions} from '../config/keyboards.js';
+import {type WorkoutType} from '../models/workout.js';
+import {countSets, getWorkoutStatsText} from './helpers/workoutStats.js';
 import {isSameDay} from 'date-fns';
-import {createOrUpdateUserWorkout} from '../models/user';
-import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts';
-import {promptUserForWeight, promptUserForRepetitions, promptUserForRPE, promptUserForYesNo} from './helpers/promptUser';
-import { getCompletedSetsString } from './helpers/calculateSetData';
-import { successMessages } from './helpers/successMessages';
+import {createOrUpdateUserWorkout} from '../models/user.js';
+import {userHasEnoughWorkouts} from '../middleware/userHasEnoughWorkouts.js';
+import {promptUserForWeight, promptUserForRepetitions, promptUserForRPE, promptUserForYesNo} from './helpers/promptUser.js';
+import { getCompletedSetsString } from './helpers/calculateSetData.js';
+import { successMessages } from './helpers/successMessages.js';
 
 const composer = new Composer<MyContext>();
 
@@ -25,18 +25,17 @@ const handleNextWorkout = async (conversation: MyConversation, ctx: MyContext) =
 	try {
 		const isDeload = await isDeloadWorkout(ctx, conversation);
 		const workoutCount = calculateWorkoutCount(recentWorkouts);
-		const isTodayWorkout = isSameDay(recentWorkouts[0]?.createdAt, Date.now());
-
 		const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
 		const previousWorkoutExercises = [...new Set(previousWorkout.sets.map(set => set.exercise))];
 		const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
-
 		let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
 		let workoutFinished = false;
 
 		do {
-			const todaysSetCountMap = isTodayWorkout ? countSets(recentWorkouts[0].sets) : {};
-			const setCountMap = updatedCurrentWorkout.sets ? countSets(updatedCurrentWorkout.sets) : todaysSetCountMap;
+			const mostRecentWorkout = recentWorkouts[0];
+			conversation.log(mostRecentWorkout);
+			const isTodayWorkout = isSameDay(mostRecentWorkout?.createdAt, Date.now());
+			const setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
 			const exerciseOptions = new InlineKeyboard();
 
 			for (const exerciseName of previousWorkoutExercises) {

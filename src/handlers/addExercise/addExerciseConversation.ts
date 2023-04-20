@@ -1,9 +1,8 @@
-import {InlineKeyboard} from 'grammy';
-import type {MyConversation, MyContext} from '../../types/bot';
-import {getMenuFromStringArray, getYesNoOptions} from '../../config/keyboards';
-import {exerciseCategories} from '../../config/exercises';
-import {createUserExercise} from '../../models/user';
-import {promptUserForExerciseName, promptUserForYesNo} from '../helpers/promptUser';
+import type {MyConversation, MyContext} from '../../types/bot.js';
+import {getMenuFromStringArray, getYesNoOptions} from '../../config/keyboards.js';
+import {exerciseCategories} from '../../config/exercises.js';
+import {createUserExercise} from '../../models/user.js';
+import {promptUserForExerciseName, promptUserForYesNo} from '../helpers/promptUser.js';
 
 export default async function handleAddExercise(conversation: MyConversation, ctx: MyContext) {
 	if (!ctx.chat) {

@@ -1,12 +1,11 @@
-/* eslint-disable no-await-in-loop */
 import {Composer} from 'grammy';
 import {createConversation} from '@grammyjs/conversations';
-import type {MyConversation, MyContext} from '../types/bot';
-import {getRpeOptions, getMenuFromStringArray, backButton, getYesNoOptions} from '../config/keyboards';
-import {createOrUpdateUserWorkout} from '../models/user';
-import {userHasExercises} from '../middleware/userHasExercises';
-import {promptUserForPredefinedString, promptUserForRPE, promptUserForRepetitions, promptUserForWeight, promptUserForYesNo} from './helpers/promptUser';
-import { successMessages } from './helpers/successMessages';
+import type {MyConversation, MyContext} from '../types/bot.js';
+import {getRpeOptions, getMenuFromStringArray, backButton, getYesNoOptions} from '../config/keyboards.js';
+import {createOrUpdateUserWorkout} from '../models/user.js';
+import {userHasExercises} from '../middleware/userHasExercises.js';
+import {promptUserForPredefinedString, promptUserForRPE, promptUserForRepetitions, promptUserForWeight, promptUserForYesNo} from './helpers/promptUser.js';
+import { successMessages } from './helpers/successMessages.js';
 
 const composer = new Composer<MyContext>();
 

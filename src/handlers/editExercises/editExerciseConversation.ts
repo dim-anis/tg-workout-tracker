@@ -1,9 +1,9 @@
-import {type MyConversation, type MyContext} from '../../types/bot';
-import {getYesNoOptions} from '../../config/keyboards';
+import {type MyConversation, type MyContext} from '../../types/bot.js';
+import {getYesNoOptions} from '../../config/keyboards.js';
 import {InlineKeyboard} from 'grammy';
-import {updateUserExercise} from '../../models/user';
-import {promptUserForExerciseName, promptUserForYesNo} from '../../handlers/helpers/promptUser';
-import {exerciseCategories} from '../../config/exercises';
+import {updateUserExercise} from '../../models/user.js';
+import {promptUserForExerciseName, promptUserForYesNo} from '../../handlers/helpers/promptUser.js';
+import {exerciseCategories} from '../../config/exercises.js';
 
 function getExerciseCategoriesMenu(categories: string[]) {
 	const categoryOptionsKbd = new InlineKeyboard();

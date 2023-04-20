@@ -3,7 +3,7 @@ import {
 	type Conversation,
 	type ConversationFlavor,
 } from '@grammyjs/conversations';
-import {type UserType} from 'models/user';
+import {type UserType} from 'models/user.js';
 
 export type SessionStorage = {
 	userSettings: {

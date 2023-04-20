@@ -1,6 +1,6 @@
 import {type NextFunction} from 'grammy';
-import {type MyContext} from 'types/bot';
-import {sendNotEnoughWorkoutsError} from '../handlers/helpers/errors';
+import {type MyContext} from 'types/bot.js';
+import {sendNotEnoughWorkoutsError} from '../handlers/helpers/errors.js';
 
 export async function userHasEnoughWorkouts(ctx: MyContext, next: NextFunction) {
 	const {recentWorkouts, settings: {splitLength}} = ctx.dbchat;

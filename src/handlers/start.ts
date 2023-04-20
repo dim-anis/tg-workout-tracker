@@ -1,6 +1,6 @@
 import {Composer} from 'grammy';
-import {getMainMenu} from '../config/keyboards';
-import type {MyContext} from '../types/bot';
+import {getMainMenu} from '../config/keyboards.js';
+import type {MyContext} from '../types/bot.js';
 
 const composer = new Composer<MyContext>();
 

@@ -1,4 +1,4 @@
-import {type MyContext} from 'types/bot';
+import {type MyContext} from 'types/bot.js';
 import {InlineKeyboard} from 'grammy';
 
 export async function sendNotEnoughWorkoutsError(ctx: MyContext) {

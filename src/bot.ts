@@ -1,14 +1,14 @@
 import dotenv from 'dotenv';
 import {Bot, session} from 'grammy';
-import commands from './config/botCommands';
-import handlers from './handlers/index';
-import {type MyContext, type SessionStorage} from 'types/bot';
+import commands from './config/botCommands.js';
+import handlers from './handlers/index.js';
+import {type MyContext, type SessionStorage} from 'types/bot.js';
 import {conversations} from '@grammyjs/conversations';
-import attachUser from './middleware/attachUser';
-import {errorHandler} from './middleware/errorHandler';
-import dbConnect from './config/dbConnection';
+import attachUser from './middleware/attachUser.js';
+import {errorHandler} from './middleware/errorHandler.js';
+import dbConnect from './config/dbConnection.js';
 import mongoose from 'mongoose';
-import type * as MongoStorage from '@grammyjs/storage-mongodb';
+import {MongoDBAdapter, type ISession} from '@grammyjs/storage-mongodb';
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ async function runBot() {
 	await dbConnect();
 	console.log('connected to MongoDB');
 
-	const collection = mongoose.connection.db.collection<MongoStorage.ISession>(
+	const collection = mongoose.connection.db.collection<ISession>(
 		'sessions',
 	);
 
@@ -44,7 +44,7 @@ async function runBot() {
 
 	bot.use(session({
 		initial,
-		// Storage: new MongoStorage.MongoDBAdapter<SessionStorage>({collection}),
+		//storage: new MongoDBAdapter<SessionStorage>({collection}),
 	}));
 
 	// Bot.use(session({

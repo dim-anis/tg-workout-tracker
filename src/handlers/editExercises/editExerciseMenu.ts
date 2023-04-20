@@ -1,11 +1,11 @@
 import {Composer} from 'grammy';
 import {Menu, MenuRange} from '@grammyjs/menu';
-import {type MyContext} from '../../types/bot';
-import {deleteUserExercise} from '../../models/user';
+import {type MyContext} from '../../types/bot.js';
+import {deleteUserExercise} from '../../models/user.js';
 import {createConversation} from '@grammyjs/conversations';
-import editExerciseConversation from './editExerciseConversation';
-import {userHasExercises} from '../../middleware/userHasExercises';
-import {backButton} from '../../config/keyboards';
+import editExerciseConversation from './editExerciseConversation.js';
+import {userHasExercises} from '../../middleware/userHasExercises.js';
+import {backButton} from '../../config/keyboards.js';
 
 const composer = new Composer<MyContext>();
 

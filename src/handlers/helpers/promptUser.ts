@@ -1,4 +1,4 @@
-import {type MyContext, type MyConversation} from 'types/bot';
+import {type MyContext, type MyConversation} from 'types/bot.js';
 
 const errorMessages = {
 	input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-
 import {model, Schema} from 'mongoose';
 
 export type ExerciseType = {

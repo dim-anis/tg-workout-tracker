@@ -1,9 +1,9 @@
 import {Composer} from 'grammy';
-import type {MyContext} from '../types/bot';
+import type {MyContext} from '../types/bot.js';
 import {Menu, type MenuFlavor} from '@grammyjs/menu';
-import {updateUserSettings} from '../models/user';
-import {checkedSquare, uncheckedSquare} from '../config/keyboards';
-import {type UserType} from '../models/user';
+import {updateUserSettings} from '../models/user.js';
+import {checkedSquare, uncheckedSquare} from '../config/keyboards.js';
+import {type UserType} from '../models/user.js';
 
 const mesocycleLengths = [4, 5, 6];
 

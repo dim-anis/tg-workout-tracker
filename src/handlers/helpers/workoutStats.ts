@@ -1,4 +1,4 @@
-import {type WorkoutType} from 'models/workout';
+import {type WorkoutType} from 'models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
 
 export function countSets(setsArray: WorkoutType['sets'] = []): Record<string, number> {

@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import mongoose from 'mongoose';
-import {WorkoutSchema, Workout, type WorkoutType} from './workout';
-import {ExerciseSchema, type ExerciseType} from './exercise';
-import {type SetType} from './set';
+import {WorkoutSchema, Workout, type WorkoutType} from './workout.js';
+import {ExerciseSchema, type ExerciseType} from './exercise.js';
+import {type SetType} from './set.js';
 import isSameDay from 'date-fns/isSameDay';
-import {getAverageRPE} from '../handlers/helpers/workoutStats';
-import {ArchivedWorkoutSchema, type ArchivedWorkoutType} from './archivedWorkout';
+import {getAverageRPE} from '../handlers/helpers/workoutStats.js';
+import {ArchivedWorkoutSchema, type ArchivedWorkoutType} from './archivedWorkout.js';
 
 export type UserType = {
 	_id: mongoose.Types.ObjectId;

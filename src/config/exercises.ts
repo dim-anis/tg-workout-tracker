@@ -1,4 +1,4 @@
-import {type ExerciseType} from '../models/exercise';
+import {type ExerciseType} from '../models/exercise.js';
 
 export const exerciseCategories = ['Legs', 'Back', 'Chest', 'Triceps', 'Biceps', 'Shoulders'];
 

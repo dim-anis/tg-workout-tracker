@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import {model, Schema} from 'mongoose';
-import {type SetType, SetSchema} from './set';
+import {type SetType, SetSchema} from './set.js';
 
 type WorkoutType = {
 	sets: SetType[];

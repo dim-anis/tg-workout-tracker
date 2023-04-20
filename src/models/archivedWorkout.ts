@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 import {type Types, Schema, model} from 'mongoose';
-import {type SetType, SetSchema} from './set';
+import {type SetType, SetSchema} from './set.js';
 
 export type ArchivedWorkoutType = {
 	user: Types.ObjectId;
