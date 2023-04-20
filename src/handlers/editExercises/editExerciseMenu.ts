@@ -1,162 +1,155 @@
-import {Composer} from 'grammy';
-import {Menu, MenuRange} from '@grammyjs/menu';
-import {type MyContext} from '../../types/bot.js';
-import {deleteUserExercise} from '../../models/user.js';
-import {createConversation} from '@grammyjs/conversations';
+import { Composer } from 'grammy';
+import { Menu, MenuRange } from '@grammyjs/menu';
+import { type MyContext } from '../../types/bot.js';
+import { deleteUserExercise } from '../../models/user.js';
+import { createConversation } from '@grammyjs/conversations';
 import editExerciseConversation from './editExerciseConversation.js';
-import {userHasExercises} from '../../middleware/userHasExercises.js';
-import {backButton} from '../../config/keyboards.js';
+import { userHasExercises } from '../../middleware/userHasExercises.js';
+import { backButton } from '../../config/keyboards.js';
 
 const composer = new Composer<MyContext>();
 
-const categoriesMenuText = '✏️ <b>Edit exercises</b>\n\n<i>Select a category:</i>';
+const categoriesMenuText =
+  '✏️ <b>Edit exercises</b>\n\n<i>Select a category:</i>';
 const categoriesMenu = new Menu<MyContext>('categories');
-categoriesMenu.dynamic(async ctx => {
-	ctx.session.state.cmdName = 'editExercise';
+categoriesMenu.dynamic(async (ctx) => {
+  ctx.session.state.cmdName = 'editExercise';
 
-	const {exercises} = ctx.dbchat;
+  const { exercises } = ctx.dbchat;
 
-	const categories = new Set(exercises.map(ex => ex.category));
+  const categories = new Set(exercises.map((ex) => ex.category));
 
-	const range = new MenuRange<MyContext>();
-	for (const cat of categories) {
-		range
-			.submenu(
-				{text: cat, payload: cat},
-				'exercises',
-				async ctx =>
-					ctx.editMessageText(exercisesMenuText(cat), {
-						parse_mode: 'HTML',
-					}),
-			)
-			.row();
-	}
+  const range = new MenuRange<MyContext>();
+  for (const cat of categories) {
+    range
+      .submenu({ text: cat, payload: cat }, 'exercises', async (ctx) =>
+        ctx.editMessageText(exercisesMenuText(cat), {
+          parse_mode: 'HTML'
+        })
+      )
+      .row();
+  }
 
-	return range;
+  return range;
 });
 
-const exercisesMenuText = (category: string) => `<b>${category}</b>\n\nSelect an exercise`;
+const exercisesMenuText = (category: string) =>
+  `<b>${category}</b>\n\nSelect an exercise`;
 const exercisesMenu = new Menu<MyContext>('exercises');
-exercisesMenu.dynamic(async ctx => {
-	const payload = ctx.match;
-	if (typeof payload !== 'string') {
-		throw new Error('No category chosen!');
-	}
+exercisesMenu.dynamic(async (ctx) => {
+  const payload = ctx.match;
+  if (typeof payload !== 'string') {
+    throw new Error('No category chosen!');
+  }
 
-	const [category, exercise] = payload.split(',');
+  const [category, exercise] = payload.split(',');
 
-	return createExerciseMenu(ctx, category);
+  return createExerciseMenu(ctx, category);
 });
 
 async function createExerciseMenu(ctx: MyContext, category: string) {
-	const {exercises} = ctx.dbchat;
-	const selectedCategoryExercises = exercises.filter(ex => ex.category === category);
-	const range = new MenuRange<MyContext>();
+  const { exercises } = ctx.dbchat;
+  const selectedCategoryExercises = exercises.filter(
+    (ex) => ex.category === category
+  );
+  const range = new MenuRange<MyContext>();
 
-	range
-		.back(
-			{text: backButton, payload: category},
-			async ctx => {
-				await ctx.editMessageText(categoriesMenuText, {parse_mode: 'HTML'});
-			},
-		)
-		.row();
+  range
+    .back({ text: backButton, payload: category }, async (ctx) => {
+      await ctx.editMessageText(categoriesMenuText, { parse_mode: 'HTML' });
+    })
+    .row();
 
-	for (const exercise of selectedCategoryExercises) {
-		range
-			.submenu(
-				{text: exercise.name, payload: `${category},${exercise.name}`},
-				'selectExercise',
-				async ctx => {
-					await ctx.editMessageText(selectExerciseMenuText(category, exercise.name), {
-						parse_mode: 'HTML',
-					});
-				},
-			)
-			.row();
-	}
+  for (const exercise of selectedCategoryExercises) {
+    range
+      .submenu(
+        { text: exercise.name, payload: `${category},${exercise.name}` },
+        'selectExercise',
+        async (ctx) => {
+          await ctx.editMessageText(
+            selectExerciseMenuText(category, exercise.name),
+            {
+              parse_mode: 'HTML'
+            }
+          );
+        }
+      )
+      .row();
+  }
 
-	return range;
+  return range;
 }
 
-const selectExerciseMenuText = (category: string, exercise: string) => `<b>${exercise} [${category}]</b>\n\nWhat would you like to do with this exercise?`;
+const selectExerciseMenuText = (category: string, exercise: string) =>
+  `<b>${exercise} [${category}]</b>\n\nWhat would you like to do with this exercise?`;
 const selectExerciseMenu = new Menu<MyContext>('selectExercise');
-selectExerciseMenu.dynamic(async ctx => {
-	const payload = ctx.match;
-	if (typeof payload !== 'string') {
-		throw new Error('No exercise chosen!');
-	}
+selectExerciseMenu.dynamic(async (ctx) => {
+  const payload = ctx.match;
+  if (typeof payload !== 'string') {
+    throw new Error('No exercise chosen!');
+  }
 
-	const [category, exercise] = payload.split(',');
+  const [category, exercise] = payload.split(',');
 
-	return createSelectExerciseMenu(category, exercise);
+  return createSelectExerciseMenu(category, exercise);
 });
 
 async function createSelectExerciseMenu(category: string, exercise: string) {
-	return new MenuRange<MyContext>()
-		.back(
-			{text: backButton, payload: category},
-			async ctx => {
-				await ctx.editMessageText(exercisesMenuText(category), {
-					parse_mode: 'HTML',
-				});
-			},
-		)
-		.submenu(
-			{text: '❌ Delete', payload: `${category},${exercise}`},
-			'deleteMenu',
-			async ctx => {
-				await ctx.editMessageText(deleteMenuText(category, exercise), {
-					parse_mode: 'HTML',
-				});
-			},
-		)
-		.text(
-			{text: '✏️ Edit', payload: exercise},
-			async ctx => {
-				const exercise = ctx.match;
-				ctx.session.state.data = exercise;
+  return new MenuRange<MyContext>()
+    .back({ text: backButton, payload: category }, async (ctx) => {
+      await ctx.editMessageText(exercisesMenuText(category), {
+        parse_mode: 'HTML'
+      });
+    })
+    .submenu(
+      { text: '❌ Delete', payload: `${category},${exercise}` },
+      'deleteMenu',
+      async (ctx) => {
+        await ctx.editMessageText(deleteMenuText(category, exercise), {
+          parse_mode: 'HTML'
+        });
+      }
+    )
+    .text({ text: '✏️ Edit', payload: exercise }, async (ctx) => {
+      const exercise = ctx.match;
+      ctx.session.state.data = exercise;
 
-				await ctx.conversation.enter('editExerciseConversation');
-			},
-		);
+      await ctx.conversation.enter('editExerciseConversation');
+    });
 }
 
-const deleteMenuText = (category: string, exercise: string) => `<b>${exercise} [${category}]</b>\n\nAre you sure you want to delete this exercise?`;
+const deleteMenuText = (category: string, exercise: string) =>
+  `<b>${exercise} [${category}]</b>\n\nAre you sure you want to delete this exercise?`;
 const deleteMenu = new Menu<MyContext>('deleteMenu');
-deleteMenu.dynamic(async ctx => {
-	const payload = ctx.match;
+deleteMenu.dynamic(async (ctx) => {
+  const payload = ctx.match;
 
-	if (typeof payload !== 'string') {
-		throw new Error('No exercise chosen!');
-	}
+  if (typeof payload !== 'string') {
+    throw new Error('No exercise chosen!');
+  }
 
-	const [category, exercise] = payload.split(',');
+  const [category, exercise] = payload.split(',');
 
-	return new MenuRange<MyContext>()
-		.back(
-			{text: 'No', payload},
-			async ctx => {
-				console.log({category, exercise});
-				await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
-					parse_mode: 'HTML',
-				});
-			},
-		)
-		.text(
-			{text: 'Yes', payload},
-			async ctx => {
-				const [category, exercise] = ctx.match.split(',');
-				console.log({category, exercise});
-				await deleteUserExercise(ctx.dbchat.user_id, exercise);
-				ctx.dbchat.exercises = ctx.dbchat.exercises.filter(exObj => exObj.name !== exercise);
-				await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
-					parse_mode: 'HTML',
-				});
-				ctx.menu.nav('categories');
-				await ctx.editMessageText(categoriesMenuText, {parse_mode: 'HTML'});
-			},
-		);
+  return new MenuRange<MyContext>()
+    .back({ text: 'No', payload }, async (ctx) => {
+      console.log({ category, exercise });
+      await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
+        parse_mode: 'HTML'
+      });
+    })
+    .text({ text: 'Yes', payload }, async (ctx) => {
+      const [category, exercise] = ctx.match.split(',');
+      console.log({ category, exercise });
+      await deleteUserExercise(ctx.dbchat.user_id, exercise);
+      ctx.dbchat.exercises = ctx.dbchat.exercises.filter(
+        (exObj) => exObj.name !== exercise
+      );
+      await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
+        parse_mode: 'HTML'
+      });
+      ctx.menu.nav('categories');
+      await ctx.editMessageText(categoriesMenuText, { parse_mode: 'HTML' });
+    });
 });
 
 composer.use(createConversation(editExerciseConversation));
@@ -167,22 +160,20 @@ categoriesMenu.register(exercisesMenu);
 
 composer.use(categoriesMenu);
 
-composer
-	.command(
-		'edit_exercises',
-		userHasExercises,
-		async ctx => {
-			const {message_id} = await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
-			ctx.session.state.lastMessageId = message_id;
-		});
-composer
-	.callbackQuery(
-		'/edit_exercises',
-		userHasExercises,
-		async ctx => {
-			await ctx.answerCallbackQuery();
-			const {message_id} = await ctx.reply(categoriesMenuText, {reply_markup: categoriesMenu, parse_mode: 'HTML'});
-			ctx.session.state.lastMessageId = message_id;
-		});
+composer.command('edit_exercises', userHasExercises, async (ctx) => {
+  const { message_id } = await ctx.reply(categoriesMenuText, {
+    reply_markup: categoriesMenu,
+    parse_mode: 'HTML'
+  });
+  ctx.session.state.lastMessageId = message_id;
+});
+composer.callbackQuery('/edit_exercises', userHasExercises, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const { message_id } = await ctx.reply(categoriesMenuText, {
+    reply_markup: categoriesMenu,
+    parse_mode: 'HTML'
+  });
+  ctx.session.state.lastMessageId = message_id;
+});
 
 export default composer;

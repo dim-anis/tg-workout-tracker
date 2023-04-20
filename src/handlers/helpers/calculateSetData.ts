@@ -1,9 +1,9 @@
-import { SetType } from "models/set.js";
-import { checkedCircle } from "../../config/keyboards.js";
+import { SetType } from 'models/set.js';
+import { checkedCircle } from '../../config/keyboards.js';
 
-export function getCompletedSetsString (setCount: number) {
+export function getCompletedSetsString(setCount: number) {
   return `${[checkedCircle.repeat(setCount)]}`;
-} 
+}
 
 export function calculateDeloadSetData(set: SetType, deloadPercent = 50) {
   const deloadSet = {
@@ -11,7 +11,7 @@ export function calculateDeloadSetData(set: SetType, deloadPercent = 50) {
     weight: Math.round(set.weight * (deloadPercent / 100)),
     repetitions: Math.round(set.repetitions * (deloadPercent / 100)),
     rpe: set.rpe
-  }
+  };
 
   return deloadSet;
 }

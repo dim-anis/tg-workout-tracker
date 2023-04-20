@@ -1,8 +1,6 @@
 {
   "compilerOptions": {
-    "lib": [
-      "es2020"
-    ],
+    "lib": ["es2020"],
     "module": "esnext",
     "target": "es2022",
     "sourceMap": true,
@@ -12,22 +10,18 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "nodenext",
     "declaration": true,
-    "rootDir": "./",
+    "rootDir": "./src",
     "outDir": "./build",
-    "baseUrl": ".",
+    "baseUrl": "./",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "paths": {
-      "*": [
-        "src/*"
-      ]
+      "*": ["src/*"]
     }
   },
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": [
-    "./src/**/*"
-  ]
+  "include": ["./src/**/*"]
 }

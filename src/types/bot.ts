@@ -1,24 +1,24 @@
-import type {Context as GrammyContext, SessionFlavor} from 'grammy';
+import type { Context as GrammyContext, SessionFlavor } from 'grammy';
 import {
-	type Conversation,
-	type ConversationFlavor,
+  type Conversation,
+  type ConversationFlavor
 } from '@grammyjs/conversations';
-import {type UserType} from 'models/user.js';
+import { type UserType } from 'models/user.js';
 
 export type SessionStorage = {
-	userSettings: {
-		isMetric: boolean;
-		splitLength: number;
-	};
-	state: {
-		cmdName: string;
-		data: string;
-		lastMessageId: number;
-	};
-	exercises: {
-		fromDB: Set<string>;
-		toAdd: Set<string>;
-	};
+  userSettings: {
+    isMetric: boolean;
+    splitLength: number;
+  };
+  state: {
+    cmdName: string;
+    data: string;
+    lastMessageId: number;
+  };
+  exercises: {
+    fromDB: Set<string>;
+    toAdd: Set<string>;
+  };
 };
 
 // Export type MemorySessionStorage = {
@@ -41,6 +41,8 @@ export type SessionStorage = {
 // 	storageSession: MongoSessionStorage;
 // };
 
-export type MyContext = GrammyContext & SessionFlavor<SessionStorage> & ConversationFlavor & {dbchat: UserType};
+export type MyContext = GrammyContext &
+  SessionFlavor<SessionStorage> &
+  ConversationFlavor & { dbchat: UserType };
 
 export type MyConversation = Conversation<MyContext>;
