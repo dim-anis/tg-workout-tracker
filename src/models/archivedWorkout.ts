@@ -1,4 +1,4 @@
-import { type Types, Schema, model } from 'mongoose';
+import { type Types, Schema } from 'mongoose';
 import { type SetType, SetSchema } from './set.js';
 
 export type ArchivedWorkoutType = {

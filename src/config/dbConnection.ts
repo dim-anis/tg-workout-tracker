@@ -1,7 +1,7 @@
-import * as mongoose from 'mongoose';
-
+import mongoose from 'mongoose';
+const { connect } = mongoose;
 mongoose.set('strictQuery', false);
 
 export default async function dbConnect() {
-  return mongoose.connect(process.env.ATLAS_URI!);
+  return connect(process.env.ATLAS_URI!);
 }

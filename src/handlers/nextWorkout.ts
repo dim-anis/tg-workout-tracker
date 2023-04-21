@@ -10,7 +10,10 @@ import {
 import { type WorkoutType } from '../models/workout.js';
 import { countSets, getWorkoutStatsText } from './helpers/workoutStats.js';
 import { isSameDay } from 'date-fns';
-import { createOrUpdateUserWorkout } from '../models/user.js';
+import {
+  createOrUpdateUserWorkout,
+  getRecentWorkouts
+} from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
 import {
   promptUserForWeight,
@@ -33,7 +36,7 @@ const handleNextWorkout = async (
 
   const { id: chat_id } = ctx.chat;
   const { splitLength, isMetric } = ctx.dbchat.settings;
-  const { recentWorkouts } = ctx.dbchat;
+  let { recentWorkouts } = ctx.dbchat;
 
   try {
     const isDeload = await isDeloadWorkout(ctx, conversation);
@@ -45,17 +48,15 @@ const handleNextWorkout = async (
     const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
     let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
     let workoutFinished = false;
+    let mostRecentWorkout: WorkoutType;
+    let isTodayWorkout: boolean;
+    let setCountMap: Record<string, number>;
 
     do {
-      const mostRecentWorkout = recentWorkouts[0];
-      conversation.log(mostRecentWorkout);
-      const isTodayWorkout = isSameDay(
-        mostRecentWorkout?.createdAt,
-        Date.now()
-      );
-      const setCountMap = isTodayWorkout
-        ? countSets(mostRecentWorkout.sets)
-        : {};
+      mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
+      isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
+      setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
+
       const exerciseOptions = new InlineKeyboard();
 
       for (const exerciseName of previousWorkoutExercises) {
@@ -272,7 +273,7 @@ async function recordSet(
   );
   const setData = { exercise: selectedExercise, weight, repetitions, rpe };
 
-  const updatedWorkout = conversation.external(async () =>
+  const updatedWorkout = await conversation.external(async () =>
     createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
   );
 
@@ -389,9 +390,18 @@ function getPreviousWorkoutSetData(
 
 const calculateWorkoutCount = (workouts: WorkoutType[]) => {
   const deloadIndex = workouts.findIndex((w) => w.isDeload);
-  const start = deloadIndex === -1 ? 0 : deloadIndex + 1;
-  const count = workouts.slice(start).length;
-  return count + 1;
+  const latestWorkoutDate = workouts[0]?.createdAt;
+  const today = new Date();
+
+  if (latestWorkoutDate && isSameDay(latestWorkoutDate, today)) {
+    return deloadIndex === -1
+      ? workouts.length
+      : workouts.slice(0, deloadIndex).length;
+  } else {
+    return deloadIndex === -1
+      ? workouts.length + 1
+      : workouts.slice(0, deloadIndex).length + 1;
+  }
 };
 
 export async function isDeloadWorkout(

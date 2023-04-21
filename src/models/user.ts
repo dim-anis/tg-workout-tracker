@@ -110,6 +110,11 @@ const getAllUserExercises = async (user_id: number) => {
   return user?.exercises;
 };
 
+const getRecentWorkouts = async (user_id: number) => {
+  const user = await User.findOne({ user_id }).lean();
+  return user?.recentWorkouts;
+};
+
 const createUserExercise = async (
   user_id: number,
   exercise: ExerciseType | ExerciseType[]
@@ -201,6 +206,7 @@ const findOrCreateUser = async (user_id: number) =>
 
 export {
   User,
+  getRecentWorkouts,
   createOrUpdateUserWorkout,
   findOrCreateUser,
   updateUserSettings,
