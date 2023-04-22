@@ -7,6 +7,7 @@ export type ArchivedWorkoutType = {
   avg_rpe: number;
   created: Date;
   updated: Date;
+  isDeload: boolean;
 };
 
 export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>({
@@ -30,6 +31,10 @@ export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>({
   },
   updated: {
     type: Date,
-    require: true
+    required: true
+  },
+  isDeload: {
+    type: Boolean,
+    required: true
   }
 });
