@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import dbConnect from './config/dbConnection.js';
-import mongoose from 'mongoose';
-const { connection } = mongoose;
-import { MongoDBAdapter, type ISession } from '@grammyjs/storage-mongodb';
+//import mongoose from 'mongoose';
+//const { connection } = mongoose;
+//import { MongoDBAdapter, type ISession } from '@grammyjs/storage-mongodb';
 import { Bot, session } from 'grammy';
 import { type MyContext } from 'types/bot.js';
 import commands from './config/botCommands.js';
@@ -18,7 +18,7 @@ async function runBot() {
   await dbConnect();
   console.log('connected to MongoDB');
 
-  const collection = connection.db.collection<ISession>('sessions');
+  //const collection = connection.db.collection<ISession>('sessions');
 
   const bot = new Bot<MyContext>(process.env.KEY!);
 

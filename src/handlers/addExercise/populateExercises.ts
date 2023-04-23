@@ -32,7 +32,7 @@ const addExerciseMenu = new Menu<MyContext>('addExerciseMenu')
 const populateMainText =
   '<b>Populate exercises</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"';
 const populateExercisesMain = new Menu<MyContext>('populate-exercises-main');
-populateExercisesMain.dynamic(async () => {
+populateExercisesMain.dynamic(() => {
   const categories = new Set(defaultExercises.map((ex) => ex.category));
 
   const range = new MenuRange<MyContext>().back(backButton).row();
@@ -74,7 +74,7 @@ const populateExercisesMainSubText = (category: string) =>
   `<b>${category}</b>\n\nSelect exercises that you'd like to add:`;
 const populateExercisesSub = new Menu<MyContext>('populate-exercises-submenu');
 
-populateExercisesSub.dynamic(async (ctx) => {
+populateExercisesSub.dynamic((ctx) => {
   const category = ctx.match;
   if (typeof category !== 'string') {
     throw new Error('No category chosen!');
@@ -83,7 +83,7 @@ populateExercisesSub.dynamic(async (ctx) => {
   return createExerciseMenu(category);
 });
 
-async function createExerciseMenu(category: string) {
+function createExerciseMenu(category: string) {
   const selectedCategoryExercises = defaultExercises.filter(
     (ex) => ex.category === category
   );
@@ -106,7 +106,7 @@ async function createExerciseMenu(category: string) {
               : `${exercise.name} ${uncheckedSquare}`,
           payload: category
         },
-        async (ctx) => {
+        (ctx) => {
           const { fromDB, toAdd } = ctx.session.exercises;
 
           if (toAdd.has(exercise.name) && !fromDB.has(exercise.name)) {

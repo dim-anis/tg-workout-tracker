@@ -22,7 +22,7 @@ const getRpeOptionColor = (value: number): string => {
   return '🟡';
 };
 
-export const getRpeOptions = async (prefix = ''): Promise<InlineKeyboard> => {
+export const getRpeOptions = (prefix = ''): InlineKeyboard => {
   const keyboard = new InlineKeyboard();
 
   for (const [index, value] of rpeValues.entries()) {
@@ -37,10 +37,10 @@ export const getRpeOptions = async (prefix = ''): Promise<InlineKeyboard> => {
   return keyboard;
 };
 
-export const getWeightOptions = async (
+export const getWeightOptions = (
   prevWeight: number,
   prefix = ''
-): Promise<InlineKeyboard> => {
+): InlineKeyboard => {
   const increments = [1, 2.5, 5, -1, -2.5, -5];
   const keyboard = new InlineKeyboard();
 
@@ -63,10 +63,10 @@ export const getWeightOptions = async (
   return keyboard;
 };
 
-export const getRepOptions = async (
+export const getRepOptions = (
   prevReps: number,
   prefix = ''
-): Promise<InlineKeyboard> => {
+): InlineKeyboard => {
   const increments = [1, 2, 3, -1, -2, -3];
   const keyboard = new InlineKeyboard();
 
@@ -89,7 +89,7 @@ export const getRepOptions = async (
   return keyboard;
 };
 
-export const getMainMenu = async (): Promise<InlineKeyboard> =>
+export const getMainMenu = (): InlineKeyboard =>
   new InlineKeyboard()
     .text('Next workout', '/next_workout')
     .row()
@@ -101,15 +101,13 @@ export const getMainMenu = async (): Promise<InlineKeyboard> =>
     .row()
     .text('Settings', '/settings');
 
-export const getEditOptions = async (): Promise<InlineKeyboard> =>
+export const getEditOptions = (): InlineKeyboard =>
   new InlineKeyboard().text('✏️ Edit', 'editOption').text('✅ Ok', 'okOption');
 
-export const getYesNoOptions = async (prefix = ''): Promise<InlineKeyboard> =>
+export const getYesNoOptions = (prefix = ''): InlineKeyboard =>
   new InlineKeyboard().text('No', `${prefix}:no`).text('Yes', `${prefix}:yes`);
 
-export const getNumberRange = async (
-  number: number
-): Promise<InlineKeyboard> => {
+export const getNumberRange = (number: number): InlineKeyboard => {
   const keyboard = new InlineKeyboard();
   for (let i = 0; i < number; i++) {
     keyboard.text(`${i + 1}`);
@@ -118,7 +116,7 @@ export const getNumberRange = async (
   return keyboard;
 };
 
-export const getMenuFromStringArray = async (
+export const getMenuFromStringArray = (
   labels: string[],
   prefix = '',
   options?: { addBackButton?: boolean; nColumns?: number }

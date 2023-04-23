@@ -12,7 +12,7 @@ const composer = new Composer<MyContext>();
 const categoriesMenuText =
   '✏️ <b>Edit exercises</b>\n\n<i>Select a category:</i>';
 const categoriesMenu = new Menu<MyContext>('categories');
-categoriesMenu.dynamic(async (ctx) => {
+categoriesMenu.dynamic((ctx) => {
   ctx.session.state.cmdName = 'editExercise';
 
   const { exercises } = ctx.dbchat;
@@ -22,10 +22,13 @@ categoriesMenu.dynamic(async (ctx) => {
   const range = new MenuRange<MyContext>();
   for (const cat of categories) {
     range
-      .submenu({ text: cat, payload: cat }, 'exercises', async (ctx) =>
-        ctx.editMessageText(exercisesMenuText(cat), {
-          parse_mode: 'HTML'
-        })
+      .submenu(
+        { text: cat, payload: cat },
+        'exercises',
+        async (ctx) =>
+          await ctx.editMessageText(exercisesMenuText(cat), {
+            parse_mode: 'HTML'
+          })
       )
       .row();
   }
@@ -36,7 +39,7 @@ categoriesMenu.dynamic(async (ctx) => {
 const exercisesMenuText = (category: string) =>
   `<b>${category}</b>\n\nSelect an exercise`;
 const exercisesMenu = new Menu<MyContext>('exercises');
-exercisesMenu.dynamic(async (ctx) => {
+exercisesMenu.dynamic((ctx) => {
   const payload = ctx.match;
   if (typeof payload !== 'string') {
     throw new Error('No category chosen!');
@@ -47,7 +50,7 @@ exercisesMenu.dynamic(async (ctx) => {
   return createExerciseMenu(ctx, category);
 });
 
-async function createExerciseMenu(ctx: MyContext, category: string) {
+function createExerciseMenu(ctx: MyContext, category: string) {
   const { exercises } = ctx.dbchat;
   const selectedCategoryExercises = exercises.filter(
     (ex) => ex.category === category
@@ -83,7 +86,7 @@ async function createExerciseMenu(ctx: MyContext, category: string) {
 const selectExerciseMenuText = (category: string, exercise: string) =>
   `<b>${exercise} [${category}]</b>\n\nWhat would you like to do with this exercise?`;
 const selectExerciseMenu = new Menu<MyContext>('selectExercise');
-selectExerciseMenu.dynamic(async (ctx) => {
+selectExerciseMenu.dynamic((ctx) => {
   const payload = ctx.match;
   if (typeof payload !== 'string') {
     throw new Error('No exercise chosen!');
@@ -94,7 +97,7 @@ selectExerciseMenu.dynamic(async (ctx) => {
   return createSelectExerciseMenu(category, exercise);
 });
 
-async function createSelectExerciseMenu(category: string, exercise: string) {
+function createSelectExerciseMenu(category: string, exercise: string) {
   return new MenuRange<MyContext>()
     .back({ text: backButton, payload: category }, async (ctx) => {
       await ctx.editMessageText(exercisesMenuText(category), {
@@ -121,7 +124,7 @@ async function createSelectExerciseMenu(category: string, exercise: string) {
 const deleteMenuText = (category: string, exercise: string) =>
   `<b>${exercise} [${category}]</b>\n\nAre you sure you want to delete this exercise?`;
 const deleteMenu = new Menu<MyContext>('deleteMenu');
-deleteMenu.dynamic(async (ctx) => {
+deleteMenu.dynamic((ctx) => {
   const payload = ctx.match;
 
   if (typeof payload !== 'string') {

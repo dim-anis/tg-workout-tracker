@@ -1,6 +1,6 @@
 import { type ErrorHandler, GrammyError, HttpError } from 'grammy';
 
-export const errorHandler: ErrorHandler = async (err) => {
+export const errorHandler: ErrorHandler = (err) => {
   const { ctx } = err;
   console.error(`Error while handling update ${ctx.update.update_id}:`);
   const e = err.error;

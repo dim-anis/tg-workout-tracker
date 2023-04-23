@@ -9,11 +9,8 @@ import {
 } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
 import { countSets, getWorkoutStatsText } from './helpers/workoutStats.js';
-import { isSameDay } from 'date-fns';
-import {
-  createOrUpdateUserWorkout,
-  getRecentWorkouts
-} from '../models/user.js';
+import { isSameDay, isToday } from 'date-fns';
+import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
 import {
   promptUserForWeight,
@@ -35,11 +32,13 @@ const handleNextWorkout = async (
   }
 
   const { id: chat_id } = ctx.chat;
-  const { splitLength, isMetric } = ctx.dbchat.settings;
-  let { recentWorkouts } = ctx.dbchat;
+  const { splitLength } = ctx.dbchat.settings;
+  const { recentWorkouts } = ctx.dbchat;
 
   try {
-    const isDeload = await isDeloadWorkout(ctx, conversation);
+    const isDeload = isToday(ctx.dbchat.recentWorkouts[0].createdAt)
+      ? ctx.dbchat.recentWorkouts[0].isDeload
+      : await isDeloadWorkout(ctx, conversation);
     const workoutCount = calculateWorkoutCount(recentWorkouts);
     const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
     const previousWorkoutExercises = [
@@ -48,14 +47,14 @@ const handleNextWorkout = async (
     const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
     let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
     let workoutFinished = false;
-    let mostRecentWorkout: WorkoutType;
-    let isTodayWorkout: boolean;
-    let setCountMap: Record<string, number>;
 
     do {
-      mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
-      isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
-      setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
+      const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
+      conversation.log(mostRecentWorkout);
+      const isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
+      const setCountMap = isTodayWorkout
+        ? countSets(mostRecentWorkout.sets)
+        : {};
 
       const exerciseOptions = new InlineKeyboard();
 
@@ -68,12 +67,20 @@ const handleNextWorkout = async (
         exerciseOptions.text(buttonLabel, exerciseName).row();
       }
 
-      const { lastMessageId } = conversation.session.state;
+      //const { lastMessageId } = conversation.session.state;
 
-      await ctx.api.editMessageText(chat_id, lastMessageId, workoutTitle, {
+      // await ctx.api.editMessageText(chat_id, lastMessageId, workoutTitle, {
+      //   reply_markup: exerciseOptions,
+      //   parse_mode: 'HTML'
+      // });
+
+      const { message_id } = await ctx.reply(workoutTitle, {
         reply_markup: exerciseOptions,
         parse_mode: 'HTML'
       });
+
+      conversation.session.state.lastMessageId = message_id;
+      const { lastMessageId } = conversation.session.state;
 
       const {
         callbackQuery: { data: selectedExercise }

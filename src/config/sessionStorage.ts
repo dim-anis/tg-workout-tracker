@@ -1,8 +1,4 @@
 export type SessionStorage = {
-  userSettings: {
-    isMetric: boolean;
-    splitLength: number;
-  };
   state: {
     cmdName: string;
     data: string;
@@ -16,10 +12,6 @@ export type SessionStorage = {
 
 export function initial(): SessionStorage {
   return {
-    userSettings: {
-      isMetric: true,
-      splitLength: 4
-    },
     state: {
       cmdName: 'idle',
       data: '',
