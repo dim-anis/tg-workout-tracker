@@ -47,7 +47,7 @@ export const getWeightOptions = (
   for (const [index, value] of increments.entries()) {
     const newWeight = prevWeight + value;
 
-    const buttonLabel = value > 0 ? `+ ${value}` : `${value}`;
+    const buttonLabel = value > 0 ? `+${value}` : `${value}`;
     const buttonData = `${prefix}:${newWeight}`;
     keyboard.text(buttonLabel, buttonData);
 
@@ -73,7 +73,7 @@ export const getRepOptions = (
   for (const [index, value] of increments.entries()) {
     const newReps = prevReps + value;
 
-    const buttonLabel = value > 0 ? `+ ${value}` : `${value}`;
+    const buttonLabel = value > 0 ? `+${value}` : `${value}`;
     const buttonData = `${prefix}:${newReps}`;
     keyboard.text(buttonLabel, buttonData);
 

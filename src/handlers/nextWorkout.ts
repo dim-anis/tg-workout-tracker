@@ -16,10 +16,8 @@ import {
   promptUserForWeight,
   promptUserForRepetitions,
   promptUserForRPE,
-  promptUserForYesNo
 } from './helpers/promptUser.js';
 import { getCompletedSetsString } from './helpers/calculateSetData.js';
-import { successMessages } from './helpers/successMessages.js';
 
 const composer = new Composer<MyContext>();
 
@@ -31,111 +29,98 @@ const handleNextWorkout = async (
     return;
   }
 
-  const { id: chat_id } = ctx.chat;
-  const { splitLength } = ctx.dbchat.settings;
-  const { recentWorkouts } = ctx.dbchat;
-
   try {
-    const isDeload = isToday(ctx.dbchat.recentWorkouts[0].createdAt)
-      ? ctx.dbchat.recentWorkouts[0].isDeload
+    const { id: chat_id } = ctx.chat;
+    const { splitLength } = ctx.dbchat.settings;
+    const { recentWorkouts } = ctx.dbchat;
+    const mostRecentWorkout = recentWorkouts[0];
+    const isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
+
+    const entryPoint = ctx.match;
+    const isDeload = isToday(mostRecentWorkout.createdAt)
+      ? mostRecentWorkout.isDeload 
       : await isDeloadWorkout(ctx, conversation);
-    const workoutCount = calculateWorkoutCount(recentWorkouts);
+    let { lastMessageId } = conversation.session.state;
+    const workoutCount = calculateWorkoutCount(recentWorkouts, isTodayWorkout);
     const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
     const previousWorkoutExercises = [
       ...new Set(previousWorkout.sets.map((set) => set.exercise))
     ];
     const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
-    let updatedCurrentWorkout: WorkoutType | Record<string, never> = {};
-    let workoutFinished = false;
-
-    do {
-      const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
-      conversation.log(mostRecentWorkout);
-      const isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
-      const setCountMap = isTodayWorkout
-        ? countSets(mostRecentWorkout.sets)
-        : {};
-
-      const exerciseOptions = new InlineKeyboard();
-
-      for (const exerciseName of previousWorkoutExercises) {
-        const numberOfCompletedSets = setCountMap[exerciseName];
-        const buttonLabel = `${exerciseName} ${getCompletedSetsString(
-          numberOfCompletedSets
-        )}`;
-
-        exerciseOptions.text(buttonLabel, exerciseName).row();
-      }
-
-      //const { lastMessageId } = conversation.session.state;
-
-      // await ctx.api.editMessageText(chat_id, lastMessageId, workoutTitle, {
-      //   reply_markup: exerciseOptions,
-      //   parse_mode: 'HTML'
-      // });
-
-      const { message_id } = await ctx.reply(workoutTitle, {
+    const setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
+    const exerciseOptions = generateExerciseOptions(previousWorkoutExercises, setCountMap); 
+    
+    if (entryPoint === 'Continue') {
+      await ctx.api.editMessageText(
+        chat_id,                          
+        lastMessageId,                    
+        workoutTitle, {                   
+        reply_markup: exerciseOptions,    
+        parse_mode: 'HTML'                
+      });                                 
+    } else {
+      const {message_id} = await ctx.reply(
+        workoutTitle, {
         reply_markup: exerciseOptions,
         parse_mode: 'HTML'
       });
 
       conversation.session.state.lastMessageId = message_id;
-      const { lastMessageId } = conversation.session.state;
+      lastMessageId = message_id;
+    }
+    
+    const {
+      callbackQuery: { data: selectedExercise }
+    } = await conversation.waitForCallbackQuery(previousWorkoutExercises);
+    const previousWorkoutSetData = getPreviousWorkoutSetData(
+      selectedExercise,
+      previousWorkout
+    );
 
-      const {
-        callbackQuery: { data: selectedExercise }
-      } = await conversation.waitForCallbackQuery(previousWorkoutExercises);
-      const previousWorkoutSetData = getPreviousWorkoutSetData(
-        selectedExercise,
-        previousWorkout
-      );
+    if (!previousWorkoutSetData) {
+      throw new Error('No data found for this exercise');
+    }
 
-      if (!previousWorkoutSetData) {
-        throw new Error('No data found for this exercise');
-      }
+    const { previousWeight, previousReps, hitAllReps } = previousWorkoutSetData;
 
-      const { previousWeight, previousReps, hitAllReps } =
-        previousWorkoutSetData;
+    const exerciseParams = {
+      selectedExercise,
+      previousWeight,
+      previousReps,
+      hitAllReps
+    };
 
-      const exerciseParams = {
-        selectedExercise,
-        previousWeight,
-        previousReps,
-        hitAllReps
-      };
+    const updatedCurrentWorkout = await recordSet(
+      conversation,
+      ctx,
+      chat_id,
+      lastMessageId,
+      exerciseParams,
+      setCountMap[selectedExercise],
+      isDeload
+    );
 
-      updatedCurrentWorkout = await recordExercise(
-        conversation,
-        ctx,
-        chat_id,
-        lastMessageId,
-        exerciseParams,
-        isDeload
-      );
+   await ctx.api.editMessageText(
+     chat_id,
+     lastMessageId,
+     'Continue the workout?',
+      {reply_markup: getYesNoOptions('nextWorkout')}
+   );
 
-      const finishWorkoutText = 'Would you like to finish this workout?';
-      const finishWorkoutOptions = {
-        reply_markup: await getYesNoOptions('nextWorkout')
-      };
-      const finishWorkout = await promptUserForYesNo(
-        ctx,
-        conversation,
-        chat_id,
-        lastMessageId,
-        finishWorkoutText,
-        finishWorkoutOptions
-      );
-
-      workoutFinished = finishWorkout === 'yes';
-    } while (!workoutFinished);
+   ctx = await conversation.waitForCallbackQuery(['nextWorkout:yes', 'nextWorkout:no']);
+   if (ctx.callbackQuery?.data === 'nextWorkout:yes') {
+     await ctx.answerCallbackQuery();
+     return await ctx.conversation.reenter('handleNextWorkout');
+   }
 
     const workoutStatsText = getWorkoutStatsText(
       updatedCurrentWorkout,
       workoutCount
     );
+
     await ctx.api.editMessageText(
       chat_id,
-      conversation.session.state.lastMessageId,
+      lastMessageId,
       workoutStatsText,
       { parse_mode: 'HTML' }
     );
@@ -163,7 +148,7 @@ async function getWeight(
     `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
 
   const options = {
-    reply_markup: await getWeightOptions(previousWeight, 'nextWorkout'),
+    reply_markup: getWeightOptions(previousWeight, 'nextWorkout'),
     parse_mode: 'HTML'
   };
 
@@ -196,7 +181,7 @@ async function getRepetitions(
     `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
 
   const options = {
-    reply_markup: await getRepOptions(previousReps, 'nextWorkout'),
+    reply_markup: getRepOptions(previousReps, 'nextWorkout'),
     parse_mode: 'HTML'
   };
 
@@ -224,7 +209,7 @@ async function getRPE(
     )}</b>\n\n` + 'Please enter the RPE\n\nHow hard was this set?';
 
   const options = {
-    reply_markup: await getRpeOptions('nextWorkout'),
+    reply_markup: getRpeOptions('nextWorkout'),
     parse_mode: 'HTML'
   };
 
@@ -280,7 +265,7 @@ async function recordSet(
   );
   const setData = { exercise: selectedExercise, weight, repetitions, rpe };
 
-  const updatedWorkout = await conversation.external(async () =>
+  const updatedWorkout = await conversation.external(() =>
     createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
   );
 
@@ -293,62 +278,6 @@ type RecordExerciseParams = {
   previousReps: number;
   hitAllReps: boolean;
 };
-
-async function recordExercise(
-  conversation: MyConversation,
-  ctx: MyContext,
-  chat_id: number,
-  message_id: number,
-  exerciseParams: RecordExerciseParams,
-  isDeload: boolean
-): Promise<WorkoutType> {
-  const { selectedExercise } = exerciseParams;
-
-  let stopRecording = false;
-  let updatedWorkout;
-  let setCount = 0;
-
-  do {
-    updatedWorkout = await recordSet(
-      conversation,
-      ctx,
-      chat_id,
-      message_id,
-      exerciseParams,
-      setCount,
-      isDeload
-    );
-
-    if (typeof updatedWorkout === 'undefined') {
-      throw new Error('Failed to record set to DB!');
-    }
-
-    setCount = countSets(updatedWorkout.sets)[selectedExercise];
-    const lastRecordedSet = updatedWorkout.sets[updatedWorkout.sets.length - 1];
-    const { weight, repetitions, rpe } = lastRecordedSet;
-
-    const successText =
-      `<b>${selectedExercise} ${getCompletedSetsString(setCount)}</b>\n\n` +
-      `${weight} kgs x ${repetitions} @ ${rpe}RPE\n\n` +
-      successMessages.onRecordSetSuccess;
-    const successOptions = {
-      reply_markup: await getYesNoOptions('nextWorkout'),
-      parse_mode: 'HTML'
-    };
-    const recordOneMoreSet = await promptUserForYesNo(
-      ctx,
-      conversation,
-      chat_id,
-      message_id,
-      successText,
-      successOptions
-    );
-
-    stopRecording = recordOneMoreSet === 'no';
-  } while (!stopRecording);
-
-  return updatedWorkout;
-}
 
 function getPreviousWorkout(
   recentWorkouts: WorkoutType[],
@@ -395,12 +324,11 @@ function getPreviousWorkoutSetData(
   return { previousWeight, previousReps, hitAllReps };
 }
 
-const calculateWorkoutCount = (workouts: WorkoutType[]) => {
+const calculateWorkoutCount = (workouts: WorkoutType[], isTodayWorkout = false) => {
   const deloadIndex = workouts.findIndex((w) => w.isDeload);
   const latestWorkoutDate = workouts[0]?.createdAt;
-  const today = new Date();
 
-  if (latestWorkoutDate && isSameDay(latestWorkoutDate, today)) {
+  if (latestWorkoutDate && isTodayWorkout) {
     return deloadIndex === -1
       ? workouts.length
       : workouts.slice(0, deloadIndex).length;
@@ -417,7 +345,7 @@ export async function isDeloadWorkout(
 ) {
   const { message_id } = await ctx.reply('Is it a <b>deload workout</b>?', {
     parse_mode: 'HTML',
-    reply_markup: await getYesNoOptions('nextWorkout')
+    reply_markup: getYesNoOptions('nextWorkout')
   });
 
   conversation.session.state.lastMessageId = message_id;
@@ -431,11 +359,26 @@ export async function isDeloadWorkout(
   return data.split(':')[1] === 'yes' ? true : false;
 }
 
+function generateExerciseOptions(previousWorkoutExercises: string[], setCountMap: Record<string, number>) {
+  const exerciseOptions = new InlineKeyboard();
+  for (const exerciseName of previousWorkoutExercises) {
+    const numberOfCompletedSets = setCountMap[exerciseName];
+    const buttonLabel = `${exerciseName} ${getCompletedSetsString(
+      numberOfCompletedSets
+    )}`;
+                                                                   
+    exerciseOptions.text(buttonLabel, exerciseName).row();
+  }
+
+  return exerciseOptions;
+};
+
 composer.use(createConversation(handleNextWorkout));
 
-composer.callbackQuery('/next_workout', userHasEnoughWorkouts, async (ctx) =>
-  ctx.conversation.enter('handleNextWorkout')
-);
+composer.callbackQuery('/next_workout', userHasEnoughWorkouts, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.conversation.enter('handleNextWorkout');  
+});
 composer.command('next_workout', userHasEnoughWorkouts, async (ctx) =>
   ctx.conversation.enter('handleNextWorkout')
 );
