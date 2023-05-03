@@ -17,6 +17,7 @@ import {
   promptUserForYesNo
 } from './helpers/promptUser.js';
 import { successMessages } from './helpers/successMessages.js';
+import {isToday} from 'date-fns';
 
 const composer = new Composer<MyContext>();
 
@@ -39,15 +40,20 @@ const handleRecordSet = async (
   }
 
   for (const exercise of exercises) {
-    exercisesByCategory.get(exercise.category)!.push(exercise.name);
+    exercisesByCategory.get(exercise.category)?.push(exercise.name);
   }
 
   let recordMoreSets = true;
 
   while (recordMoreSets) {
     try {
+      const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
+      const isDeload = isToday(mostRecentWorkout.createdAt)
+        ? mostRecentWorkout.isDeload 
+        : await isDeloadWorkout(ctx, conversation);
+      
       const { lastMessageId } = conversation.session.state;
-      const isDeload = await isDeloadWorkout(ctx, conversation);
+
       const chosenExercise = await chooseExercise(
         ctx,
         conversation,
@@ -66,7 +72,7 @@ const handleRecordSet = async (
       );
 
       const successOptions = {
-        reply_markup: await getYesNoOptions('recordSet'),
+        reply_markup: getYesNoOptions('recordSet'),
         parse_mode: 'HTML'
       };
       const recordOneMoreSet = await promptUserForYesNo(
@@ -99,7 +105,7 @@ async function chooseExercise(
   const chooseCategoryText =
     '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
   const chooseCategoryOptions = {
-    reply_markup: await getMenuFromStringArray([...categories], 'recordSet'),
+    reply_markup: getMenuFromStringArray([...categories], 'recordSet'),
     parse_mode: 'HTML'
   };
 
@@ -115,7 +121,7 @@ async function chooseExercise(
 
   const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions = {
-    reply_markup: await getMenuFromStringArray(
+    reply_markup: getMenuFromStringArray(
       exercisesByCategory.get(category)!,
       'recordSet',
       { addBackButton: true }
@@ -178,7 +184,7 @@ async function getSetData(
 
   const rpeTextOptions = {
     parse_mode: 'HTML',
-    reply_markup: await getRpeOptions('recordSet')
+    reply_markup: getRpeOptions('recordSet')
   };
   const rpeText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`;
   const rpe = await promptUserForRPE(
@@ -199,7 +205,7 @@ export async function isDeloadWorkout(
 ) {
   const { message_id } = await ctx.reply('Is it a <b>deload workout</b>?', {
     parse_mode: 'HTML',
-    reply_markup: await getYesNoOptions('recordSet')
+    reply_markup: getYesNoOptions('recordSet')
   });
 
   conversation.session.state.lastMessageId = message_id;
@@ -218,8 +224,9 @@ composer.use(createConversation(handleRecordSet));
 composer.command('record_set', userHasExercises, async (ctx) =>
   ctx.conversation.enter('handleRecordSet')
 );
-composer.callbackQuery('/record_set', userHasExercises, async (ctx) =>
-  ctx.conversation.enter('handleRecordSet')
-);
+composer.callbackQuery('/record_set', userHasExercises, async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.conversation.enter('handleRecordSet')
+});
 
 export default composer;

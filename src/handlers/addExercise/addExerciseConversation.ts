@@ -40,7 +40,7 @@ export default async function handleAddExercise(
       '<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>';
     const isCompoundTextOptions = {
       parse_mode: 'HTML',
-      reply_markup: await getYesNoOptions('addExercise')
+      reply_markup: getYesNoOptions('addExercise')
     };
     const isCompound = await promptUserForYesNo(
       ctx,
@@ -56,7 +56,7 @@ export default async function handleAddExercise(
     const categoryText = `📋 <b>Add ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
     const categoryOptions = {
       parse_mode: 'HTML',
-      reply_markup: await getMenuFromStringArray(exerciseCategories, 'addEx', {
+      reply_markup: getMenuFromStringArray(exerciseCategories, 'addEx', {
         nColumns: 3
       })
     };

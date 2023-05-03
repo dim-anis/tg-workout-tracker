@@ -36,7 +36,7 @@ const handleNextWorkout = async (
     const mostRecentWorkout = recentWorkouts[0];
     const isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
 
-    const entryPoint = ctx.match;
+    const isCalledFromCmd = typeof ctx.match === 'string' && ctx.match.split('')[0] === '/';
     const isDeload = isToday(mostRecentWorkout.createdAt)
       ? mostRecentWorkout.isDeload 
       : await isDeloadWorkout(ctx, conversation);
@@ -50,7 +50,7 @@ const handleNextWorkout = async (
     const setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
     const exerciseOptions = generateExerciseOptions(previousWorkoutExercises, setCountMap); 
     
-    if (entryPoint === 'Continue') {
+    if (!isCalledFromCmd) {
       await ctx.api.editMessageText(
         chat_id,                          
         lastMessageId,                    
@@ -371,7 +371,7 @@ function generateExerciseOptions(previousWorkoutExercises: string[], setCountMap
   }
 
   return exerciseOptions;
-};
+}
 
 composer.use(createConversation(handleNextWorkout));
 

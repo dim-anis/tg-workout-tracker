@@ -160,9 +160,17 @@ export async function promptUserForText(
   chat_id: number,
   message_id: number,
   message: string,
-  options: any
+  options: any,
 ): Promise<string> {
-  await ctx.api.editMessageText(chat_id, message_id, message, options);
+  const isCalledFromCmd = typeof ctx.match === 'string' && ctx.match.split('')[0] === '/';
+
+  if (!isCalledFromCmd) {
+    await ctx.api.editMessageText(chat_id, message_id, message, options);
+  } else {
+    const {message_id: newMessageId} = await ctx.reply(message, options);
+    message_id = newMessageId;
+    conversation.session.state.lastMessageId = message_id;
+  }
 
   ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
@@ -254,7 +262,7 @@ export async function promptUserForExerciseName(
   chat_id: number,
   message_id: number,
   message: string,
-  options: any
+  options: any,
 ): Promise<string> {
   return promptUserForText(
     ctx,
