@@ -104,7 +104,7 @@ const handleNextWorkout = async (
      chat_id,
      lastMessageId,
      'Continue the workout?',
-      {reply_markup: getYesNoOptions('nextWorkout')}
+     {reply_markup: getYesNoOptions('nextWorkout')}
    );
 
    ctx = await conversation.waitForCallbackQuery(['nextWorkout:yes', 'nextWorkout:no']);
@@ -333,7 +333,7 @@ const calculateWorkoutCount = (workouts: WorkoutType[], isTodayWorkout = false) 
   }
 };
 
-export async function isDeloadWorkout(
+async function isDeloadWorkout(
   ctx: MyContext,
   conversation: MyConversation
 ) {

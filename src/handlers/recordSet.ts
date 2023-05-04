@@ -13,11 +13,11 @@ import {
   promptUserForPredefinedString,
   promptUserForRPE,
   promptUserForRepetitions,
-  promptUserForWeight,
-  promptUserForYesNo
+  promptUserForWeight
 } from './helpers/promptUser.js';
 import { successMessages } from './helpers/successMessages.js';
 import {isToday} from 'date-fns';
+import { ExerciseType } from 'models/exercise.js';
 
 const composer = new Composer<MyContext>();
 
@@ -29,69 +29,66 @@ const handleRecordSet = async (
     return;
   }
 
-  const { user_id, exercises } = ctx.dbchat;
-  const { id: chat_id } = ctx.chat;
-  const categories = new Set(exercises.map((exercise) => exercise.category));
+  try {
+    const { user_id, exercises } = ctx.dbchat;
+    const { id: chat_id } = ctx.chat;
+    const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
+    let { lastMessageId } = conversation.session.state;
 
-  const exercisesByCategory = new Map<string, string[]>();
+    const categories = new Set(exercises.map((exercise) => exercise.category));
+    const exercisesByCategory = getExercisesByCategory(categories, exercises);
+    const isTodaysWorkout = isToday(mostRecentWorkout.createdAt);
 
-  for (const category of categories) {
-    exercisesByCategory.set(category, []);
-  }
+    const isDeload = isTodaysWorkout 
+      ? mostRecentWorkout.isDeload 
+      : await isDeloadWorkout(ctx, conversation);
 
-  for (const exercise of exercises) {
-    exercisesByCategory.get(exercise.category)?.push(exercise.name);
-  }
-
-  let recordMoreSets = true;
-
-  while (recordMoreSets) {
-    try {
-      const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
-      const isDeload = isToday(mostRecentWorkout.createdAt)
-        ? mostRecentWorkout.isDeload 
-        : await isDeloadWorkout(ctx, conversation);
-      
-      const { lastMessageId } = conversation.session.state;
-
-      const chosenExercise = await chooseExercise(
-        ctx,
-        conversation,
-        chat_id,
-        categories,
-        exercisesByCategory
-      );
-      const setData = await getSetData(
-        ctx,
-        conversation,
-        chosenExercise,
-        chat_id
-      );
-      const updatedWorkout = await conversation.external(async () =>
-        createOrUpdateUserWorkout(user_id, setData, isDeload)
-      );
-
-      const successOptions = {
-        reply_markup: getYesNoOptions('recordSet'),
-        parse_mode: 'HTML'
-      };
-      const recordOneMoreSet = await promptUserForYesNo(
-        ctx,
-        conversation,
-        chat_id,
-        lastMessageId,
-        successMessages.onRecordSetSuccess,
-        successOptions
-      );
-
-      recordMoreSets = recordOneMoreSet === 'yes';
-
-      await ctx.api.deleteMessage(chat_id, lastMessageId);
-    } catch (err: unknown) {
-      console.log(err);
+    if (isTodaysWorkout) {
+      const {message_id} = await ctx.reply('continuing workout...');
+      conversation.session.state.lastMessageId = message_id;
+      lastMessageId = message_id;
+      await conversation.sleep(500);
     }
+
+    const chosenExercise = await chooseExercise(
+      ctx,
+      conversation,
+      chat_id,
+      categories,
+      exercisesByCategory
+    );
+    const setData = await getSetData(
+      ctx,
+      conversation,
+      chosenExercise,
+      chat_id
+    );
+    const updatedWorkout = await conversation.external(async () =>
+      createOrUpdateUserWorkout(user_id, setData, isDeload)
+    );
+
+   await ctx.api.editMessageText(
+     chat_id,
+     lastMessageId,
+     successMessages.onRecordSetSuccess,
+     {
+      reply_markup: getYesNoOptions('recordSet'),
+      parse_mode: 'HTML'
+     }
+   );
+
+   ctx = await conversation.waitForCallbackQuery(['recordSet:yes', 'recordSet:no']);
+
+   if (ctx.callbackQuery?.data === 'recordSet:yes') {
+     await ctx.answerCallbackQuery();
+     return await ctx.conversation.reenter('handleRecordSet');
+   }
+
+   await ctx.api.deleteMessage(chat_id, lastMessageId);
+  } catch (err: unknown) {
+    console.log(err);
   }
-};
+}
 
 async function chooseExercise(
   ctx: MyContext,
@@ -199,7 +196,7 @@ async function getSetData(
   return { exercise, weight, repetitions, rpe };
 }
 
-export async function isDeloadWorkout(
+async function isDeloadWorkout(
   ctx: MyContext,
   conversation: MyConversation
 ) {
@@ -216,7 +213,23 @@ export async function isDeloadWorkout(
     'recordSet:yes',
     'recordSet:no'
   ]);
+
   return data.split(':')[1] === 'yes' ? true : false;
+}
+
+function getExercisesByCategory(categories: Set<string>, exercises: ExerciseType[]) {
+
+  const exercisesByCategory = new Map<string, string[]>();
+
+  for (const category of categories) {
+    exercisesByCategory.set(category, []);
+  }
+
+  for (const exercise of exercises) {
+    exercisesByCategory.get(exercise.category)?.push(exercise.name);
+  }
+
+  return exercisesByCategory;
 }
 
 composer.use(createConversation(handleRecordSet));
