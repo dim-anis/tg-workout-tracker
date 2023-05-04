@@ -285,12 +285,6 @@ function getPreviousWorkout(
 ) {
   const isSameWorkout = isSameDay(recentWorkouts[0].createdAt, new Date());
   let workoutNumber = splitLength - 1;
-  const workoutCandidate = recentWorkouts[workoutNumber];
-
-  if (workoutCandidate.isDeload) {
-    workoutNumber = recentWorkouts.findIndex((workout) => !workout.isDeload);
-    workoutNumber = workoutNumber === -1 ? splitLength - 1 : workoutNumber;
-  }
 
   if (isSameWorkout) {
     workoutNumber += 1;
