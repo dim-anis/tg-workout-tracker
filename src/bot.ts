@@ -21,7 +21,6 @@ async function runBot() {
   const collection = connection.db.collection<ISession>('sessions');
 
   const bot = new Bot<MyContext>(process.env.KEY!);
-
   await bot.api.setMyCommands(commands);
 
   bot.use(

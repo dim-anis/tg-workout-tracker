@@ -33,7 +33,6 @@ const handleRecordSet = async (
     const { user_id, exercises } = ctx.dbchat;
     const { id: chat_id } = ctx.chat;
     const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
-    let { lastMessageId } = conversation.session.state;
 
     const categories = new Set(exercises.map((exercise) => exercise.category));
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
@@ -45,8 +44,6 @@ const handleRecordSet = async (
 
     if (isTodaysWorkout) {
       const {message_id} = await ctx.reply('continuing workout...');
-      conversation.session.state.lastMessageId = message_id;
-      lastMessageId = message_id;
       await conversation.sleep(500);
     }
 
@@ -69,7 +66,7 @@ const handleRecordSet = async (
 
    await ctx.api.editMessageText(
      chat_id,
-     lastMessageId,
+     conversation.session.state.lastMessageId,
      successMessages.onRecordSetSuccess,
      {
       reply_markup: getYesNoOptions('recordSet'),
@@ -84,7 +81,7 @@ const handleRecordSet = async (
      return await ctx.conversation.reenter('handleRecordSet');
    }
 
-   await ctx.api.deleteMessage(chat_id, lastMessageId);
+   await ctx.api.deleteMessage(chat_id, conversation.session.state.lastMessageId);
   } catch (err: unknown) {
     console.log(err);
   }
@@ -97,7 +94,6 @@ async function chooseExercise(
   categories: Set<string>,
   exercisesByCategory: Map<string, string[]>
 ): Promise<string> {
-  const { lastMessageId } = conversation.session.state;
 
   const chooseCategoryText =
     '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
@@ -110,7 +106,7 @@ async function chooseExercise(
     ctx,
     conversation,
     chat_id,
-    lastMessageId,
+    conversation.session.state.lastMessageId,
     chooseCategoryText,
     chooseCategoryOptions,
     [...categories]
@@ -119,7 +115,7 @@ async function chooseExercise(
   const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions = {
     reply_markup: getMenuFromStringArray(
-      exercisesByCategory.get(category)!,
+      exercisesByCategory.get(category) as string[],
       'recordSet',
       { addBackButton: true }
     ),
@@ -130,10 +126,10 @@ async function chooseExercise(
     ctx,
     conversation,
     chat_id,
-    lastMessageId,
+    conversation.session.state.lastMessageId,
     chooseExerciseText,
     chooseExerciseOptions,
-    [backButton, ...exercisesByCategory.get(category)!]
+    [backButton, ...exercisesByCategory.get(category) as string[]]
   );
 
   if (exercise === backButton) {
@@ -155,15 +151,13 @@ async function getSetData(
   exercise: string,
   chat_id: number
 ) {
-  const { lastMessageId } = conversation.session.state;
-
   const weightTextOptions = { parse_mode: 'HTML' };
   const weightText = `<b>${exercise.toUpperCase()}</b>\n\nType in the weight:`;
   const weight = await promptUserForWeight(
     ctx,
     conversation,
     chat_id,
-    lastMessageId,
+    conversation.session.state.lastMessageId,
     weightText,
     weightTextOptions
   );
@@ -174,7 +168,7 @@ async function getSetData(
     ctx,
     conversation,
     chat_id,
-    lastMessageId,
+    conversation.session.state.lastMessageId,
     repetitionsText,
     repetitionsTextOptions
   );
@@ -188,7 +182,7 @@ async function getSetData(
     ctx,
     conversation,
     chat_id,
-    lastMessageId,
+    conversation.session.state.lastMessageId,
     rpeText,
     rpeTextOptions
   );
@@ -204,8 +198,6 @@ async function isDeloadWorkout(
     parse_mode: 'HTML',
     reply_markup: getYesNoOptions('recordSet')
   });
-
-  conversation.session.state.lastMessageId = message_id;
 
   const {
     callbackQuery: { data }

@@ -1,12 +1,12 @@
 {
   "name": "tg-workout-tracker",
   "version": "1.0.0",
-  "description": "WrktTrckr is a workout tracker built with grammyjs. It supports periodisation & predicts your next workout.",
+  "description": "WrktTrckr is a workout tracker built with GrammyJS. It supports periodisation & predicts your next workout.",
   "main": "./src/bot.ts",
   "type": "module",
   "scripts": {
     "dev": "nodemon --exec ts-node ./src/bot.ts",
-    "trasnpiled": "node ./build/bot.js",
+    "trasnpiled": "node ./dist/bot.js",
     "build": "tsc",
     "lint": "eslint . --ext .ts"
   },
@@ -35,7 +35,7 @@
     "mongoose": "^7.0.1"
   },
   "devDependencies": {
-    "@types/node": "^18.13.0",
+    "@types/node": "^20.2.3",
     "@typescript-eslint/eslint-plugin": "^5.58.0",
     "@typescript-eslint/parser": "^5.58.0",
     "dotenv": "^16.0.3",

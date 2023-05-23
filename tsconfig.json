@@ -11,8 +11,8 @@
     "moduleResolution": "nodenext",
     "declaration": true,
     "rootDir": "./src",
-    "outDir": "./build",
-    "baseUrl": "./",
+    "outDir": "./dist",
+    "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "paths": {

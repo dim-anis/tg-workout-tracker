@@ -9,6 +9,16 @@ import type { MyContext } from '../types/bot.js';
 
 const composer = new Composer<MyContext>();
 
+composer.use(async (ctx, next) => {
+  if (ctx.message?.message_id) {
+    ctx.session.state.lastMessageId = ctx.message.message_id;
+  }
+  if (ctx.callbackQuery?.message?.message_id) {
+    ctx.session.state.lastMessageId = ctx.callbackQuery.message.message_id;
+  }
+
+  await next();
+})
 composer.filter((ctx) => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);
