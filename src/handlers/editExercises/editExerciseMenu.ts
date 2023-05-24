@@ -11,7 +11,7 @@ const composer = new Composer<MyContext>();
 
 const categoriesMenuText =
   '✏️ <b>Edit exercises</b>\n\n<i>Select a category:</i>';
-const categoriesMenu = new Menu<MyContext>('categories');
+const categoriesMenu = new Menu<MyContext>('cat');
 categoriesMenu.dynamic((ctx) => {
   ctx.session.state.cmdName = 'editExercise';
 
@@ -24,7 +24,7 @@ categoriesMenu.dynamic((ctx) => {
     range
       .submenu(
         { text: cat, payload: cat },
-        'exercises',
+        'ex',
         async (ctx) =>
           await ctx.editMessageText(exercisesMenuText(cat), {
             parse_mode: 'HTML'
@@ -38,14 +38,14 @@ categoriesMenu.dynamic((ctx) => {
 
 const exercisesMenuText = (category: string) =>
   `<b>${category}</b>\n\nSelect an exercise`;
-const exercisesMenu = new Menu<MyContext>('exercises');
+const exercisesMenu = new Menu<MyContext>('ex');
 exercisesMenu.dynamic((ctx) => {
   const payload = ctx.match;
   if (typeof payload !== 'string') {
     throw new Error('No category chosen!');
   }
 
-  const [category, exercise] = payload.split(',');
+  const [category] = payload.split(',');
 
   return createExerciseMenu(ctx, category);
 });
@@ -150,7 +150,7 @@ deleteMenu.dynamic((ctx) => {
       await ctx.editMessageText(selectExerciseMenuText(category, exercise), {
         parse_mode: 'HTML'
       });
-      ctx.menu.nav('categories');
+      ctx.menu.nav('cat');
       await ctx.editMessageText(categoriesMenuText, { parse_mode: 'HTML' });
     });
 });

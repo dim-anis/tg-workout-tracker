@@ -9,10 +9,8 @@ import type { MyContext } from '../types/bot.js';
 
 const composer = new Composer<MyContext>();
 
+// only save message_id coming from callbackQuery
 composer.use(async (ctx, next) => {
-  if (ctx.message?.message_id) {
-    ctx.session.state.lastMessageId = ctx.message.message_id;
-  }
   if (ctx.callbackQuery?.message?.message_id) {
     ctx.session.state.lastMessageId = ctx.callbackQuery.message.message_id;
   }

@@ -35,17 +35,13 @@ const handleRecordSet = async (
     const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
 
     const categories = new Set(exercises.map((exercise) => exercise.category));
+    conversation.log(categories);
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
     const isTodaysWorkout = isToday(mostRecentWorkout.createdAt);
 
     const isDeload = isTodaysWorkout 
       ? mostRecentWorkout.isDeload 
       : await isDeloadWorkout(ctx, conversation);
-
-    if (isTodaysWorkout) {
-      const {message_id} = await ctx.reply('continuing workout...');
-      await conversation.sleep(500);
-    }
 
     const chosenExercise = await chooseExercise(
       ctx,
@@ -60,7 +56,7 @@ const handleRecordSet = async (
       chosenExercise,
       chat_id
     );
-    const updatedWorkout = await conversation.external(async () =>
+    await conversation.external(async () =>
       createOrUpdateUserWorkout(user_id, setData, isDeload)
     );
 
@@ -194,7 +190,7 @@ async function isDeloadWorkout(
   ctx: MyContext,
   conversation: MyConversation
 ) {
-  const { message_id } = await ctx.reply('Is it a <b>deload workout</b>?', {
+  await ctx.reply('Is it a <b>deload workout</b>?', {
     parse_mode: 'HTML',
     reply_markup: getYesNoOptions('recordSet')
   });
