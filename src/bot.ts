@@ -25,8 +25,8 @@ async function runBot() {
 
   bot.use(
     session({
-      initial,
-     // storage: new MongoDBAdapter<SessionStorage>({ collection })
+      initial
+      // storage: new MongoDBAdapter<SessionStorage>({ collection })
     })
   );
   bot.use(attachUser);

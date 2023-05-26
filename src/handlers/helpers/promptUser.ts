@@ -1,4 +1,6 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
+import { getYesNoOptions } from '../../config/keyboards.js';
+import { type } from 'os';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
@@ -166,9 +168,13 @@ export async function promptUserForText(
 
   ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
-  if (ctx.callbackQuery) {
-    const value = ctx.callbackQuery.data?.split(':')[1];
-    return value!;
+  if (ctx.callbackQuery?.data) {
+    let value = ctx.callbackQuery.data.split(':')[1];
+    // callback data doesn't contain prefix
+    if (typeof value === 'undefined') {
+      value = ctx.callbackQuery.data;
+    }
+    return value;
   }
 
   await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
@@ -254,7 +260,7 @@ export async function promptUserForExerciseName(
   chat_id: number,
   message_id: number,
   message: string,
-  options: any,
+  options: any
 ): Promise<string> {
   return promptUserForText(
     ctx,
@@ -306,4 +312,24 @@ export async function promptUserForPredefinedString(
     message,
     options
   );
+}
+
+export async function isDeloadWorkout(
+  ctx: MyContext,
+  conversation: MyConversation,
+  commandName: string
+) {
+  await ctx.reply('Is it a <b>deload workout</b>?', {
+    parse_mode: 'HTML',
+    reply_markup: getYesNoOptions(commandName)
+  });
+
+  const {
+    callbackQuery: { data }
+  } = await conversation.waitForCallbackQuery([
+    `${commandName}:yes`,
+    `${commandName}:no`
+  ]);
+
+  return data.split(':')[1] === 'yes' ? true : false;
 }

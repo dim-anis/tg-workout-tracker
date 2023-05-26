@@ -13,10 +13,11 @@ import {
   promptUserForPredefinedString,
   promptUserForRPE,
   promptUserForRepetitions,
-  promptUserForWeight
+  promptUserForWeight,
+  isDeloadWorkout
 } from './helpers/promptUser.js';
 import { successMessages } from './helpers/successMessages.js';
-import {isToday} from 'date-fns';
+import { isToday } from 'date-fns';
 import { ExerciseType } from 'models/exercise.js';
 
 const composer = new Composer<MyContext>();
@@ -39,9 +40,9 @@ const handleRecordSet = async (
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
     const isTodaysWorkout = isToday(mostRecentWorkout.createdAt);
 
-    const isDeload = isTodaysWorkout 
-      ? mostRecentWorkout.isDeload 
-      : await isDeloadWorkout(ctx, conversation);
+    const isDeload = isTodaysWorkout
+      ? mostRecentWorkout.isDeload
+      : await isDeloadWorkout(ctx, conversation, 'recordSet');
 
     const chosenExercise = await chooseExercise(
       ctx,
@@ -56,32 +57,38 @@ const handleRecordSet = async (
       chosenExercise,
       chat_id
     );
-    await conversation.external(async () =>
-      createOrUpdateUserWorkout(user_id, setData, isDeload)
+    await conversation.external(
+      async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
     );
 
-   await ctx.api.editMessageText(
-     chat_id,
-     conversation.session.state.lastMessageId,
-     successMessages.onRecordSetSuccess,
-     {
-      reply_markup: getYesNoOptions('recordSet'),
-      parse_mode: 'HTML'
-     }
-   );
+    await ctx.api.editMessageText(
+      chat_id,
+      conversation.session.state.lastMessageId,
+      successMessages.onRecordSetSuccess,
+      {
+        reply_markup: getYesNoOptions('recordSet'),
+        parse_mode: 'HTML'
+      }
+    );
 
-   ctx = await conversation.waitForCallbackQuery(['recordSet:yes', 'recordSet:no']);
+    ctx = await conversation.waitForCallbackQuery([
+      'recordSet:yes',
+      'recordSet:no'
+    ]);
 
-   if (ctx.callbackQuery?.data === 'recordSet:yes') {
-     await ctx.answerCallbackQuery();
-     return await ctx.conversation.reenter('handleRecordSet');
-   }
+    if (ctx.callbackQuery?.data === 'recordSet:yes') {
+      await ctx.answerCallbackQuery();
+      return await ctx.conversation.reenter('handleRecordSet');
+    }
 
-   await ctx.api.deleteMessage(chat_id, conversation.session.state.lastMessageId);
+    await ctx.api.deleteMessage(
+      chat_id,
+      conversation.session.state.lastMessageId
+    );
   } catch (err: unknown) {
     console.log(err);
   }
-}
+};
 
 async function chooseExercise(
   ctx: MyContext,
@@ -90,7 +97,6 @@ async function chooseExercise(
   categories: Set<string>,
   exercisesByCategory: Map<string, string[]>
 ): Promise<string> {
-
   const chooseCategoryText =
     '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
   const chooseCategoryOptions = {
@@ -125,7 +131,7 @@ async function chooseExercise(
     conversation.session.state.lastMessageId,
     chooseExerciseText,
     chooseExerciseOptions,
-    [backButton, ...exercisesByCategory.get(category) as string[]]
+    [backButton, ...(exercisesByCategory.get(category) as string[])]
   );
 
   if (exercise === backButton) {
@@ -186,27 +192,10 @@ async function getSetData(
   return { exercise, weight, repetitions, rpe };
 }
 
-async function isDeloadWorkout(
-  ctx: MyContext,
-  conversation: MyConversation
+function getExercisesByCategory(
+  categories: Set<string>,
+  exercises: ExerciseType[]
 ) {
-  await ctx.reply('Is it a <b>deload workout</b>?', {
-    parse_mode: 'HTML',
-    reply_markup: getYesNoOptions('recordSet')
-  });
-
-  const {
-    callbackQuery: { data }
-  } = await conversation.waitForCallbackQuery([
-    'recordSet:yes',
-    'recordSet:no'
-  ]);
-
-  return data.split(':')[1] === 'yes' ? true : false;
-}
-
-function getExercisesByCategory(categories: Set<string>, exercises: ExerciseType[]) {
-
   const exercisesByCategory = new Map<string, string[]>();
 
   for (const category of categories) {
@@ -222,12 +211,14 @@ function getExercisesByCategory(categories: Set<string>, exercises: ExerciseType
 
 composer.use(createConversation(handleRecordSet));
 
-composer.command('record_set', userHasExercises, async (ctx) =>
-  ctx.conversation.enter('handleRecordSet')
+composer.command(
+  'record_set',
+  userHasExercises,
+  async (ctx) => await ctx.conversation.enter('handleRecordSet')
 );
 composer.callbackQuery('/record_set', userHasExercises, async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.conversation.enter('handleRecordSet')
+  await ctx.conversation.enter('handleRecordSet');
 });
 
 export default composer;

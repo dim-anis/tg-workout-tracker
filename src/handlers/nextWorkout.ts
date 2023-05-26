@@ -1,5 +1,7 @@
 import { Composer, InlineKeyboard } from 'grammy';
-import { createConversation } from '@grammyjs/conversations';
+import {
+  createConversation
+} from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import {
   getRpeOptions,
@@ -16,6 +18,8 @@ import {
   promptUserForWeight,
   promptUserForRepetitions,
   promptUserForRPE,
+  isDeloadWorkout,
+  promptUserForPredefinedString
 } from './helpers/promptUser.js';
 import { getCompletedSetsString } from './helpers/calculateSetData.js';
 
@@ -45,27 +49,38 @@ const handleNextWorkout = async (
 
     const isDeload = isToday(mostRecentWorkout.createdAt)
       ? mostRecentWorkout.isDeload
-      : await isDeloadWorkout(ctx, conversation);
-    const workoutCount = isTodayWorkout ? recentWorkouts.length : calculateWorkoutCount(recentWorkouts);
+      : await isDeloadWorkout(ctx, conversation, 'nextWorkout');
+    const workoutCount = isTodayWorkout
+      ? recentWorkouts.length
+      : calculateWorkoutCount(recentWorkouts);
     const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
     const previousWorkoutExercises = [
       ...new Set(previousWorkout.sets.map((set) => set.exercise))
     ];
+
+    // Prompt user for next exercise in todays workout
     const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
     const setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
-    const todaysExercises = generateExerciseOptions(previousWorkoutExercises, setCountMap);
-
-    await ctx.api.editMessageText(
-      chat_id,
-      conversation.session.state.lastMessageId,
-      workoutTitle, {
+    const todaysExercises = generateExerciseOptions(
+      previousWorkoutExercises,
+      setCountMap
+    );
+    const options = {
       reply_markup: todaysExercises,
       parse_mode: 'HTML'
-    });
+    };
+    const selectedExercise = await promptUserForPredefinedString(
+      ctx,
+      conversation,
+      chat_id,
+      conversation.session.state.lastMessageId,
+      workoutTitle,
+      options,
+      previousWorkoutExercises
+    );
 
-    const {
-      callbackQuery: { data: selectedExercise }
-    } = await conversation.waitForCallbackQuery(previousWorkoutExercises);
+    conversation.log(previousWorkoutExercises);
+    conversation.log(selectedExercise);
     const previousWorkoutSetData = getPreviousWorkoutSetData(
       selectedExercise,
       previousWorkout
@@ -101,7 +116,10 @@ const handleNextWorkout = async (
       { reply_markup: getYesNoOptions('nextWorkout') }
     );
 
-    ctx = await conversation.waitForCallbackQuery(['nextWorkout:yes', 'nextWorkout:no']);
+    ctx = await conversation.waitForCallbackQuery([
+      'nextWorkout:yes',
+      'nextWorkout:no'
+    ]);
     if (ctx.callbackQuery?.data === 'nextWorkout:yes') {
       await ctx.answerCallbackQuery();
       return await ctx.conversation.reenter('handleNextWorkout');
@@ -312,27 +330,10 @@ const calculateWorkoutCount = (workouts: WorkoutType[]) => {
     : workouts.slice(0, deloadIndex).length + 1;
 };
 
-async function isDeloadWorkout(
-  ctx: MyContext,
-  conversation: MyConversation
+function generateExerciseOptions(
+  previousWorkoutExercises: string[],
+  setCountMap: Record<string, number>
 ) {
-  await ctx.reply('Is it a <b>deload workout</b>?', {
-    parse_mode: 'HTML',
-    reply_markup: getYesNoOptions('nextWorkout')
-  });
-
-  const {
-    callbackQuery: { data, id }
-  } = await conversation.waitForCallbackQuery([
-    'nextWorkout:yes',
-    'nextWorkout:no'
-  ]);
-  await ctx.api.answerCallbackQuery(id);
-  
-  return data.split(':')[1] === 'yes' ? true : false;
-}
-
-function generateExerciseOptions(previousWorkoutExercises: string[], setCountMap: Record<string, number>) {
   const todaysExercises = new InlineKeyboard();
   for (const exerciseName of previousWorkoutExercises) {
     const numberOfCompletedSets = setCountMap[exerciseName];
@@ -352,8 +353,10 @@ composer.callbackQuery('/next_workout', userHasEnoughWorkouts, async (ctx) => {
   await ctx.answerCallbackQuery();
   await ctx.conversation.enter('handleNextWorkout');
 });
-composer.command('next_workout', userHasEnoughWorkouts, async (ctx) =>
-  ctx.conversation.enter('handleNextWorkout')
+composer.command(
+  'next_workout',
+  userHasEnoughWorkouts,
+  async (ctx) => await ctx.conversation.enter('handleNextWorkout')
 );
 
 export default composer;

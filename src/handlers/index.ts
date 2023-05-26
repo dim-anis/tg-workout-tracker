@@ -16,7 +16,7 @@ composer.use(async (ctx, next) => {
   }
 
   await next();
-})
+});
 composer.filter((ctx) => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);

@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "nodenext",
     "declaration": true,
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
     "baseUrl": ".",
     "allowSyntheticDefaultImports": true,
@@ -19,9 +19,12 @@
       "*": ["src/*"]
     }
   },
+ "include": [
+    "src/*.ts",
+    "src/**/*.ts",
+  ],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": ["./src/**/*"]
 }
