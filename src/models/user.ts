@@ -48,7 +48,7 @@ UserSchema.pre<UserType>('save', function(next) {
   if (exerciseToUpdate.personalBests) {
     const personalBests = exerciseToUpdate.personalBests;
     const oldPB = personalBests.get(newSet.repetitions.toString());
-    const newPB = { weight: newSet.weight, date: new Date() };
+    const newPB = { weight: newSet.weight, date: new Date(), lastPB: oldPB};
 
     if ((oldPB && oldPB.weight < newSet.weight) || typeof oldPB === 'undefined') {
       personalBests.set(newSet.repetitions.toString(), newPB);

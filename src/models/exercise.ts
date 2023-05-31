@@ -5,11 +5,13 @@ export type PBRecord = {
   date: Date;
 };
 
+export type PBType = Map<string, { weight: number, date: Date, lastPB?: { weight: number, date: Date } }>;
+
 export type ExerciseType = {
   name: string;
   category: string;
   is_compound: boolean;
-  personalBests?: Map<string, { weight: number, date: Date }>;
+  personalBests?: PBType;
 };
 
 export const ExerciseSchema = new Schema({
@@ -20,7 +22,11 @@ export const ExerciseSchema = new Schema({
     type: Map,
     of: {
       weight: Number,
-      date: Date
+      date: Date,
+      lastPB: {
+        weight: Number,
+        date: Date
+      }
     },
     default: new Map()
   }
