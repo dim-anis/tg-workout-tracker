@@ -41,19 +41,23 @@ export const UserSchema = new mongoose.Schema<UserType>(
 UserSchema.pre<UserType>('save', function(next) {
   const sets = this.recentWorkouts[0].sets;
   const newSet = sets[sets.length - 1];
-
   const exToUpdateIdx = this.exercises.findIndex(exercise => exercise.name === newSet.exercise);
   const exerciseToUpdate = this.exercises[exToUpdateIdx];
 
   if (exerciseToUpdate.personalBests) {
-    const personalBests = exerciseToUpdate.personalBests;
-    const oldPB = personalBests.get(newSet.repetitions.toString());
-    const newPB = { weight: newSet.weight, date: new Date(), lastPB: oldPB};
+    const oldPbIndex = exerciseToUpdate.personalBests?.findIndex(pb => pb.repetitions === newSet.repetitions);
+    const oldPb = exerciseToUpdate.personalBests[oldPbIndex];
 
-    if ((oldPB && oldPB.weight < newSet.weight) || typeof oldPB === 'undefined') {
-      personalBests.set(newSet.repetitions.toString(), newPB);
-      exerciseToUpdate.personalBests = personalBests;
+    const newPb = {weight: newSet.weight, repetitions: newSet.repetitions, date: new Date()};
+    if (!oldPb) {
+      exerciseToUpdate.personalBests.push(newPb);
     }
+    else if (oldPb.weight < newSet.weight) {
+      exerciseToUpdate.personalBests[oldPbIndex] = {
+        ...newPb,
+        oldPb
+      };
+    }  
   }
 
   next();
