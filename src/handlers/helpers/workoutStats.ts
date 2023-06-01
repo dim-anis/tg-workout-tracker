@@ -41,7 +41,6 @@ export function getWorkoutStatsText(
   const totalDurationString = `${hours ? hours + 'h' : ''} ${
     minutes ? minutes + 'min' : ''
   } ${seconds ? seconds + 's' : ''}`;
-  const avgRpe = getAverageRPE(workout.sets);
   const totalVolume = getTotalVolume(workout.sets).toLocaleString();
 
   const statsText =
@@ -50,7 +49,7 @@ export function getWorkoutStatsText(
     `📅 Date: <b>${dateString}</b>\n` +
     `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n` +
     `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
-    `⭐ Average RPE: <b>${avgRpe}</b>`;
+    `⭐ Average RPE: <b>${workout.avg_rpe}</b>`;
 
   return statsText;
 }

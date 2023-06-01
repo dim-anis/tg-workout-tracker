@@ -45,14 +45,12 @@ const handleNextWorkout = async (
     const { splitLength } = ctx.dbchat.settings;
     const { recentWorkouts } = ctx.dbchat;
     const mostRecentWorkout = recentWorkouts[0];
-    const isTodayWorkout = isSameDay(mostRecentWorkout.createdAt, Date.now());
+    const isTodayWorkout = isToday(mostRecentWorkout.createdAt);
 
-    const isDeload = isToday(mostRecentWorkout.createdAt)
+    const isDeload = isTodayWorkout
       ? mostRecentWorkout.isDeload
       : await isDeloadWorkout(ctx, conversation, 'nextWorkout');
-    const workoutCount = isTodayWorkout
-      ? recentWorkouts.length
-      : calculateWorkoutCount(recentWorkouts);
+    const workoutCount = getWorkoutCount(recentWorkouts, isTodayWorkout);
     const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
     const previousWorkoutExercises = [
       ...new Set(previousWorkout.sets.map((set) => set.exercise))
@@ -79,8 +77,6 @@ const handleNextWorkout = async (
       previousWorkoutExercises
     );
 
-    conversation.log(previousWorkoutExercises);
-    conversation.log(selectedExercise);
     const previousWorkoutSetData = getPreviousWorkoutSetData(
       selectedExercise,
       previousWorkout
@@ -323,11 +319,20 @@ function getPreviousWorkoutSetData(
 }
 
 // count num of workouts since the start of meso (startOfMeso = first session after the deload)
-const calculateWorkoutCount = (workouts: WorkoutType[]) => {
+const getWorkoutCount = (workouts: WorkoutType[], isTodayWorkout: boolean) => {
+  // if deloadWorkout found => start count from the next workout
+  // otherwise start count from the start of the array
   const deloadIndex = workouts.findIndex((w) => w.isDeload);
-  return deloadIndex === -1
-    ? workouts.length + 1
-    : workouts.slice(0, deloadIndex).length + 1;
+
+  let count;
+
+  if (deloadIndex === -1) {
+    count = isTodayWorkout ? workouts.length : workouts.length + 1;
+  } else {
+    count = isTodayWorkout ? deloadIndex : deloadIndex + 1;
+  }
+
+  return count;
 };
 
 function generateExerciseOptions(

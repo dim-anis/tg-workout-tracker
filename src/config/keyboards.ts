@@ -3,8 +3,8 @@ import { InlineKeyboard } from 'grammy';
 export const backButton = '◀ Back';
 export const checkedSquare = '■';
 export const uncheckedSquare = '□';
-export const checkedCircle = '●';
-export const uncheckedCircle = '○';
+export const checkedCircle = '⦿';
+export const uncheckedCircle = '⦾';
 
 const isEveryThirdButton = (index: number) => (index + 1) % 3 === 0;
 
