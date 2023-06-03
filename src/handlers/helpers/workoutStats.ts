@@ -1,5 +1,73 @@
 import { type WorkoutType } from 'models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
+import { ExerciseType, PersonalBest } from 'models/exercise.js';
+import { isToday } from 'date-fns';
+
+export function getWorkoutStatsText(
+  workout: WorkoutType,
+  workoutCount: number,
+  prs: PersonalBestWithName[]
+) {
+  const dateString = new Date().toLocaleDateString();
+  const { createdAt, updatedAt } = workout;
+  const { hours, minutes, seconds } = intervalToDuration({
+    start: new Date(createdAt),
+    end: new Date(updatedAt)
+  });
+  const totalDurationString = `${hours ? hours + 'h' : ''} ${minutes ? minutes + 'min' : ''
+    } ${seconds ? seconds + 's' : ''}`;
+  const totalVolume = getTotalVolume(workout.sets).toLocaleString();
+  const prMessage = createPrMessage(prs);
+
+  const statsText =
+    `<b>Workout Stats</b>\n\n` +
+    `🔢 Workout number: <b>${workoutCount}</b>\n` +
+    `📅 Date: <b>${dateString}</b>\n` +
+    `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n` +
+    `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
+    `⭐ Average RPE: <b>${workout.avg_rpe}</b>` +
+    prMessage;
+
+  return statsText;
+}
+
+export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
+  const exerciseMap = new Map(exercises.map(exercise => [exercise.name, exercise]));
+  const out = [];
+
+  for (const [exerciseName, exerciseData] of exerciseMap) {
+    if (exerciseData.personalBests) {
+      for (const pb of exerciseData.personalBests) {
+        if (isToday(pb.date)) {
+          const newPr = { exerciseName, ...pb };
+          out.push(newPr);
+        }
+      }
+    }
+  }
+
+  return out;
+}
+
+type PersonalBestWithName = PersonalBest & { exerciseName: string };
+
+function createPrMessage(newPbs: PersonalBestWithName[]) {
+  const pbMessageLines = [];
+  if (newPbs.length > 0) {
+    for (const newPb of newPbs) {
+      let diff;
+      if (newPb.oldPb) {
+        diff = newPb.weight - newPb.oldPb?.weight;
+        diff = Number.isInteger(diff) ? diff : diff.toFixed(2);
+      }
+      const strengthImprovement = diff ? `| 🔺 ${diff}kgs` : '';
+      pbMessageLines.push(`${newPb.exerciseName} - ${newPb.weight}kgs x ${newPb.repetitions} ${strengthImprovement}`)
+    }
+  }
+
+  return '\n\n<b>You\'ve hit new PRs!</b>\n' + pbMessageLines.join('\n');
+}
+
 
 export function countSets(
   setsArray: WorkoutType['sets'] = []
@@ -28,28 +96,3 @@ export function getTotalVolume(setsArray: WorkoutType['sets']) {
   );
 }
 
-export function getWorkoutStatsText(
-  workout: WorkoutType,
-  workoutCount: number
-) {
-  const dateString = new Date().toLocaleDateString();
-  const { createdAt, updatedAt } = workout;
-  const { hours, minutes, seconds } = intervalToDuration({
-    start: new Date(createdAt),
-    end: new Date(updatedAt)
-  });
-  const totalDurationString = `${hours ? hours + 'h' : ''} ${
-    minutes ? minutes + 'min' : ''
-  } ${seconds ? seconds + 's' : ''}`;
-  const totalVolume = getTotalVolume(workout.sets).toLocaleString();
-
-  const statsText =
-    `<b>Workout Stats</b>\n\n` +
-    `🔢 Workout number: <b>${workoutCount}</b>\n` +
-    `📅 Date: <b>${dateString}</b>\n` +
-    `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n` +
-    `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
-    `⭐ Average RPE: <b>${workout.avg_rpe}</b>`;
-
-  return statsText;
-}

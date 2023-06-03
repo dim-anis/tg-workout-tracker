@@ -10,7 +10,7 @@ import {
   getYesNoOptions
 } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
-import { countSets, getWorkoutStatsText } from './helpers/workoutStats.js';
+import { countSets, getPrs, getWorkoutStatsText } from './helpers/workoutStats.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
@@ -121,9 +121,12 @@ const handleNextWorkout = async (
       return await ctx.conversation.reenter('handleNextWorkout');
     }
 
+    const prs = getPrs(ctx.dbchat.exercises);
+
     const workoutStatsText = getWorkoutStatsText(
       updatedCurrentWorkout,
-      workoutCount
+      workoutCount,
+      prs
     );
 
     await ctx.api.editMessageText(
