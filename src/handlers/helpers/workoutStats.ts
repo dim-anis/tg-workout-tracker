@@ -17,7 +17,7 @@ export function getWorkoutStatsText(
   const totalDurationString = `${hours ? hours + 'h' : ''} ${minutes ? minutes + 'min' : ''
     } ${seconds ? seconds + 's' : ''}`;
   const totalVolume = getTotalVolume(workout.sets).toLocaleString();
-  const prMessage = createPrMessage(prs);
+  const prMessage = prs.length ? createPrMessage(prs) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
@@ -60,7 +60,7 @@ function createPrMessage(newPbs: PersonalBestWithName[]) {
         diff = newPb.weight - newPb.oldPb?.weight;
         diff = Number.isInteger(diff) ? diff : diff.toFixed(2);
       }
-      const strengthImprovement = diff ? `| 🔺 ${diff}kgs` : '';
+      const strengthImprovement = diff ? ` (+${diff}kgs)` : '';
       pbMessageLines.push(`${newPb.exerciseName} - ${newPb.weight}kgs x ${newPb.repetitions} ${strengthImprovement}`)
     }
   }
