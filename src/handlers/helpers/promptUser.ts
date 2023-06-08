@@ -1,6 +1,5 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
-import { type } from 'os';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
