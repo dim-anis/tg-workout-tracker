@@ -1,5 +1,6 @@
 import type { MyConversation, MyContext } from '../../types/bot.js';
 import {
+  InlineKeyboardOptions,
   getMenuFromStringArray,
   getYesNoOptions
 } from '../../config/keyboards.js';
@@ -24,7 +25,7 @@ export default async function handleAddExercise(
 
   try {
     const nameText = '📋 <b>Add new exercise</b>\n\nType in the name:';
-    const nameOptions = { parse_mode: 'HTML', reply_markup: undefined };
+    const nameOptions: InlineKeyboardOptions = { parse_mode: 'HTML', reply_markup: undefined };
     const name = await promptUserForExerciseName(
       ctx,
       conversation,
@@ -38,7 +39,7 @@ export default async function handleAddExercise(
       `📋 <b>Add ${name.toUpperCase()}</b>\n\n` +
       'Is it a compound exercise?\n\n' +
       '<i>*Involving two or more joints at once, think heavy exercises like squats, bench press etc.</i>';
-    const isCompoundTextOptions = {
+    const isCompoundTextOptions: InlineKeyboardOptions = {
       parse_mode: 'HTML',
       reply_markup: getYesNoOptions('addExercise')
     };
@@ -54,7 +55,7 @@ export default async function handleAddExercise(
     const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
     const categoryText = `📋 <b>Add ${name.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
-    const categoryOptions = {
+    const categoryOptions: InlineKeyboardOptions = {
       parse_mode: 'HTML',
       reply_markup: getMenuFromStringArray(exerciseCategories, 'addEx', {
         nColumns: 3
@@ -70,7 +71,7 @@ export default async function handleAddExercise(
     ); // <- same logic as in promptUserForExerciseName
 
     const updatedUser = await conversation.external(async () =>
-      createUserExercise(user_id, { name, category, is_compound })
+      await createUserExercise(user_id, { name, category, is_compound })
     );
 
     if (!updatedUser) {

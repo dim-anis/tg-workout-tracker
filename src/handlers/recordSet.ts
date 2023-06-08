@@ -2,10 +2,10 @@ import { Composer } from 'grammy';
 import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import {
-  getRpeOptions,
   getMenuFromStringArray,
   backButton,
-  getYesNoOptions
+  getYesNoOptions,
+  InlineKeyboardOptions
 } from '../config/keyboards.js';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasExercises } from '../middleware/userHasExercises.js';
@@ -99,7 +99,7 @@ async function chooseExercise(
 ): Promise<string> {
   const chooseCategoryText =
     '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
-  const chooseCategoryOptions = {
+  const chooseCategoryOptions: InlineKeyboardOptions = {
     reply_markup: getMenuFromStringArray([...categories], 'recordSet'),
     parse_mode: 'HTML'
   };
@@ -115,7 +115,7 @@ async function chooseExercise(
   );
 
   const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
-  const chooseExerciseOptions = {
+  const chooseExerciseOptions: InlineKeyboardOptions = {
     reply_markup: getMenuFromStringArray(
       exercisesByCategory.get(category) as string[],
       'recordSet',
@@ -153,40 +153,31 @@ async function getSetData(
   exercise: string,
   chat_id: number
 ) {
-  const weightTextOptions = { parse_mode: 'HTML' };
-  const weightText = `<b>${exercise.toUpperCase()}</b>\n\nType in the weight:`;
   const weight = await promptUserForWeight(
     ctx,
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    weightText,
-    weightTextOptions
+    {selectedExercise: exercise}
   );
 
-  const repetitionsTextOptions = { parse_mode: 'HTML' };
-  const repetitionsText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs</i>\n\nType in the repetitions:`;
   const repetitions = await promptUserForRepetitions(
     ctx,
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    repetitionsText,
-    repetitionsTextOptions
+    {selectedExercise: exercise},
+    weight
   );
 
-  const rpeTextOptions = {
-    parse_mode: 'HTML',
-    reply_markup: getRpeOptions('recordSet')
-  };
-  const rpeText = `<b>${exercise.toUpperCase()}</b>\n\n<i>${weight}kgs x ${repetitions}</i>\n\nChoose the RPE:`;
   const rpe = await promptUserForRPE(
     ctx,
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    rpeText,
-    rpeTextOptions
+    {selectedExercise: exercise},
+    weight,
+    repetitions
   );
 
   return { exercise, weight, repetitions, rpe };

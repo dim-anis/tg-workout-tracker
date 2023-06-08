@@ -1,5 +1,9 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
+import { getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
+import { getCompletedSetsString } from './calculateSetData.js';
+import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
+import { getRPEText, getRepetitionsText, recordWeightMessage } from './successMessages.js';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
@@ -196,14 +200,30 @@ export async function promptUserForText(
   );
 }
 
-export async function promptUserForWeight(
+export function promptUserForWeight(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
-  message: string,
-  options: any
+  exerciseParams: RecordExerciseParams,
 ): Promise<number> {
+  const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
+  let options: InlineKeyboardOptions = {
+    parse_mode: 'HTML',
+  };
+  let message: string;
+
+  if (previousWeight !== undefined && hitAllReps !== undefined) {
+    const completedSets = getCompletedSetsString(setCount);
+    message = recordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps);
+    options = {
+      ...options,
+      reply_markup: getWeightOptions(previousWeight, 'nextWorkout'),
+    };
+  } else {
+    message = `<b>${selectedExercise.toUpperCase()}</b>\n\nType in the weight:`;
+  }
+
   return promptUserForNumber(
     ctx,
     conversation,
@@ -215,14 +235,32 @@ export async function promptUserForWeight(
   );
 }
 
-export async function promptUserForRepetitions(
+export function promptUserForRepetitions(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
-  message: string,
-  options: any
+  exerciseParams: RecordExerciseParams,
+  currWeight: number
 ): Promise<number> {
+  const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
+
+  let options: InlineKeyboardOptions = {
+    parse_mode: 'HTML',
+  };
+  let message: string;
+
+  if (previousReps !== undefined && hitAllReps !== undefined) {
+    const completedSets = getCompletedSetsString(setCount);
+    message = getRepetitionsText(selectedExercise, completedSets, previousReps, hitAllReps);
+    options = {
+      ...options,
+      reply_markup: getRepOptions(previousReps, 'nextWorkout'),
+    };
+  } else {
+    message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs</i>\n\nType in the repetitions:`;
+  }
+
   return promptUserForNumber(
     ctx,
     conversation,
@@ -234,14 +272,33 @@ export async function promptUserForRepetitions(
   );
 }
 
-export async function promptUserForRPE(
+export function promptUserForRPE(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
-  message: string,
-  options: any
+  exerciseParams: RecordExerciseParams,
+  currWeight: number,
+  currReps: number
 ): Promise<number> {
+  const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
+
+  let options: InlineKeyboardOptions = {
+    parse_mode: 'HTML',
+  };
+  let message: string;
+
+  if (previousReps !== undefined && hitAllReps !== undefined) {
+    const completedSets = getCompletedSetsString(setCount);
+    message = getRPEText(selectedExercise, completedSets);
+    options = {
+      ...options,
+      reply_markup: getRpeOptions('nextWorkout'),
+    };
+  } else {
+    message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs x ${currReps}</i>\n\nChoose the RPE:`;
+  }
+
   return promptUserForNumber(
     ctx,
     conversation,
@@ -253,13 +310,13 @@ export async function promptUserForRPE(
   );
 }
 
-export async function promptUserForExerciseName(
+export function promptUserForExerciseName(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
   message: string,
-  options: any
+  options: InlineKeyboardOptions
 ): Promise<string> {
   return promptUserForText(
     ctx,
@@ -272,13 +329,13 @@ export async function promptUserForExerciseName(
   );
 }
 
-export async function promptUserForYesNo(
+export function promptUserForYesNo(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
   message: string,
-  options: any
+  options: InlineKeyboardOptions
 ): Promise<string> {
   return promptUserForText(
     ctx,
@@ -291,13 +348,13 @@ export async function promptUserForYesNo(
   );
 }
 
-export async function promptUserForPredefinedString(
+export function promptUserForPredefinedString(
   ctx: MyContext,
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
   message: string,
-  options: any,
+  options: InlineKeyboardOptions,
   validTextOptions: string[]
 ): Promise<string> {
   const validatorFunc = createPredefinedStringValidator(validTextOptions);

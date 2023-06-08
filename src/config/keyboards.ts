@@ -1,10 +1,13 @@
 import { InlineKeyboard } from 'grammy';
+import { InlineKeyboardMarkup } from 'grammy/types';
 
 export const backButton = '◀ Back';
 export const checkedSquare = '■';
 export const uncheckedSquare = '□';
 export const checkedCircle = '⦿';
 export const uncheckedCircle = '⦾';
+
+export type InlineKeyboardOptions = { parse_mode?: "HTML" | "MarkdownV2", reply_markup?: InlineKeyboardMarkup };
 
 const isEveryThirdButton = (index: number) => (index + 1) % 3 === 0;
 

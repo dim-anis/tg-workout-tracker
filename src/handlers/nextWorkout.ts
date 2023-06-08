@@ -1,16 +1,10 @@
 import { Composer, InlineKeyboard } from 'grammy';
-import {
-  createConversation
-} from '@grammyjs/conversations';
+import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
-import {
-  getRpeOptions,
-  getRepOptions,
-  getWeightOptions,
-  getYesNoOptions
-} from '../config/keyboards.js';
+import { InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
 import { countSets, getPrs, getWorkoutStatsText } from './helpers/workoutStats.js';
+import { getWorkoutTitleMessage } from './helpers/successMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
@@ -23,11 +17,12 @@ import {
 } from './helpers/promptUser.js';
 import { getCompletedSetsString } from './helpers/calculateSetData.js';
 
-type RecordExerciseParams = {
+export type RecordExerciseParams = {
   selectedExercise: string;
-  previousWeight: number;
-  previousReps: number;
-  hitAllReps: boolean;
+  previousWeight?: number;
+  previousReps?: number;
+  hitAllReps?: boolean;
+  setCount?: number;
 };
 
 const composer = new Composer<MyContext>();
@@ -57,13 +52,13 @@ const handleNextWorkout = async (
     ];
 
     // Prompt user for next exercise in todays workout
-    const workoutTitle = `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
+    const workoutTitle = getWorkoutTitleMessage(workoutCount);
     const setCountMap = isTodayWorkout ? countSets(mostRecentWorkout.sets) : {};
     const todaysExercises = generateExerciseOptions(
       previousWorkoutExercises,
       setCountMap
     );
-    const options = {
+    const options: InlineKeyboardOptions = {
       reply_markup: todaysExercises,
       parse_mode: 'HTML'
     };
@@ -86,13 +81,10 @@ const handleNextWorkout = async (
       throw new Error('No data found for this exercise');
     }
 
-    const { previousWeight, previousReps, hitAllReps } = previousWorkoutSetData;
-
-    const exerciseParams = {
+    const exerciseParams: RecordExerciseParams = {
       selectedExercise,
-      previousWeight,
-      previousReps,
-      hitAllReps
+      setCount: setCountMap[selectedExercise],
+      ...previousWorkoutSetData
     };
 
     const updatedCurrentWorkout = await recordSet(
@@ -101,7 +93,6 @@ const handleNextWorkout = async (
       chat_id,
       conversation.session.state.lastMessageId,
       exerciseParams,
-      setCountMap[selectedExercise],
       isDeload
     );
 
@@ -140,142 +131,40 @@ const handleNextWorkout = async (
   }
 };
 
-async function getWeight(
-  ctx: MyContext,
-  conversation: MyConversation,
-  chat_id: number,
-  message_id: number,
-  selectedExercise: string,
-  previousWeight: number,
-  hitAllReps: boolean,
-  setCount: number
-) {
-  const weightText =
-    `<b>${selectedExercise.toUpperCase()} ${getCompletedSetsString(
-      setCount
-    )}</b>\n\n` +
-    'Please enter the weight\n\n' +
-    `Last working weight: <b>${previousWeight}kg</b>\n\n` +
-    `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
-
-  const options = {
-    reply_markup: getWeightOptions(previousWeight, 'nextWorkout'),
-    parse_mode: 'HTML'
-  };
-
-  return promptUserForWeight(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    weightText,
-    options
-  );
-}
-
-async function getRepetitions(
-  ctx: MyContext,
-  conversation: MyConversation,
-  chat_id: number,
-  message_id: number,
-  selectedExercise: string,
-  previousReps: number,
-  hitAllReps: boolean,
-  setCount: number
-) {
-  const repetitionsText =
-    `<b>${selectedExercise.toUpperCase()} ${getCompletedSetsString(
-      setCount
-    )}</b>\n\n` +
-    'Please enter the repetitions\n\n' +
-    `Expected number of repetitions: <b>${previousReps}</b>\n\n` +
-    `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
-
-  const options = {
-    reply_markup: getRepOptions(previousReps, 'nextWorkout'),
-    parse_mode: 'HTML'
-  };
-
-  return promptUserForRepetitions(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    repetitionsText,
-    options
-  );
-}
-
-async function getRPE(
-  ctx: MyContext,
-  conversation: MyConversation,
-  chat_id: number,
-  message_id: number,
-  selectedExercise: string,
-  setCount: number
-) {
-  const rpeText =
-    `<b>${selectedExercise.toUpperCase()} ${getCompletedSetsString(
-      setCount
-    )}</b>\n\n` + 'Please enter the RPE\n\nHow hard was this set?';
-
-  const options = {
-    reply_markup: getRpeOptions('nextWorkout'),
-    parse_mode: 'HTML'
-  };
-
-  return promptUserForRPE(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    rpeText,
-    options
-  );
-}
-
 async function recordSet(
   conversation: MyConversation,
   ctx: MyContext,
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-  setCount: number,
   isDeload: boolean
 ): Promise<WorkoutType> {
-  const { selectedExercise, previousWeight, previousReps, hitAllReps } =
-    exerciseParams;
+  const weight = await promptUserForWeight(
+    ctx,
+    conversation,
+    chat_id,
+    message_id,
+    exerciseParams
+  );
+  const repetitions = await promptUserForRepetitions(
+    ctx,
+    conversation,
+    chat_id,
+    message_id,
+    exerciseParams,
+    weight
+  );
+  const rpe = await promptUserForRPE(
+    ctx,
+    conversation,
+    chat_id,
+    message_id,
+    exerciseParams,
+    weight,
+    repetitions
+  );
 
-  const weight = await getWeight(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    selectedExercise,
-    previousWeight,
-    hitAllReps,
-    setCount
-  );
-  const repetitions = await getRepetitions(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    selectedExercise,
-    previousReps,
-    hitAllReps,
-    setCount
-  );
-  const rpe = await getRPE(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    selectedExercise,
-    setCount
-  );
-  const setData = { exercise: selectedExercise, weight, repetitions, rpe };
-
+  const setData = { exercise: exerciseParams.selectedExercise, weight, repetitions, rpe };
   const updatedWorkout = await conversation.external(() =>
     createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
   );

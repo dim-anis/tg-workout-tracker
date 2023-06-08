@@ -1,7 +1,7 @@
 import { SetType } from 'models/set.js';
 import { checkedCircle } from '../../config/keyboards.js';
 
-export function getCompletedSetsString(setCount: number) {
+export function getCompletedSetsString(setCount = 0) {
   return `${[checkedCircle.repeat(setCount)]}`;
 }
 
