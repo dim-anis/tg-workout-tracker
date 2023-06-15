@@ -3,7 +3,7 @@ import { getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOpti
 import { getCompletedSetsString } from './calculateSetData.js';
 import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
-import { getRPEText, getRepetitionsText, recordWeightMessage } from './successMessages.js';
+import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './successMessages.js';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
@@ -126,33 +126,68 @@ export async function promptUserForNumber(
   validatorFunc: (input: string) => string | undefined,
   chat_id: number,
   message_id: number,
+  exerciseParams: RecordExerciseParams,
   message: string,
-  options: any
+  options: InlineKeyboardOptions
 ): Promise<number> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
   ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
   if (ctx.callbackQuery) {
-    const value = ctx.callbackQuery.data?.split(':')[1];
-    return Number(value);
+    const callbackData = ctx.callbackQuery.data?.split(':')[1];
+    if (callbackData && callbackData.startsWith('toggle_unit')) {
+      const currUnit = callbackData.split('~')[1];
+      conversation.log(currUnit);
+
+      const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
+      if (previousWeight === undefined || hitAllReps === undefined) {
+        return NaN;
+      }
+
+      const completedSets = getCompletedSetsString(setCount);
+      const updatedOptions: InlineKeyboardOptions = {
+        parse_mode: 'HTML',
+        reply_markup: getWeightOptions(previousWeight, 'nextWorkout', currUnit !== 'kg'),
+      };
+      const updatedMessage = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps, currUnit === 'kg' ? 'lb' : 'kg');
+
+      return promptUserForNumber(
+        ctx,
+        conversation,
+        validatorFunc,
+        chat_id,
+        message_id,
+        exerciseParams,
+        updatedMessage,
+        updatedOptions
+      )
+    }
+
+    return Number(callbackData);
   }
 
-  await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
+  if (!ctx.chat || !ctx.message || !ctx.message.text) {
+    return NaN;
+  }
 
-  const validationError = validatorFunc(ctx.message!.text!);
+  await ctx.api.deleteMessage(ctx.chat.id, ctx.message.message_id);
 
-  if (!validationError && typeof ctx.message!.text !== 'undefined') {
-    return Number(ctx.message!.text);
+  const validationError = validatorFunc(ctx.message.text);
+
+  if (!validationError) {
+    return Number(ctx.message.text);
   }
 
   const newMessage = updateMessageWithError(message, validationError);
+
   return promptUserForNumber(
     ctx,
     conversation,
     validatorFunc,
     chat_id,
     message_id,
+    exerciseParams,
     newMessage,
     options
   );
@@ -165,7 +200,7 @@ export async function promptUserForText(
   chat_id: number,
   message_id: number,
   message: string,
-  options: any
+  options: InlineKeyboardOptions
 ): Promise<string> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
@@ -215,7 +250,7 @@ export function promptUserForWeight(
 
   if (previousWeight !== undefined && hitAllReps !== undefined) {
     const completedSets = getCompletedSetsString(setCount);
-    message = recordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps);
+    message = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps);
     options = {
       ...options,
       reply_markup: getWeightOptions(previousWeight, 'nextWorkout'),
@@ -230,6 +265,7 @@ export function promptUserForWeight(
     validateWeight,
     chat_id,
     message_id,
+    exerciseParams,
     message,
     options
   );
@@ -267,6 +303,7 @@ export function promptUserForRepetitions(
     validateReps,
     chat_id,
     message_id,
+    exerciseParams,
     message,
     options
   );
@@ -305,6 +342,7 @@ export function promptUserForRPE(
     validateRPE,
     chat_id,
     message_id,
+    exerciseParams,
     message,
     options
   );

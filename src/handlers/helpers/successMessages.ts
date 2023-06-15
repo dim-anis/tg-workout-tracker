@@ -3,10 +3,14 @@ export const successMessages = {
     '✅ <b>Successfully recorded.</b> Would you like to record one more set?'
 };
 
-export const recordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean) => {
+export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb' = 'kg') => {
+  const weightUnit = unit === 'kg' ? 'kg' : 'lbs';
+  const weightConversionFactor = unit === 'kg' ? 1 : 2.20462;
+  const convertedWeight = previousWeight * weightConversionFactor;
+
   return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
     'Please enter the weight\n\n' +
-    `Last working weight: <b>${previousWeight}kg</b>\n\n` +
+    `Last working weight: <b>${convertedWeight}${weightUnit}</b>\n\n` +
     `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
 }
 
