@@ -43,19 +43,24 @@ export const getRpeOptions = (prefix = ''): InlineKeyboard => {
 export const getWeightOptions = (
   prevWeight: number,
   prefix = '',
-  isMetric = true,
+  isMetric: boolean,
 ): InlineKeyboard => {
-  const increments = [1.25, 2.5, 5, -1.25, -2.5, -5];
+  const weightIncrementsKg = [1.25, 2.5, 5, -1.25, -2.5, -5];
+  const weightIncrementsLb = [2.5, 5, 10, -2.5, -5, -10];
+  const weightIncrements = isMetric ? weightIncrementsKg : weightIncrementsLb;
+
+  const weightConversionFactor = isMetric ? 1 : 2.20462;
+
+  prevWeight = prevWeight * weightConversionFactor;
+
   const keyboard = new InlineKeyboard();
 
-  // three most common smallest plates in kgs: 1.25, 2.5, 5 
-  //                                   in lbs: 2.5,  5,   10
-  for (const [index, inc] of increments.entries()) {
-    const value = isMetric ? inc : inc * 2;
+  for (const [index, value] of weightIncrements.entries()) {
     const newWeight = prevWeight + value;
+    const newWeightInKg = (newWeight / weightConversionFactor).toFixed(1);
 
     const buttonLabel = value > 0 ? `+${value}` : `${value}`;
-    const buttonData = `${prefix}:${newWeight}`;
+    const buttonData = `${prefix}:${newWeightInKg}`;
     keyboard.text(buttonLabel, buttonData);
 
     if (isEveryThirdButton(index)) {
@@ -63,12 +68,13 @@ export const getWeightOptions = (
     }
   }
 
-  const toggleUnitButtonLabel = `${isMetric ? `${checkedCircle} kg / ${uncheckedCircle} lb` :  `${uncheckedCircle} kg / ${checkedCircle} lb`}`;
+  const toggleUnitButtonLabel = `${isMetric ? `${checkedCircle} kg / ${uncheckedCircle} lb` : `${uncheckedCircle} kg / ${checkedCircle} lb`}`;
   const toggleUnitButtonData = `${prefix}:toggle_unit~${isMetric ? 'kg' : 'lb'}`;
   keyboard.text(toggleUnitButtonLabel, toggleUnitButtonData);
 
+  const newWeightInKg = prevWeight / weightConversionFactor;
   const defaultButtonLabel = '✓ Use same';
-  const defaultButtonData = `${prefix}:${prevWeight}`;
+  const defaultButtonData = `${prefix}:${newWeightInKg}`;
   keyboard.text(defaultButtonLabel, defaultButtonData);
 
   return keyboard;

@@ -3,11 +3,21 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from 'models/exercise.js';
 import { isToday } from 'date-fns';
 
+export function convertWeightWithRounding(weight: number, weightUnit: 'kg' | 'lb'): number {
+  const weightConversionFactor = 2.20462;
+  const roundingFactor = weightUnit === 'kg' ? 0.5 : 1;
+  const convertedWeight = Math.round(weight * weightConversionFactor / roundingFactor) * roundingFactor;
+
+  return convertedWeight;
+}
+
 export function getWorkoutStatsText(
   workout: WorkoutType,
   workoutCount: number,
-  prs: PersonalBestWithName[]
+  prs: PersonalBestWithName[],
+  isMetric: boolean
 ) {
+  const weightUnit = isMetric ? 'kg' : 'lb';
   const dateString = new Date().toLocaleDateString();
   const { createdAt, updatedAt } = workout;
   const { hours, minutes, seconds } = intervalToDuration({
@@ -16,14 +26,14 @@ export function getWorkoutStatsText(
   });
   const totalDurationString = `${hours ? hours + 'h' : ''} ${minutes ? minutes + 'min' : ''
     } ${seconds ? seconds + 's' : ''}`;
-  const totalVolume = getTotalVolume(workout.sets).toLocaleString();
-  const prMessage = prs.length ? createPrMessage(prs) : '';
+  const totalVolume = convertWeightWithRounding(getTotalVolume(workout.sets), weightUnit).toLocaleString();
+  const prMessage = prs.length ? createPrMessage(prs, isMetric) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
     `🔢 Workout number: <b>${workoutCount}</b>\n` +
     `📅 Date: <b>${dateString}</b>\n` +
-    `🏋️‍♂️ Total volume: <b>${totalVolume}kgs</b>\n` +
+    `🏋️‍♂️ Total volume: <b>${totalVolume}${weightUnit}</b>\n` +
     `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
     `⭐ Average RPE: <b>${workout.avg_rpe}</b>` +
     prMessage;
@@ -51,17 +61,19 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
 
 type PersonalBestWithName = PersonalBest & { exerciseName: string };
 
-function createPrMessage(newPbs: PersonalBestWithName[]) {
+function createPrMessage(newPbs: PersonalBestWithName[], isMetric: boolean) {
+  const weightUnit = isMetric ? 'kg' : 'lb';
+
   const pbMessageLines = [];
   if (newPbs.length > 0) {
     for (const newPb of newPbs) {
       let diff;
       if (newPb.oldPb) {
-        diff = newPb.weight - newPb.oldPb?.weight;
+        diff = convertWeightWithRounding(newPb.weight - newPb.oldPb?.weight, weightUnit);
         diff = Number.isInteger(diff) ? diff : diff.toFixed(2);
       }
-      const strengthImprovement = diff ? ` (+${diff}kgs)` : '';
-      pbMessageLines.push(`${newPb.exerciseName} - ${newPb.weight}kgs x ${newPb.repetitions} ${strengthImprovement}`)
+      const strengthImprovement = diff ? ` (+${diff}${weightUnit})` : '';
+      pbMessageLines.push(`${newPb.exerciseName} - ${convertWeightWithRounding(newPb.weight, weightUnit)}${weightUnit} x ${newPb.repetitions} ${strengthImprovement}`)
     }
   }
 

@@ -117,7 +117,8 @@ const handleNextWorkout = async (
     const workoutStatsText = getWorkoutStatsText(
       updatedCurrentWorkout,
       workoutCount,
-      prs
+      prs,
+      ctx.dbchat.settings.isMetric
     );
 
     await ctx.api.editMessageText(

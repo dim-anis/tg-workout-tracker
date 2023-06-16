@@ -4,6 +4,7 @@ import { getCompletedSetsString } from './calculateSetData.js';
 import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
 import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './successMessages.js';
+import { convertWeightWithRounding } from './workoutStats.js';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
@@ -128,7 +129,8 @@ export async function promptUserForNumber(
   message_id: number,
   exerciseParams: RecordExerciseParams,
   message: string,
-  options: InlineKeyboardOptions
+  options: InlineKeyboardOptions,
+  unit?: 'kg' | 'lb'
 ): Promise<number> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
@@ -138,7 +140,6 @@ export async function promptUserForNumber(
     const callbackData = ctx.callbackQuery.data?.split(':')[1];
     if (callbackData && callbackData.startsWith('toggle_unit')) {
       const currUnit = callbackData.split('~')[1];
-      conversation.log(currUnit);
 
       const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
       if (previousWeight === undefined || hitAllReps === undefined) {
@@ -160,14 +161,15 @@ export async function promptUserForNumber(
         message_id,
         exerciseParams,
         updatedMessage,
-        updatedOptions
+        updatedOptions,
+        unit === 'kg' ? 'lb' : 'kg'
       )
     }
 
     return Number(callbackData);
   }
 
-  if (!ctx.chat || !ctx.message || !ctx.message.text) {
+  if (!ctx.chat || !ctx.message?.text) {
     return NaN;
   }
 
@@ -176,7 +178,10 @@ export async function promptUserForNumber(
   const validationError = validatorFunc(ctx.message.text);
 
   if (!validationError) {
-    return Number(ctx.message.text);
+    const value = Number(ctx.message.text);
+    const weight = unit === 'kg' ? value : Number((value / 2.20462).toFixed(2));
+    conversation.log(weight);
+    return weight;
   }
 
   const newMessage = updateMessageWithError(message, validationError);
@@ -242,6 +247,8 @@ export function promptUserForWeight(
   message_id: number,
   exerciseParams: RecordExerciseParams,
 ): Promise<number> {
+  const { isMetric } = ctx.dbchat.settings;
+  const unit = isMetric ? 'kg' : 'lb';
   const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
   let options: InlineKeyboardOptions = {
     parse_mode: 'HTML',
@@ -250,10 +257,10 @@ export function promptUserForWeight(
 
   if (previousWeight !== undefined && hitAllReps !== undefined) {
     const completedSets = getCompletedSetsString(setCount);
-    message = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps);
+    message = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps, unit);
     options = {
       ...options,
-      reply_markup: getWeightOptions(previousWeight, 'nextWorkout'),
+      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', isMetric),
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\nType in the weight:`;
@@ -267,7 +274,8 @@ export function promptUserForWeight(
     message_id,
     exerciseParams,
     message,
-    options
+    options,
+    unit
   );
 }
 

@@ -1,12 +1,13 @@
+import { convertWeightWithRounding } from "./workoutStats.js";
+
 export const successMessages = {
   onRecordSetSuccess:
     '✅ <b>Successfully recorded.</b> Would you like to record one more set?'
 };
 
-export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb' = 'kg') => {
-  const weightUnit = unit === 'kg' ? 'kg' : 'lbs';
-  const weightConversionFactor = unit === 'kg' ? 1 : 2.20462;
-  const convertedWeight = previousWeight * weightConversionFactor;
+export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb') => {
+  const weightUnit = unit === 'kg' ? 'kg' : 'lb';
+  const convertedWeight = weightUnit === 'kg' ? previousWeight : convertWeightWithRounding(previousWeight, 'lb');
 
   return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
     'Please enter the weight\n\n' +
