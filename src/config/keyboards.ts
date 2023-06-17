@@ -57,7 +57,8 @@ export const getWeightOptions = (
 
   for (const [index, value] of weightIncrements.entries()) {
     const newWeight = prevWeight + value;
-    const newWeightInKg = (newWeight / weightConversionFactor).toFixed(1);
+    // if the value is in lb, convert to kg and round to 2 decimals for storing in db
+    const newWeightInKg = isMetric ? newWeight : Number((newWeight / weightConversionFactor).toFixed(2));
 
     const buttonLabel = value > 0 ? `+${value}` : `${value}`;
     const buttonData = `${prefix}:${newWeightInKg}`;
