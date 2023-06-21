@@ -1,5 +1,6 @@
 import { InlineKeyboard } from 'grammy';
 import { InlineKeyboardMarkup } from 'grammy/types';
+import { fromLbToKgRounded } from '../handlers/helpers/unitConverters.js';
 
 export const backButton = '◀ Back';
 export const checkedSquare = '■';
@@ -49,19 +50,15 @@ export const getWeightOptions = (
   const weightIncrementsLb = [2.5, 5, 10, -2.5, -5, -10];
   const weightIncrements = isMetric ? weightIncrementsKg : weightIncrementsLb;
 
-  const weightConversionFactor = isMetric ? 1 : 2.20462;
-
-  prevWeight = prevWeight * weightConversionFactor;
-
   const keyboard = new InlineKeyboard();
 
   for (const [index, value] of weightIncrements.entries()) {
-    const newWeight = prevWeight + value;
-    // if the value is in lb, convert to kg and round to 2 decimals for storing in db
-    const newWeightInKg = isMetric ? newWeight : Number((newWeight / weightConversionFactor).toFixed(2));
+    const incrementValue = isMetric ? value : fromLbToKgRounded(value);
+    const newWeightInKg = prevWeight + incrementValue;
 
     const buttonLabel = value > 0 ? `+${value}` : `${value}`;
     const buttonData = `${prefix}:${newWeightInKg}`;
+
     keyboard.text(buttonLabel, buttonData);
 
     if (isEveryThirdButton(index)) {
@@ -73,9 +70,8 @@ export const getWeightOptions = (
   const toggleUnitButtonData = `${prefix}:toggle_unit~${isMetric ? 'kg' : 'lb'}`;
   keyboard.text(toggleUnitButtonLabel, toggleUnitButtonData);
 
-  const newWeightInKg = prevWeight / weightConversionFactor;
   const defaultButtonLabel = '✓ Use same';
-  const defaultButtonData = `${prefix}:${newWeightInKg}`;
+  const defaultButtonData = `${prefix}:${prevWeight}`;
   keyboard.text(defaultButtonLabel, defaultButtonData);
 
   return keyboard;

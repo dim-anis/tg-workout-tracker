@@ -4,7 +4,7 @@ import { getCompletedSetsString } from './calculateSetData.js';
 import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
 import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './successMessages.js';
-import { conversations } from '@grammyjs/conversations';
+import { fromLbToKgRounded } from './unitConverters.js';
 
 const errorMessages = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
@@ -179,7 +179,7 @@ export async function promptUserForNumber(
 
   if (!validationError) {
     const value = Number(ctx.message.text);
-    const weight = unit === 'kg' ? value : Number((value / 2.20462).toFixed(2));
+    const weight = unit === 'kg' ? value : fromLbToKgRounded(value);
 
     return weight;
   }
