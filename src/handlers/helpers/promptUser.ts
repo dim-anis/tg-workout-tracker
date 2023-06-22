@@ -179,9 +179,12 @@ export async function promptUserForNumber(
 
   if (!validationError) {
     const value = Number(ctx.message.text);
-    const weight = unit === 'kg' ? value : fromLbToKgRounded(value);
-
-    return weight;
+    if (unit) {
+      const weight = unit === 'kg' ? value : fromLbToKgRounded(value);
+      return weight;
+    } else {
+      return value;
+    }
   }
 
   const newMessage = updateMessageWithError(message, validationError);
