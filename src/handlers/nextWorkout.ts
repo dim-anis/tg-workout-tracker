@@ -4,7 +4,7 @@ import type { MyConversation, MyContext } from '../types/bot.js';
 import { InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
 import { countSets, getPrs, getWorkoutStatsText } from './helpers/workoutStats.js';
-import { getWorkoutTitleMessage } from './helpers/successMessages.js';
+import { getWorkoutTitleMessage } from './helpers/textMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
@@ -15,7 +15,7 @@ import {
   isDeloadWorkout,
   promptUserForPredefinedString
 } from './helpers/promptUser.js';
-import { getCompletedSetsString } from './helpers/calculateSetData.js';
+import { getCompletedSetsString } from './helpers/workoutStats.js';
 
 export type RecordExerciseParams = {
   selectedExercise: string;
@@ -23,6 +23,7 @@ export type RecordExerciseParams = {
   previousReps?: number;
   hitAllReps?: boolean;
   setCount?: number;
+  unit: 'kg' | 'lb';
 };
 
 const composer = new Composer<MyContext>();
@@ -37,7 +38,7 @@ const handleNextWorkout = async (
 
   try {
     const { id: chat_id } = ctx.chat;
-    const { splitLength } = ctx.dbchat.settings;
+    const { splitLength, isMetric } = ctx.dbchat.settings;
     const { recentWorkouts } = ctx.dbchat;
     const mostRecentWorkout = recentWorkouts[0];
     const isTodayWorkout = isToday(mostRecentWorkout.createdAt);
@@ -84,7 +85,8 @@ const handleNextWorkout = async (
     const exerciseParams: RecordExerciseParams = {
       selectedExercise,
       setCount: setCountMap[selectedExercise],
-      ...previousWorkoutSetData
+      ...previousWorkoutSetData,
+      unit: isMetric ? 'kg' : 'lb'
     };
 
     const updatedCurrentWorkout = await recordSet(
@@ -145,7 +147,7 @@ async function recordSet(
     conversation,
     chat_id,
     message_id,
-    exerciseParams
+    exerciseParams,
   );
   const repetitions = await promptUserForRepetitions(
     ctx,

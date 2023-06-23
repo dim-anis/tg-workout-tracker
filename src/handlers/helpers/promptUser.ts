@@ -1,29 +1,11 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
 import { getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
-import { getCompletedSetsString } from './calculateSetData.js';
+import { getCompletedSetsString } from './workoutStats.js';
 import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
-import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './successMessages.js';
+import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './textMessages.js';
 import { fromLbToKgRounded } from './unitConverters.js';
-
-const errorMessages = {
-  input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
-  input_too_long:
-    '\n\n❌ <b>Input is too long. Max length is 50 characters.</b>',
-  input_contains_special_chars:
-    '\n\n❌ Input contains special characters. Only alphanumeric characters are allowed.',
-  input_is_not_a_number: '\n\n❌ <b>Input must be a number.</b>',
-  input_is_out_of_range_weight:
-    '\n\n❌ <b>Input is out of range. Must be between 1 and 999.</b>',
-  input_is_out_of_range_rpe:
-    '\n\n❌ <b>Input is out of range. Must be between 6.0 and 10.0.</b>',
-  input_is_out_of_range_repetitions:
-    '\n\n❌ <b>Input is out of range. Must be between 1 and 99.</b>',
-  input_is_not_a_multiple_of_half:
-    '\n\n❌ <b>Input must be a multiple of 0.5 (5.5, 6, 6.5, etc.)./b>',
-  input_is_not_an_integer: '\n\n❌ <b>Input must be an integer.</b>\n',
-  input_is_not_defined: "\n\n❌ <b>Input isn't one of the given options.</b>\n"
-};
+import { errorMessages } from './textMessages.js';
 
 function updateMessageWithError(message: string, error = '') {
   const existingErrorMessages = message
@@ -141,28 +123,17 @@ export async function promptUserForNumber(
     if (callbackData && callbackData.startsWith('toggle_unit')) {
       const currUnit = callbackData.split('~')[1];
 
-      const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
-      if (previousWeight === undefined || hitAllReps === undefined) {
-        return NaN;
+      exerciseParams = {
+        ...exerciseParams,
+        unit: currUnit === 'kg' ? 'lb' : 'kg'
       }
 
-      const completedSets = getCompletedSetsString(setCount);
-      const updatedOptions: InlineKeyboardOptions = {
-        parse_mode: 'HTML',
-        reply_markup: getWeightOptions(previousWeight, 'nextWorkout', currUnit !== 'kg'),
-      };
-      const updatedMessage = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps, currUnit === 'kg' ? 'lb' : 'kg');
-
-      return promptUserForNumber(
+      return promptUserForWeight(
         ctx,
         conversation,
-        validatorFunc,
         chat_id,
         message_id,
         exerciseParams,
-        updatedMessage,
-        updatedOptions,
-        unit === 'kg' ? 'lb' : 'kg'
       )
     }
 
@@ -223,12 +194,16 @@ export async function promptUserForText(
     return value;
   }
 
-  await ctx.api.deleteMessage(ctx.chat!.id, ctx.message!.message_id);
+  if (!ctx.chat || !ctx.message?.text) {
+    return '';
+  }
 
-  const validationError = validatorFunc(ctx.message!.text!);
+  await ctx.api.deleteMessage(ctx.chat.id, ctx.message.message_id);
 
-  if (!validationError && typeof ctx.message!.text !== 'undefined') {
-    return ctx.message!.text;
+  const validationError = validatorFunc(ctx.message.text);
+
+  if (!validationError && typeof ctx.message.text !== 'undefined') {
+    return ctx.message.text;
   }
 
   const newMessage = updateMessageWithError(message, validationError);
@@ -250,9 +225,8 @@ export function promptUserForWeight(
   message_id: number,
   exerciseParams: RecordExerciseParams,
 ): Promise<number> {
-  const { isMetric } = ctx.dbchat.settings;
-  const unit = isMetric ? 'kg' : 'lb';
-  const { selectedExercise, previousWeight, hitAllReps, setCount } = exerciseParams;
+  const { selectedExercise, previousWeight, hitAllReps, setCount, unit } = exerciseParams;
+
   let options: InlineKeyboardOptions = {
     parse_mode: 'HTML',
   };
@@ -263,7 +237,7 @@ export function promptUserForWeight(
     message = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps, unit);
     options = {
       ...options,
-      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', isMetric),
+      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', unit),
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\nType in the weight:`;

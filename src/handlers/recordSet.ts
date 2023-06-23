@@ -16,7 +16,7 @@ import {
   promptUserForWeight,
   isDeloadWorkout
 } from './helpers/promptUser.js';
-import { successMessages } from './helpers/successMessages.js';
+import { successMessages } from './helpers/textMessages.js';
 import { isToday } from 'date-fns';
 import { ExerciseType } from 'models/exercise.js';
 
@@ -158,7 +158,10 @@ async function getSetData(
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    {selectedExercise: exercise}
+    {
+      selectedExercise: exercise,
+      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
+    },
   );
 
   const repetitions = await promptUserForRepetitions(
@@ -166,7 +169,10 @@ async function getSetData(
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    {selectedExercise: exercise},
+    {
+      selectedExercise: exercise,
+      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
+    },
     weight
   );
 
@@ -175,7 +181,10 @@ async function getSetData(
     conversation,
     chat_id,
     conversation.session.state.lastMessageId,
-    {selectedExercise: exercise},
+    {
+      selectedExercise: exercise,
+      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
+    },
     weight,
     repetitions
   );

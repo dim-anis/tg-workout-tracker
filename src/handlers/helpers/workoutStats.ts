@@ -3,6 +3,7 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from 'models/exercise.js';
 import { isToday } from 'date-fns';
 import { fromKgToLbRounded } from './unitConverters.js';
+import { checkedCircle } from '../../config/keyboards.js';
 
 export function getWorkoutStatsText(
   workout: WorkoutType,
@@ -106,3 +107,6 @@ export function getTotalVolume(setsArray: WorkoutType['sets']) {
   );
 }
 
+export function getCompletedSetsString(setCount = 0) {
+  return `${[checkedCircle.repeat(setCount)]}`;
+}

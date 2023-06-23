@@ -44,16 +44,16 @@ export const getRpeOptions = (prefix = ''): InlineKeyboard => {
 export const getWeightOptions = (
   prevWeight: number,
   prefix = '',
-  isMetric: boolean,
+  unit: 'kg' | 'lb',
 ): InlineKeyboard => {
   const weightIncrementsKg = [1.25, 2.5, 5, -1.25, -2.5, -5];
   const weightIncrementsLb = [2.5, 5, 10, -2.5, -5, -10];
-  const weightIncrements = isMetric ? weightIncrementsKg : weightIncrementsLb;
+  const weightIncrements = unit === 'kg' ? weightIncrementsKg : weightIncrementsLb;
 
   const keyboard = new InlineKeyboard();
 
   for (const [index, value] of weightIncrements.entries()) {
-    const incrementValue = isMetric ? value : fromLbToKgRounded(value);
+    const incrementValue = unit === 'kg' ? value : fromLbToKgRounded(value);
     const newWeightInKg = prevWeight + incrementValue;
 
     const buttonLabel = value > 0 ? `+${value}` : `${value}`;
@@ -66,8 +66,8 @@ export const getWeightOptions = (
     }
   }
 
-  const toggleUnitButtonLabel = `${isMetric ? `${checkedCircle} kg / ${uncheckedCircle} lb` : `${uncheckedCircle} kg / ${checkedCircle} lb`}`;
-  const toggleUnitButtonData = `${prefix}:toggle_unit~${isMetric ? 'kg' : 'lb'}`;
+  const toggleUnitButtonLabel = `${unit === 'kg' ? `${checkedCircle} kg / ${uncheckedCircle} lb` : `${uncheckedCircle} kg / ${checkedCircle} lb`}`;
+  const toggleUnitButtonData = `${prefix}:toggle_unit~${unit}`;
   keyboard.text(toggleUnitButtonLabel, toggleUnitButtonData);
 
   const defaultButtonLabel = '✓ Use same';
