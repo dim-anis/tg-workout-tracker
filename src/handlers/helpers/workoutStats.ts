@@ -21,7 +21,7 @@ export function getWorkoutStatsText(
     } ${seconds ? seconds + 's' : ''}`;
   const totalVolumeInKg = getTotalVolume(workout.sets);
   const totalVolume = weightUnit === 'kg' ? totalVolumeInKg : fromKgToLbRounded(totalVolumeInKg);
-  const prMessage = prs.length ? createPrMessage(prs, isMetric) : '';
+  const prMessage = prs.length ? createPrMessage(prs, weightUnit) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
@@ -55,24 +55,22 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
 
 type PersonalBestWithName = PersonalBest & { exerciseName: string };
 
-function createPrMessage(newPbs: PersonalBestWithName[], isMetric: boolean) {
-  const weightUnit = isMetric ? 'kg' : 'lb';
-
+function createPrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
   const pbMessageLines = [];
   if (newPbs.length > 0) {
     for (const newPb of newPbs) {
       let pbDiff = 0;
       if (newPb.oldPb) {
-        const pbWeightDiffInKg = Number((newPb.weight - newPb.oldPb?.weight).toFixed(2));
-        const pbWeightDiffConverted = weightUnit === 'kg' ? pbWeightDiffInKg : fromKgToLbRounded(pbWeightDiffInKg);
+        const pbWeightDiffInKg = Number((newPb.weight - newPb.oldPb?.weight).toFixed(1));
+        const pbWeightDiffConverted = unit === 'kg' ? pbWeightDiffInKg : fromKgToLbRounded(pbWeightDiffInKg);
         const pbWeightDiffConvertedRounded = Number.isInteger(pbWeightDiffConverted) ? Math.floor(pbWeightDiffConverted) : pbWeightDiffConverted;
         pbDiff = pbWeightDiffConvertedRounded;
       }
 
-      const strengthImprovement = pbDiff ? ` (+${pbDiff}${weightUnit})` : '';
-      const newWeight = weightUnit === 'kg' ? newPb.weight : fromKgToLbRounded(newPb.weight);
+      const strengthImprovement = pbDiff ? ` (+${pbDiff}${unit})` : '';
+      const newWeight = unit === 'kg' ? newPb.weight : fromKgToLbRounded(newPb.weight);
 
-      pbMessageLines.push(`${newPb.exerciseName} - <b>${newWeight}${weightUnit} x ${newPb.repetitions} ${strengthImprovement}</b>`)
+      pbMessageLines.push(`${newPb.exerciseName} - <b>${newWeight}${unit} x ${newPb.repetitions} ${strengthImprovement}</b>`)
     }
   }
 

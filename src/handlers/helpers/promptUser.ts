@@ -207,6 +207,7 @@ export async function promptUserForText(
   }
 
   const newMessage = updateMessageWithError(message, validationError);
+
   return promptUserForText(
     ctx,
     conversation,
