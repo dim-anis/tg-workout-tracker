@@ -2,7 +2,7 @@ import { Composer } from 'grammy';
 import type { MyContext } from '../types/bot.js';
 import { Menu, type MenuFlavor } from '@grammyjs/menu';
 import { updateUserSettings } from '../models/user.js';
-import { checkedSquare, uncheckedSquare } from '../config/keyboards.js';
+import { InlineKeyboardOptions, checkedSquare, uncheckedSquare } from '../config/keyboards.js';
 import { type UserType } from '../models/user.js';
 
 const mesocycleLengths = [4, 5, 6];
@@ -14,7 +14,7 @@ const mainMenu = new Menu<MyContext>('main')
     { text: 'Unit system', payload: 'unit' },
     'settings-unit',
     async (ctx) =>
-      ctx.editMessageText('<b>⚙️ Unit system</b>\n\nChoose one of the two:', {
+      await ctx.editMessageText('<b>⚙️ Unit system</b>\n\nChoose one of the two:', {
         parse_mode: 'HTML'
       })
   )
@@ -54,14 +54,20 @@ for (let length = 1; length < 8; length++) {
       ctx.dbchat.settings.splitLength === length
         ? `${checkedSquare} ${length}`
         : `${uncheckedSquare} ${length}`,
-    async (ctx) => updateSettings(ctx, 'splitLength', length)
+    async (ctx) => await updateSettings(ctx, 'splitLength', length)
   );
+}
+
+const mainMenuTitle = '⚙️ ' + '<b>Settings</b>';
+const mainMenuOpts: InlineKeyboardOptions = {
+  reply_markup: mainMenu,
+  parse_mode: 'HTML'
 }
 
 splitLengthMenu
   .row()
   .back('✅ Apply', async (ctx) =>
-    ctx.editMessageText('⚙️ <b>Settings</b>', { parse_mode: 'HTML' })
+    await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
   );
 
 const mesocycleLengthMenu = new Menu<MyContext>('mesocycle-length');
@@ -71,14 +77,14 @@ for (const lengthOption of mesocycleLengths) {
       ctx.dbchat.settings.mesocycleLength === lengthOption
         ? `${checkedSquare} ${lengthOption}`
         : `${uncheckedSquare} ${lengthOption}`,
-    async (ctx) => updateSettings(ctx, 'mesocycleLength', lengthOption)
+    async (ctx) => await updateSettings(ctx, 'mesocycleLength', lengthOption)
   );
 }
 
 mesocycleLengthMenu
   .row()
   .back('✅ Apply', async (ctx) =>
-    ctx.editMessageText('⚙️ <b>Settings</b>', { parse_mode: 'HTML' })
+    await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
   );
 
 const settingsUnitMenu = new Menu<MyContext>('settings-unit')
@@ -87,18 +93,18 @@ const settingsUnitMenu = new Menu<MyContext>('settings-unit')
       ctx.dbchat.settings.isMetric
         ? `${checkedSquare} Metric (kg)`
         : `${uncheckedSquare} Metric (kg)`,
-    async (ctx) => updateSettings(ctx, 'isMetric', true)
+    async (ctx) => await updateSettings(ctx, 'isMetric', true)
   )
   .text(
     (ctx) =>
       ctx.dbchat.settings.isMetric
         ? `${uncheckedSquare} Imperial (lb)`
         : `${checkedSquare} Imperial (lb)`,
-    async (ctx) => updateSettings(ctx, 'isMetric', false)
+    async (ctx) => await updateSettings(ctx, 'isMetric', false)
   )
   .row()
   .back('✅ Apply', async (ctx) =>
-    ctx.editMessageText('⚙️ <b>Settings</b>', { parse_mode: 'HTML' })
+    await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
   );
 
 const updateSettings = async <K extends keyof UserType['settings']>(
@@ -108,12 +114,14 @@ const updateSettings = async <K extends keyof UserType['settings']>(
 ) => {
   ctx.dbchat.settings[settingsKey] = updatedValue;
   const { splitLength, mesocycleLength, isMetric } = ctx.dbchat.settings;
-  const updatedUser = await updateUserSettings(
+
+  await updateUserSettings(
     ctx.dbchat.user_id,
     splitLength,
     mesocycleLength,
     isMetric
   );
+
   ctx.menu.update();
 };
 
@@ -124,17 +132,12 @@ mainMenu.register(splitLengthMenu);
 composer.use(mainMenu);
 
 composer.command('settings', async (ctx) => {
-  await ctx.reply('⚙️ <b>Settings</b>', {
-    reply_markup: mainMenu,
-    parse_mode: 'HTML'
-  });
+  await ctx.reply(mainMenuTitle, mainMenuOpts);
 });
+
 composer.callbackQuery('/settings', async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.reply('⚙️ <b>Settings</b>', {
-    reply_markup: mainMenu,
-    parse_mode: 'HTML'
-  });
+  await ctx.reply(mainMenuTitle, mainMenuOpts);
 });
 
 export default composer;

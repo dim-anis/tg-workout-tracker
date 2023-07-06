@@ -54,8 +54,8 @@ async function runBot() {
     }
   });
 
-  process.once('SIGTERM', async () => bot.stop());
-  process.once('SIGINT', async () => bot.stop());
+  process.once('SIGTERM', async () => await bot.stop());
+  process.once('SIGINT', async () => await bot.stop());
 }
 
 void runBot();

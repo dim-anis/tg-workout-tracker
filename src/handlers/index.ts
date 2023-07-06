@@ -1,5 +1,6 @@
 import { Composer } from 'grammy';
 import start from './start.js';
+import stats from './stats.js';
 import recordSet from './recordSet.js';
 import nextWorkout from './nextWorkout.js';
 import addExercise from './addExercise/populateExercises.js';
@@ -20,6 +21,7 @@ composer.use(async (ctx, next) => {
 composer.filter((ctx) => ctx.chat?.type === 'private');
 composer.use(start);
 composer.use(settings);
+composer.use(stats);
 composer.use(addExercise);
 composer.use(recordSet);
 composer.use(nextWorkout);
