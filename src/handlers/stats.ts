@@ -1,20 +1,21 @@
-import { Menu } from "@grammyjs/menu";
+import { Menu, MenuRange } from "@grammyjs/menu";
 import { InlineKeyboardOptions } from "config/keyboards.js";
 import { Composer } from "grammy";
 import { MyContext } from "types/bot.js";
-import { getWorkoutStatsText } from "./helpers/workoutStats.js";
+import { generateWorkoutStatsString } from "./helpers/workoutStats.js";
 
 const composer = new Composer<MyContext>();
 
 const mainMenu = new Menu<MyContext>('statsMenu')
   .submenu(
-    { text: 'by workout', payload: 'workout' },
+    { text: 'by workout', payload: '0' },
     'statsByWorkout',
     async (ctx) => {
-      const lastWorkout = ctx.dbchat.recentWorkouts[0];
-      const message = getWorkoutStatsText(lastWorkout, 0, [], true);
-
-      await ctx.editMessageText(message, { parse_mode: 'HTML' })
+      const workoutStatsString = generateWorkoutStatsString(
+        ctx.dbchat.recentWorkouts[0],
+        ctx.dbchat.settings.isMetric
+      );
+      await ctx.editMessageText(workoutStatsString, { parse_mode: 'HTML' })
     }
   )
   .row()
@@ -28,29 +29,60 @@ const mainMenu = new Menu<MyContext>('statsMenu')
     'statsByMonth',
   );
 
-const statsByWorkoutMenu = new Menu<MyContext>('statsByWorkout')
-  .text('1')
-  .text('2')
-  .text('3')
-  .text('4')
-  .text('>>')
-  .row()
-  .back(
-    'Go back',
-    async (ctx) => {
-      await ctx.editMessageText('Last 20 workouts shows', { parse_mode: 'HTML' })
-    }
-  )
-  ;
-
-mainMenu.register(statsByWorkoutMenu);
-composer.use(mainMenu);
-
 const mainMenuTitle = '📊 ' + '<b>Training Stats</b>';
 const mainMenuOpts: InlineKeyboardOptions = {
   reply_markup: mainMenu,
   parse_mode: 'HTML'
 }
+
+const statsByDayMenu = new Menu<MyContext>('statsByWorkout');
+statsByDayMenu.dynamic((ctx) => {
+  const startIndex = Number(ctx.match);
+  const workouts = ctx.dbchat.recentWorkouts;
+  const range = new MenuRange<MyContext>();
+
+  const remainingWorkouts = workouts.slice(startIndex);
+  const increment = Math.min(4, remainingWorkouts.length);
+
+  const prevPageStartIndex = startIndex - 4;
+
+  // hide 'prev' button on the first page
+  if (startIndex > 0) {
+    range.submenu({ text: '<<', payload: prevPageStartIndex.toString() }, 'statsByWorkout');
+  }
+
+  // show 4 buttons when 'back' and 'forward' buttons are shown, show 5 otherwise
+  // 'back' and 'forward' not included in the count
+  for (let i = 0; i < increment; i++) {
+    const workoutIndex = startIndex + i;
+    const dateShort = workouts[workoutIndex].createdAt.toLocaleDateString('en-US', { day: 'numeric', month: 'numeric' });
+    range
+      .text(
+        { text: dateShort, payload: `${workoutIndex}` },
+      )
+  }
+
+  // calculate the workout index in the payload
+  const nextPageStartIndex = (startIndex || 0) + increment;
+
+  // show 'forward' button on all pages but the last
+  if (remainingWorkouts.length - increment > 0) {
+    range.submenu({ text: '>>', payload: nextPageStartIndex.toString() }, 'statsByWorkout')
+  }
+
+  return range;
+});
+
+statsByDayMenu.row();
+statsByDayMenu
+  .back(
+    { text: '<< Back to all stats', payload: 'byDay' },
+    async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
+  );
+
+mainMenu.register(statsByDayMenu);
+composer.use(mainMenu);
+
 
 composer.command('stats', async (ctx) => {
   await ctx.reply(mainMenuTitle, mainMenuOpts);

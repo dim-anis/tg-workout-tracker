@@ -5,28 +5,29 @@ import { isToday } from 'date-fns';
 import { fromKgToLbRounded } from './unitConverters.js';
 import { checkedCircle } from '../../config/keyboards.js';
 
-export function getWorkoutStatsText(
+export function generateWorkoutStatsString(
   workout: WorkoutType,
-  workoutCount: number,
-  prs: PersonalBestWithName[],
-  isMetric: boolean
+  isMetric: boolean,
+  workoutCount?: number,
+  prs?: PersonalBestWithName[],
 ) {
   const weightUnit = isMetric ? 'kg' : 'lb';
-  const dateString = new Date().toLocaleDateString();
-  const { hours, minutes, seconds } = intervalToDuration({
+  const workoutDate = workout.createdAt.toLocaleDateString();
+  const { hours, minutes, seconds } = workout.updatedAt && intervalToDuration({
     start: new Date(workout.createdAt),
     end: new Date(workout.updatedAt)
   });
-  const totalDurationString = `${hours ? hours + 'h' : ''} ${minutes ? minutes + 'min' : ''
-    } ${seconds ? seconds + 's' : ''}`;
+  const totalDurationString = workout.updatedAt 
+    ? 'N/A' 
+    : `<b>${hours || 0}h ${minutes || 0}m ${seconds || 0}s</b>`
   const totalVolumeInKg = getTotalVolume(workout.sets);
   const totalVolume = weightUnit === 'kg' ? totalVolumeInKg : fromKgToLbRounded(totalVolumeInKg);
-  const prMessage = prs.length ? createPrMessage(prs, weightUnit) : '';
+  const prMessage = prs?.length ? createPrMessage(prs, weightUnit) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
     `🔢 Workout number: <b>${workoutCount}</b>\n` +
-    `📅 Date: <b>${dateString}</b>\n` +
+    `📅 Date: <b>${workoutDate}</b>\n` +
     `🏋️‍♂️ Total volume: <b>${totalVolume.toLocaleString()}${weightUnit}</b>\n` +
     `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
     `⭐ Average RPE: <b>${workout.avg_rpe}</b>` +

@@ -3,7 +3,7 @@ import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import { InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
-import { countSets, getPrs, getWorkoutStatsText } from './helpers/workoutStats.js';
+import { countSets, getPrs, generateWorkoutStatsString } from './helpers/workoutStats.js';
 import { getWorkoutTitleMessage } from './helpers/textMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
@@ -116,17 +116,17 @@ const handleNextWorkout = async (
 
     const prs = getPrs(ctx.dbchat.exercises);
 
-    const workoutStatsText = getWorkoutStatsText(
+    const workoutStatsString = generateWorkoutStatsString(
       updatedCurrentWorkout,
+      ctx.dbchat.settings.isMetric,
       workoutCount,
       prs,
-      ctx.dbchat.settings.isMetric
     );
 
     await ctx.api.editMessageText(
       chat_id,
       conversation.session.state.lastMessageId,
-      workoutStatsText,
+      workoutStatsString,
       { parse_mode: 'HTML' }
     );
   } catch (err: unknown) {
