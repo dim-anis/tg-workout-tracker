@@ -1,8 +1,9 @@
 import { Menu, MenuRange } from "@grammyjs/menu";
-import { InlineKeyboardOptions } from "config/keyboards.js";
+import { type InlineKeyboardOptions } from "config/keyboards.js";
 import { Composer } from "grammy";
-import { MyContext } from "types/bot.js";
+import { type MyContext } from "types/bot.js";
 import { generateWorkoutStatsString } from "./helpers/workoutStats.js";
+import { WorkoutType } from "models/workout.js";
 
 const composer = new Composer<MyContext>();
 
@@ -10,13 +11,6 @@ const mainMenu = new Menu<MyContext>('statsMenu')
   .submenu(
     { text: 'by workout', payload: '0' },
     'statsByWorkout',
-    async (ctx) => {
-      const workoutStatsString = generateWorkoutStatsString(
-        ctx.dbchat.recentWorkouts[0],
-        ctx.dbchat.settings.isMetric
-      );
-      await ctx.editMessageText(workoutStatsString, { parse_mode: 'HTML' })
-    }
   )
   .row()
   .submenu(
@@ -37,37 +31,38 @@ const mainMenuOpts: InlineKeyboardOptions = {
 
 const statsByDayMenu = new Menu<MyContext>('statsByWorkout');
 statsByDayMenu.dynamic((ctx) => {
-  const startIndex = Number(ctx.match);
+  const { isMetric } = ctx.dbchat.settings;
   const workouts = ctx.dbchat.recentWorkouts;
+
+  const startIndex = Number(ctx.match);
+  const workoutsLeft = workouts.length - startIndex;
+  const indexOffset = Math.min(4, workoutsLeft);
+  const prevPageStartIndex = Math.max(0, startIndex - 4);
+
   const range = new MenuRange<MyContext>();
-
-  const remainingWorkouts = workouts.slice(startIndex);
-  const increment = Math.min(4, remainingWorkouts.length);
-
-  const prevPageStartIndex = startIndex - 4;
-
   // hide 'prev' button on the first page
   if (startIndex > 0) {
-    range.submenu({ text: '<<', payload: prevPageStartIndex.toString() }, 'statsByWorkout');
+    range.submenu({ text: '<<', payload: `${prevPageStartIndex}` }, 'statsByWorkout');
   }
 
   // show 4 buttons when 'back' and 'forward' buttons are shown, show 5 otherwise
   // 'back' and 'forward' not included in the count
-  for (let i = 0; i < increment; i++) {
+  for (let i = 0; i < indexOffset; i++) {
     const workoutIndex = startIndex + i;
     const dateShort = workouts[workoutIndex].createdAt.toLocaleDateString('en-US', { day: 'numeric', month: 'numeric' });
     range
       .text(
-        { text: dateShort, payload: `${workoutIndex}` },
+        { text: dateShort, payload: `${startIndex}` },
+        async () => {
+          const message = generateWorkoutStatsString(workouts[workoutIndex], isMetric);
+          await ctx.editMessageText(message, { parse_mode: 'HTML' });
+        }
       )
   }
 
-  // calculate the workout index in the payload
-  const nextPageStartIndex = (startIndex || 0) + increment;
-
   // show 'forward' button on all pages but the last
-  if (remainingWorkouts.length - increment > 0) {
-    range.submenu({ text: '>>', payload: nextPageStartIndex.toString() }, 'statsByWorkout')
+  if (workoutsLeft - indexOffset > 0) {
+    range.submenu({ text: '>>', payload: `${startIndex + indexOffset}` }, 'statsByWorkout')
   }
 
   return range;
