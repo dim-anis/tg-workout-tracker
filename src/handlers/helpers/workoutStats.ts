@@ -3,7 +3,9 @@ import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from 'models/exercise.js';
 import { isToday } from 'date-fns';
 import { fromKgToLbRounded } from './unitConverters.js';
-import { checkedCircle } from '../../config/keyboards.js';
+import { checkedCircle, getRpeOptionColor } from '../../config/keyboards.js';
+
+type PersonalBestWithName = PersonalBest & { exerciseName: string };
 
 export function generateWorkoutStatsString(
   workout: WorkoutType,
@@ -18,19 +20,20 @@ export function generateWorkoutStatsString(
     end: new Date(workout.updatedAt)
   });
   const totalDurationString = workout.updatedAt 
-    ? 'N/A' 
-    : `<b>${hours || 0}h ${minutes || 0}m ${seconds || 0}s</b>`
+    ? `<b>${hours || 0}h ${minutes || 0}m ${seconds || 0}s</b>`
+    : 'N/A' 
   const totalVolumeInKg = getTotalVolume(workout.sets);
   const totalVolume = weightUnit === 'kg' ? totalVolumeInKg : fromKgToLbRounded(totalVolumeInKg);
   const prMessage = prs?.length ? createPrMessage(prs, weightUnit) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
-    `🔢 Workout number: <b>${workoutCount}</b>\n` +
     `📅 Date: <b>${workoutDate}</b>\n` +
+    `💤 Is deload workout: <b>${workout.isDeload ? 'yes' : 'no'}</b>\n` +
+    `📋 Workout number: <b>${workoutCount}</b>\n` +
     `🏋️‍♂️ Total volume: <b>${totalVolume.toLocaleString()}${weightUnit}</b>\n` +
     `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
-    `⭐ Average RPE: <b>${workout.avg_rpe}</b>` +
+    `${getRpeOptionColor(workout.avg_rpe)} Average RPE: <b>${workout.avg_rpe}</b>` +
     prMessage;
 
   return statsText;
@@ -53,8 +56,6 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
 
   return out;
 }
-
-type PersonalBestWithName = PersonalBest & { exerciseName: string };
 
 function createPrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
   const pbMessageLines = [];

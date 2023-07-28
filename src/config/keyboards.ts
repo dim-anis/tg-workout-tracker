@@ -5,8 +5,8 @@ import { fromLbToKgRounded } from '../handlers/helpers/unitConverters.js';
 export const backButton = '◀ Back';
 export const checkedSquare = '■';
 export const uncheckedSquare = '□';
-export const checkedCircle = '⦿'; // ● ○ 
-export const uncheckedCircle = '⦾'; // ○ ●
+export const checkedCircle = '●'; // ⦿ 
+export const uncheckedCircle = '○'; // ⦾
 
 export type InlineKeyboardOptions = { parse_mode?: "HTML" | "MarkdownV2", reply_markup?: InlineKeyboardMarkup };
 
@@ -14,7 +14,7 @@ const isEveryThirdButton = (index: number) => (index + 1) % 3 === 0;
 
 export const rpeValues = [9, 9.5, 10, 7.5, 8, 8.5, 6, 6.5, 7];
 
-const getRpeOptionColor = (value: number): string => {
+export const getRpeOptionColor = (value: number): string => {
   if (value >= 9) {
     return '🔴';
   }
