@@ -1,4 +1,4 @@
-import { type Types, Schema } from 'mongoose';
+import { type Types, Schema, model, connection } from 'mongoose';
 import { type SetType, SetSchema } from './set.js';
 
 export type ArchivedWorkoutType = {
@@ -38,3 +38,26 @@ export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>({
     required: true
   }
 });
+
+const ITEMS_PER_PAGE = 19;
+
+export async function getArchivedWorkouts(user_id: string, pageNumber: number): Promise<ArchivedWorkoutType[]> {
+  const collectionName = `archivedworkouts_${user_id}`;
+  console.log(collectionName)
+  const ArchivedWorkout = model<ArchivedWorkoutType>(collectionName, ArchivedWorkoutSchema);
+
+  const skipWorkouts = (pageNumber - 1) * ITEMS_PER_PAGE;
+
+  const workouts = await ArchivedWorkout
+    .find({})
+    .sort({created: 'desc'})
+    .skip(skipWorkouts)
+    .limit(ITEMS_PER_PAGE)
+    .lean();
+
+  if (!workouts) {
+    throw new Error("Error fetching workouts from DB");
+  }
+
+  return workouts;
+}
