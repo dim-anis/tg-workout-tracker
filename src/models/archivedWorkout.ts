@@ -39,13 +39,11 @@ export const ArchivedWorkoutSchema = new Schema<ArchivedWorkoutType>({
   }
 });
 
-const ITEMS_PER_PAGE = 19;
-
 export async function getArchivedWorkouts(user_id: string, pageNumber: number): Promise<ArchivedWorkoutType[]> {
-  const collectionName = `archivedworkouts_${user_id}`;
-  console.log(collectionName)
-  const ArchivedWorkout = model<ArchivedWorkoutType>(collectionName, ArchivedWorkoutSchema);
+  const ITEMS_PER_PAGE = 19;
 
+  const collectionName = `archivedworkouts_${user_id}`;
+  const ArchivedWorkout = model<ArchivedWorkoutType>(collectionName, ArchivedWorkoutSchema);
   const skipWorkouts = (pageNumber - 1) * ITEMS_PER_PAGE;
 
   const workouts = await ArchivedWorkout

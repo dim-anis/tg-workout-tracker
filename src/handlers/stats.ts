@@ -1,12 +1,14 @@
 import { Menu, MenuRange } from "@grammyjs/menu";
 import { getISOWeek } from "date-fns";
-import { InlineKeyboardOptions } from "../config/keyboards.js";
+import { InlineKeyboardOptions, prevButton, nextButton } from "../config/keyboards.js";
 import { Composer } from "grammy";
 import { type WorkoutType } from "../models/workout.js";
 import { type MyContext } from "types/bot.js";
-import { generateWorkoutStatsString } from "./helpers/workoutStats.js";
 import { getWeekDates } from "./helpers/dateConverters.js";
 import { ArchivedWorkoutType, getArchivedWorkouts } from "../models/archivedWorkout.js";
+import { getStats, getStatsString } from "./helpers/workoutStats.js";
+
+const ITEMS_PER_PAGE = 19;
 
 const composer = new Composer<MyContext>();
 
@@ -51,6 +53,8 @@ periodMenu.dynamic(ctx => {
 interface WeekToWorkoutsMap { [week: string]: ((WorkoutType | ArchivedWorkoutType)[]) };
 
 async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
+  const { isMetric } = ctx.dbchat.settings;
+  const { exercises } = ctx.dbchat;
   let workouts: WorkoutType[] | ArchivedWorkoutType[] = ctx.dbchat.recentWorkouts;
   if (page && Number(page) > 0) {
     workouts = await getArchivedWorkouts(ctx.dbchat._id.toString(), Number(page));
@@ -59,7 +63,7 @@ async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
   const weekToWorkoutsMap = getWeekToWorkoutsMap(workouts);
 
   const range = new MenuRange<MyContext>();
-  for (const [weekNumber, workouts] of Object.entries(weekToWorkoutsMap)) {
+  for (const [weekNumber, workouts] of Object.entries(weekToWorkoutsMap).sort(([weekA], [weekB]) => Number(weekB) - Number(weekA))) {
     let year: number;
     //hacky typescript stuff
     if ('created' in workouts[0]) {
@@ -80,21 +84,40 @@ async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
         month: 'short'
       });
 
+    const fromToDate = `${formattedStartDate} - ${formattedEndDate}`;
     range
       .submenu(
-        { text: `${formattedStartDate} - ${formattedEndDate}`, payload: `week?page=${page}` },
+        { text: fromToDate, payload: `week?page=${page}` },
         'renderWeekMenu',
         async ctx => {
-          await ctx.editMessageText(mainMenuTitle + ' > <b>Weekly</b>' + ` > <b>${formattedStartDate} - ${formattedEndDate}</b>`, { parse_mode: 'HTML' })
+          const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats(workouts, exercises);
+          const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
+          await ctx.editMessageText(mainMenuTitle + ' > <b>Weekly</b>' + ` > <b>${fromToDate}</b>\n` + statsText, { parse_mode: 'HTML' });
         }
       )
       .row()
   }
 
-  range.submenu(
-    { text: 'Next Batch >>', payload: `week?page=${page + 1}` },
-    'periodMenu'
-  )
+  if (page > 0) {
+    range.submenu(
+      { text: prevButton, payload: `week?page=${page - 1}` },
+      'periodMenu'
+    )
+  }
+
+  if (workouts.length === ITEMS_PER_PAGE) {
+    range.submenu(
+      { text: nextButton, payload: `week?page=${page + 1}` },
+      'periodMenu'
+    )
+  }
+
+  range
+    .row()
+    .back(
+      { text: 'Back to Stats', payload: 'week?page=0' },
+      async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
+    )
 
   return range;
 }
@@ -113,13 +136,12 @@ function createStatsByMonthMenu(ctx: MyContext) {
 
 async function createStatsByDayMenu(ctx: MyContext, page = 0) {
   const { isMetric } = ctx.dbchat.settings;
+  const { exercises } = ctx.dbchat;
 
   let workouts: WorkoutType[] | ArchivedWorkoutType[] = ctx.dbchat.recentWorkouts;
   if (page && Number(page) > 0) {
     workouts = await getArchivedWorkouts(ctx.dbchat._id.toString(), page);
   }
-
-  console.log(workouts);
 
   if (workouts.length === 0) {
     await ctx.reply("No workouts recorded");
@@ -131,6 +153,7 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
     if (Number(index) % 4 === 0) {
       range.row();
     }
+
     let formattedDate: string;
     if ('created' in workout) {
       formattedDate = workout
@@ -146,15 +169,39 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
           day: 'numeric',
           month: 'short'
         });
-    } 
+    }
     range.submenu(
       { text: `${formattedDate}`, payload: `day?page=${page}` },
       'renderDayMenu',
       async ctx => {
-        // const message = generateWorkoutStatsString(workouts[Number(index)], isMetric);
-        await ctx.editMessageText('Hi', { parse_mode: 'HTML' });
+        const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats([workout], exercises);
+        const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
+        await ctx.editMessageText(mainMenuTitle + ' > <b>Daily</b>' + ` > <b>${formattedDate}</b>\n` + statsText, { parse_mode: 'HTML' });
       }
     )
+
+    if (Number(index) === workouts.length - 1) {
+      range.row();
+    }
+  }
+
+
+  // only show prevButton button if NOT on the first page
+  if (page > 0) {
+    range
+      .submenu(
+        { text: prevButton, payload: `day?page=${page - 1}` },
+        'periodMenu'
+      )
+  }
+
+  // simple guard for now
+  if (workouts.length === ITEMS_PER_PAGE) {
+    range
+      .submenu(
+        { text: nextButton, payload: `day?page=${page + 1}` },
+        'periodMenu'
+      )
   }
 
   range
@@ -162,12 +209,6 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
     .back(
       { text: 'Back to Stats', payload: 'day?page=0' },
       async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
-    )
-
-  range
-    .submenu(
-      { text: 'Next Batch >>', payload: `day?page=${page + 1}` },
-      'periodMenu'
     )
 
   return range;

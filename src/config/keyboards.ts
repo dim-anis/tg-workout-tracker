@@ -3,10 +3,12 @@ import { InlineKeyboardMarkup } from 'grammy/types';
 import { fromLbToKgRounded } from '../handlers/helpers/unitConverters.js';
 
 export const backButton = '◀ Back';
+export const prevButton = '<< Prev';
+export const nextButton = 'Next >>';
 export const checkedSquare = '■';
 export const uncheckedSquare = '□';
-export const checkedCircle = '●'; // ⦿ 
-export const uncheckedCircle = '○'; // ⦾
+export const checkedCircle = '●';
+export const uncheckedCircle = '○';
 
 export type InlineKeyboardOptions = { parse_mode?: "HTML" | "MarkdownV2", reply_markup?: InlineKeyboardMarkup };
 

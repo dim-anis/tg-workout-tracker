@@ -1,4 +1,4 @@
-import { startOfWeek, addDays, addWeeks, endOfWeek } from 'date-fns';
+import { startOfWeek, addDays, addWeeks } from 'date-fns';
 
 export function getWeekDates(year: number, weekNumber: number, weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6 | undefined) {
   // Find the first day of the specified year

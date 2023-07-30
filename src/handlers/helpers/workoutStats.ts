@@ -2,10 +2,52 @@ import { type WorkoutType } from 'models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from 'models/exercise.js';
 import { isToday } from 'date-fns';
-import { fromKgToLbRounded } from './unitConverters.js';
+import { fromKgToLbRounded, roundToNearestHalf } from './unitConverters.js';
 import { checkedCircle, getRpeOptionColor } from '../../config/keyboards.js';
+import { ArchivedWorkoutType } from 'models/archivedWorkout.js';
 
 type PersonalBestWithName = PersonalBest & { exerciseName: string };
+type MuscleGroupToVolumeMap = { [muscleGroup: string]: number };
+
+export function getStats(workouts: (WorkoutType | ArchivedWorkoutType)[], exercises: ExerciseType[]) {
+  const volumePerMuscleGroup = workouts.reduce((acc: MuscleGroupToVolumeMap, workout) => {
+    const volumePerWorkout = getVolumePerMuscleGroup(workout.sets, exercises);
+    for (const [muscleGroup, volume] of Object.entries(volumePerWorkout)) {
+      if (!acc[muscleGroup]) {
+        acc[muscleGroup] = volume;
+      } else {
+        acc[muscleGroup] += volume;
+      }
+    }
+
+    return acc;
+  }, {});
+
+  const totalVolume = Object.values(volumePerMuscleGroup).reduce((total, currVolume) => total + currVolume, 0);
+  let avgRPE = workouts.reduce((total, workout) => total + workout.avg_rpe, 0);
+  avgRPE = roundToNearestHalf(avgRPE / workouts.length);
+
+  return { volumePerMuscleGroup, totalVolume, avgRPE };
+}
+
+export function getStatsString(totalVolume: number, volumePerMuscleGroupMap: MuscleGroupToVolumeMap, avgRPE: number, isMetric: boolean) {
+  const weightUnit = isMetric ? 'kg' : 'lb';
+  totalVolume = weightUnit === 'kg' ? Math.round(totalVolume) : Math.round(fromKgToLbRounded(totalVolume));
+
+  const volumePerMuscleGroup: string[] = [];
+  for (let [muscleGroup, volume] of Object.entries(volumePerMuscleGroupMap)) {
+    volume = weightUnit === 'kg' ? Math.round(volume) : Math.round(fromKgToLbRounded(volume));
+    volumePerMuscleGroup.push(`    • ${muscleGroup}: <b>${volume.toLocaleString()}${weightUnit}</b>`);
+  }
+
+  const statsText = `
+Total volume: <b>${totalVolume.toLocaleString()}${weightUnit}</b> 
+Volume per muscle group:
+${volumePerMuscleGroup.join('\n')}
+Average RPE: <b>${avgRPE}</b>
+`
+  return statsText;
+}
 
 export function generateWorkoutStatsString(
   workout: WorkoutType,
@@ -19,12 +61,12 @@ export function generateWorkoutStatsString(
     start: new Date(workout.createdAt),
     end: new Date(workout.updatedAt)
   });
-  const totalDurationString = workout.updatedAt 
+  const totalDurationString = workout.updatedAt
     ? `<b>${hours || 0}h ${minutes || 0}m ${seconds || 0}s</b>`
-    : 'N/A' 
+    : 'N/A'
   const totalVolumeInKg = getTotalVolume(workout.sets);
   const totalVolume = weightUnit === 'kg' ? totalVolumeInKg : fromKgToLbRounded(totalVolumeInKg);
-  const prMessage = prs?.length ? createPrMessage(prs, weightUnit) : '';
+  const prMessage = prs?.length ? generatePrMessage(prs, weightUnit) : '';
 
   const statsText =
     `<b>Workout Stats</b>\n\n` +
@@ -57,7 +99,7 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
   return out;
 }
 
-function createPrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
+function generatePrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
   const pbMessageLines = [];
   if (newPbs.length > 0) {
     for (const newPb of newPbs) {
@@ -93,18 +135,31 @@ export function countSets(
   return counts;
 }
 
-export const getAverageRPE = (setsArray: WorkoutType['sets']) =>
-  Number(
-    (
-      setsArray.reduce((total, set) => total + set.rpe, 0) / setsArray.length
-    ).toFixed(1)
-  );
+export const getAverageRPE = (sets: WorkoutType['sets']) => roundToNearestHalf(sets.reduce((total, set) =>
+  total + set.rpe, 0) / sets.length);
 
-export function getTotalVolume(setsArray: WorkoutType['sets']) {
-  return setsArray.reduce(
+export function getTotalVolume(sets: WorkoutType['sets']) {
+  return sets.reduce(
     (totalVolume, set) => totalVolume + set.weight * set.repetitions,
     0
   );
+}
+
+export function getVolumePerMuscleGroup(sets: WorkoutType['sets'], exercises: ExerciseType[]) {
+  const result = sets.reduce((acc: MuscleGroupToVolumeMap, set) => {
+    const category = exercises.find(exercise => exercise.name === set.exercise)?.category;
+    if (!category) return {};
+
+    if (!acc[category]) {
+      acc[category] = set.weight * set.repetitions;
+    } else {
+      acc[category] += set.weight * set.repetitions;
+    }
+
+    return acc;
+  }, {});
+
+  return result;
 }
 
 export function getCompletedSetsString(setCount = 0) {

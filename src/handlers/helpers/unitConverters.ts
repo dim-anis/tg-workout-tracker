@@ -9,3 +9,7 @@ export function fromKgToLbRounded(valueInKg: number) {
 export function fromLbToKgRounded(valueInLb: number) {
   return Number((valueInLb / oneKgInLb).toFixed(2));
 }
+
+export function roundToNearestHalf(number: number) {
+  return Math.round(number * 2) / 2;
+}
