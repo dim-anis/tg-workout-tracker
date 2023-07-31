@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { PipelineStage } from 'mongoose';
 import { WorkoutSchema, Workout, type WorkoutType } from './workout.js';
 import { ExerciseSchema, type ExerciseType } from './exercise.js';
 import { type SetType } from './set.js';
@@ -48,7 +48,7 @@ UserSchema.pre<UserType>('save', function(next) {
     const oldPbIndex = exerciseToUpdate.personalBests?.findIndex(pb => pb.repetitions === newSet.repetitions);
     const oldPb = exerciseToUpdate.personalBests[oldPbIndex];
 
-    const newPb = {weight: newSet.weight, repetitions: newSet.repetitions, date: new Date()};
+    const newPb = { weight: newSet.weight, repetitions: newSet.repetitions, date: new Date() };
     if (!oldPb) {
       exerciseToUpdate.personalBests.push(newPb);
     }
@@ -57,7 +57,7 @@ UserSchema.pre<UserType>('save', function(next) {
         ...newPb,
         oldPb
       };
-    }  
+    }
   }
 
   next();
@@ -139,6 +139,67 @@ const getRecentWorkouts = async (user_id: number) => {
   const user = await User.findOne({ user_id }).lean();
   return user?.recentWorkouts;
 };
+
+interface AggregatedWorkout {
+  _id: { week: number };
+  workouts: (WorkoutType | ArchivedWorkoutType)[];
+}
+
+export async function getUserWorkoutsGroupedByWeek(user_id: string, page: number, pageSize: number): Promise<AggregatedWorkout[]> {
+  console.log({page, pageSize});
+  const pipeline: PipelineStage[] = [
+    // Stage 1: Lookup the recentWorkouts for the specific user
+    {
+      $match: { _id: user_id },
+    },
+    // Stage 2: Combine the documents from recentWorkouts and ArchivedWorkouts for the user
+    {
+      $project: {
+        workouts: {
+          $concatArrays: ['$recentWorkouts', { $objectToArray: `$archivedworkouts_${user_id}` }],
+        },
+      },
+    },
+    // Stage 3: Unwind the workouts array to separate the combined documents
+    {
+      $unwind: {
+        path: '$workouts',
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    // Stage 4: Group by week using $week aggregation operator
+    {
+      $group: {
+        _id: {
+          $week: {
+            $ifNull: [
+              { $ifNull: ['$workouts.created', '$workouts.createdAt'] },
+              { $ifNull: ['$created', '$createdAt'] }
+            ]
+          }
+        },
+        workouts: { $push: '$workouts' },
+      },
+    },
+    // Stage 5: Sort Results
+    {
+      $sort: {
+        _id: -1,
+      }
+    },
+    // Stage 6: Apply pagination - Skip and Limit
+    {
+      $skip: (page - 1) * pageSize,
+    },
+    {
+      $limit: pageSize,
+    },
+  ];
+
+  const result = await User.aggregate(pipeline).exec();
+
+  return result as AggregatedWorkout[];
+}
 
 const createUserExercise = async (
   user_id: number,

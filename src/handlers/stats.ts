@@ -1,10 +1,10 @@
 import { Menu, MenuRange } from "@grammyjs/menu";
 import { getISOWeek } from "date-fns";
-import { InlineKeyboardOptions, prevButton, nextButton } from "../config/keyboards.js";
+import { InlineKeyboardOptions, prevButton, nextButton, backButton } from "../config/keyboards.js";
 import { Composer } from "grammy";
 import { type WorkoutType } from "../models/workout.js";
 import { type MyContext } from "types/bot.js";
-import { getWeekDates } from "./helpers/dateConverters.js";
+import { getMonthNameFromNumber, getWeekDates } from "./helpers/dateConverters.js";
 import { ArchivedWorkoutType, getArchivedWorkouts } from "../models/archivedWorkout.js";
 import { getStats, getStatsString } from "./helpers/workoutStats.js";
 
@@ -26,8 +26,8 @@ const mainMenu = new Menu<MyContext>('statsMenu')
   )
   .row()
   .submenu(
-    { text: 'Monthly', payload: 'month' },
-    'perioMenu',
+    { text: 'Monthly', payload: 'month?page=0' },
+    'periodMenu',
     async ctx => await ctx.editMessageText(mainMenuTitle + " > <b>Monthly</b>", { parse_mode: 'HTML' })
   );
 
@@ -46,11 +46,12 @@ periodMenu.dynamic(ctx => {
     case "week":
       return createStatsByWeekMenu(ctx, Number(page));
     case "month":
-      return createStatsByMonthMenu(ctx);
+      return createStatsByMonthMenu(ctx, Number(page));
   }
 })
 
 interface WeekToWorkoutsMap { [week: string]: ((WorkoutType | ArchivedWorkoutType)[]) };
+interface MonthToWorkoutsMap { [week: string]: ((WorkoutType | ArchivedWorkoutType)[]) };
 
 async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
   const { isMetric } = ctx.dbchat.settings;
@@ -115,7 +116,7 @@ async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
   range
     .row()
     .back(
-      { text: 'Back to Stats', payload: 'week?page=0' },
+      { text: backButton, payload: 'week?page=0' },
       async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
     )
 
@@ -124,15 +125,70 @@ async function createStatsByWeekMenu(ctx: MyContext, page = 0) {
 
 const renderWeekMenu = new Menu<MyContext>('renderWeekMenu');
 renderWeekMenu.back(
-  { text: 'Go back', payload: 'week?page=0' },
+  { text: backButton, payload: 'week?page=0' },
   async ctx => {
     await ctx.editMessageText(mainMenuTitle + " > <b>Weekly</b>", { parse_mode: 'HTML' });
   }
 );
 
-function createStatsByMonthMenu(ctx: MyContext) {
-  const workouts = ctx.dbchat.recentWorkouts;
+async function createStatsByMonthMenu(ctx: MyContext, page = 0) {
+  const { isMetric } = ctx.dbchat.settings;
+  const { exercises } = ctx.dbchat;
+  let workouts: WorkoutType[] | ArchivedWorkoutType[] = ctx.dbchat.recentWorkouts;
+
+  if (page && Number(page) > 0) {
+    workouts = await getArchivedWorkouts(ctx.dbchat._id.toString(), Number(page));
+  }
+
+  const monthToWorkoutsMap = getMonthToWorkoutsMap(workouts);
+
+  const range = new MenuRange<MyContext>();
+  for (const [monthNumber, workouts] of Object.entries(monthToWorkoutsMap).sort(([monthA], [monthB]) => Number(monthB) - Number(monthA))) {
+    const monthString = getMonthNameFromNumber(Number(monthNumber));
+    range
+      .submenu(
+        { text: monthString, payload: `month?page=${page}` },
+        'renderMonthMenu',
+        async ctx => {
+          const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats(workouts, exercises);
+          const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
+          await ctx.editMessageText(mainMenuTitle + ' > <b>Monthly</b>' + ` > <b>${monthString}</b>\n` + statsText, { parse_mode: 'HTML' });
+        }
+      )
+      .row()
+  }
+
+  if (page > 0) {
+    range.submenu(
+      { text: prevButton, payload: `month?page=${page - 1}` },
+      'periodMenu'
+    )
+  }
+
+  if (workouts.length === ITEMS_PER_PAGE) {
+    range.submenu(
+      { text: nextButton, payload: `month?page=${page + 1}` },
+      'periodMenu'
+    )
+  }
+
+  range
+    .row()
+    .back(
+      { text: backButton, payload: 'month?page=0' },
+      async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
+    )
+
+  return range;
 }
+
+const renderMonthMenu = new Menu<MyContext>('renderMonthMenu');
+renderMonthMenu.back(
+  { text: backButton, payload: 'month?page=0' },
+  async ctx => {
+    await ctx.editMessageText(mainMenuTitle + " > <b>Monthly</b>", { parse_mode: 'HTML' });
+  }
+);
 
 async function createStatsByDayMenu(ctx: MyContext, page = 0) {
   const { isMetric } = ctx.dbchat.settings;
@@ -185,7 +241,6 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
     }
   }
 
-
   // only show prevButton button if NOT on the first page
   if (page > 0) {
     range
@@ -207,7 +262,7 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
   range
     .row()
     .back(
-      { text: 'Back to Stats', payload: 'day?page=0' },
+      { text: backButton, payload: 'day?page=0' },
       async ctx => await ctx.editMessageText(mainMenuTitle, { parse_mode: 'HTML' })
     )
 
@@ -216,7 +271,7 @@ async function createStatsByDayMenu(ctx: MyContext, page = 0) {
 
 const renderDayMenu = new Menu<MyContext>('renderDayMenu');
 renderDayMenu.back(
-  { text: 'Go back', payload: 'day?page=0' },
+  { text: backButton, payload: 'day?page=0' },
   async ctx => {
     await ctx.editMessageText(mainMenuTitle + " > <b>Daily</b>", { parse_mode: 'HTML' });
   }
@@ -228,8 +283,7 @@ const mainMenuOpts: InlineKeyboardOptions = {
   parse_mode: 'HTML'
 }
 
-
-function getWeekToWorkoutsMap(workouts: WorkoutType[] | ArchivedWorkoutType[]): WeekToWorkoutsMap {
+function getWeekToWorkoutsMap(workouts: (WorkoutType | ArchivedWorkoutType)[]): WeekToWorkoutsMap {
   const result: WeekToWorkoutsMap = {};
 
   workouts.forEach(workout => {
@@ -255,6 +309,33 @@ function getWeekToWorkoutsMap(workouts: WorkoutType[] | ArchivedWorkoutType[]): 
   return result;
 }
 
+function getMonthToWorkoutsMap(workouts: (WorkoutType | ArchivedWorkoutType)[]): MonthToWorkoutsMap {
+  const result: MonthToWorkoutsMap = {};
+
+  workouts.forEach(workout => {
+    if ('createdAt' in workout) {
+      const month = workout.createdAt.getMonth().toString();
+
+      if (!result[month]) {
+        result[month] = [workout];
+      } else {
+        result[month].push(workout);
+      }
+    } else if ('created' in workout) {
+      const month = workout.created.getMonth().toString();
+
+      if (!result[month]) {
+        result[month] = [workout];
+      } else {
+        result[month].push(workout);
+      }
+    }
+  })
+
+  return result;
+}
+
+periodMenu.register(renderMonthMenu);
 periodMenu.register(renderWeekMenu);
 periodMenu.register(renderDayMenu);
 mainMenu.register(periodMenu);

@@ -18,3 +18,8 @@ export function getWeekDates(year: number, weekNumber: number, weekStartsOn: 0 |
     endDate,
   };
 }
+
+export function getMonthNameFromNumber(monthNumber: number) {
+  const date = new Date(2023, monthNumber, 1); // Using any non-leap year to ensure valid results
+  return date.toLocaleString('default', { month: 'long' });
+}
