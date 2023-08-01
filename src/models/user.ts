@@ -140,65 +140,162 @@ const getRecentWorkouts = async (user_id: number) => {
   return user?.recentWorkouts;
 };
 
-interface AggregatedWorkout {
-  _id: { week: number };
-  workouts: (WorkoutType | ArchivedWorkoutType)[];
+interface GroupByWeekAggregationResult {
+  _id: { week: number, year: number };
+  workouts: ArchivedWorkoutType[];
 }
 
-export async function getUserWorkoutsGroupedByWeek(user_id: string, page: number, pageSize: number): Promise<AggregatedWorkout[]> {
-  console.log({page, pageSize});
+export async function getUserWorkoutsGroupedByWeek(user_id: string, page: number, pageSize: number): Promise<GroupByWeekAggregationResult[]> {
   const pipeline: PipelineStage[] = [
-    // Stage 1: Lookup the recentWorkouts for the specific user
     {
-      $match: { _id: user_id },
+      $match: {
+        user_id: user_id,
+      },
     },
-    // Stage 2: Combine the documents from recentWorkouts and ArchivedWorkouts for the user
+    {
+      $unwind: "$recentWorkouts",
+    },
+    {
+      $replaceRoot:
+      {
+        newRoot: "$recentWorkouts",
+      },
+    },
     {
       $project: {
-        workouts: {
-          $concatArrays: ['$recentWorkouts', { $objectToArray: `$archivedworkouts_${user_id}` }],
+        sets: 1,
+        avg_rpe: 1,
+        isDeload: 1,
+        _id: 1,
+        created: "$createdAt",
+        updated: "$updatedAt",
+      },
+    },
+    {
+      $unionWith: {
+        coll: `archivedworkouts_${user_id}`,
+      },
+    },
+    {
+      $addFields:
+      {
+        week: {
+          $isoWeek: "$created",
         },
+        year: {
+          $isoWeekYear: "$created",
+        }
       },
     },
-    // Stage 3: Unwind the workouts array to separate the combined documents
     {
-      $unwind: {
-        path: '$workouts',
-        preserveNullAndEmptyArrays: true,
-      },
-    },
-    // Stage 4: Group by week using $week aggregation operator
-    {
-      $group: {
+      $group:
+      {
         _id: {
-          $week: {
-            $ifNull: [
-              { $ifNull: ['$workouts.created', '$workouts.createdAt'] },
-              { $ifNull: ['$created', '$createdAt'] }
-            ]
-          }
+          week: "$week",
+          year: "$year",
         },
-        workouts: { $push: '$workouts' },
+        workouts: {
+          $push: "$$ROOT",
+        },
       },
     },
-    // Stage 5: Sort Results
     {
-      $sort: {
-        _id: -1,
-      }
+      $sort:
+      {
+        "_id.year": -1,
+        "_id.week": -1
+      },
     },
-    // Stage 6: Apply pagination - Skip and Limit
     {
       $skip: (page - 1) * pageSize,
     },
     {
       $limit: pageSize,
-    },
-  ];
+    }
+  ]
 
   const result = await User.aggregate(pipeline).exec();
 
-  return result as AggregatedWorkout[];
+  return result as GroupByWeekAggregationResult[];
+}
+
+export interface GroupByMonthAggregationResult {
+  _id: { month: number, year: number };
+  workouts: ArchivedWorkoutType[];
+}
+
+export async function getUserWorkoutsGroupedByMonth(user_id: string, page: number, pageSize: number): Promise<GroupByMonthAggregationResult[]> {
+  const pipeline: PipelineStage[] = [
+    {
+      $match: {
+        user_id: user_id,
+      },
+    },
+    {
+      $unwind: "$recentWorkouts",
+    },
+    {
+      $replaceRoot:
+      {
+        newRoot: "$recentWorkouts",
+      },
+    },
+    {
+      $project: {
+        sets: 1,
+        avg_rpe: 1,
+        isDeload: 1,
+        _id: 1,
+        created: "$createdAt",
+        updated: "$updatedAt",
+      },
+    },
+    {
+      $unionWith: {
+        coll: `archivedworkouts_${user_id}`,
+      },
+    },
+    {
+      $addFields:
+      {
+        month: {
+          $month: "$created",
+        },
+        year: {
+          $year: "$created",
+        }
+      },
+    },
+    {
+      $group:
+      {
+        _id: {
+          month: "$month",
+          year: "$year",
+        },
+        workouts: {
+          $push: "$$ROOT",
+        },
+      },
+    },
+    {
+      $sort:
+      {
+        "_id.year": -1,
+        "_id.month": -1
+      },
+    },
+    {
+      $skip: (page - 1) * pageSize,
+    },
+    {
+      $limit: pageSize,
+    }
+  ]
+
+  const result = await User.aggregate(pipeline).exec();
+
+  return result as GroupByMonthAggregationResult[];
 }
 
 const createUserExercise = async (
@@ -288,7 +385,7 @@ const updateUserSettings = async (
 };
 
 const findOrCreateUser = async (user_id: number) =>
-  User.findOneAndUpdate({ user_id }, {}, { upsert: true, new: true });
+  await User.findOneAndUpdate({ user_id }, {}, { upsert: true, new: true });
 
 export {
   User,

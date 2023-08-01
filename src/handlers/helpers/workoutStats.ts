@@ -37,14 +37,15 @@ export function getStatsString(totalVolume: number, volumePerMuscleGroupMap: Mus
   const volumePerMuscleGroup: string[] = [];
   for (let [muscleGroup, volume] of Object.entries(volumePerMuscleGroupMap)) {
     volume = weightUnit === 'kg' ? Math.round(volume) : Math.round(fromKgToLbRounded(volume));
-    volumePerMuscleGroup.push(`    • ${muscleGroup}: <b>${volume.toLocaleString()}${weightUnit}</b>`);
+    volumePerMuscleGroup.push(`    • <b>${muscleGroup}:</b> ${volume.toLocaleString()}${weightUnit}`);
   }
 
   const statsText = `
-Total volume: <b>${totalVolume.toLocaleString()}${weightUnit}</b> 
-Volume per muscle group:
+<b>Total volume: ${totalVolume.toLocaleString()}${weightUnit}</b> 
+
 ${volumePerMuscleGroup.join('\n')}
-Average RPE: <b>${avgRPE}</b>
+
+Average RPE: ${getRpeOptionColor(avgRPE)} <b>${avgRPE}</b>
 `
   return statsText;
 }

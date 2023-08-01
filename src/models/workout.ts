@@ -1,11 +1,13 @@
 import { model, Schema } from 'mongoose';
 import { type SetType, SetSchema } from './set.js';
 
-type WorkoutType = {
+interface WorkoutType {
   sets: SetType[];
   avg_rpe: number;
   isDeload: boolean;
-} & { updatedAt: Date; createdAt: Date };
+  updatedAt: Date;
+  createdAt: Date;
+};
 
 const WorkoutSchema = new Schema<WorkoutType>(
   {
