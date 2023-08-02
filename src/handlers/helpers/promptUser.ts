@@ -1,7 +1,7 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
 import { getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
 import { getCompletedSetsString } from './workoutStats.js';
-import { type RecordExerciseParams } from 'handlers/nextWorkout.js';
+import { RecordExerciseParams } from './workoutUtils.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
 import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './textMessages.js';
 import { fromLbToKgRounded } from './unitConverters.js';
@@ -113,12 +113,13 @@ export async function promptUserForNumber(
   message: string,
   options: InlineKeyboardOptions,
   unit?: 'kg' | 'lb'
-): Promise<number> {
+): Promise<number | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
   ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
 
   if (ctx.callbackQuery) {
+    conversation.log(ctx.callbackQuery.data);
     const callbackData = ctx.callbackQuery.data?.split(':')[1];
     if (callbackData && callbackData.startsWith('toggle_unit')) {
       const currUnit = callbackData.split('~')[1];
@@ -135,6 +136,8 @@ export async function promptUserForNumber(
         message_id,
         exerciseParams,
       )
+    } else if (callbackData === 'goBack') {
+      return undefined;
     }
 
     return Number(callbackData);
@@ -225,7 +228,7 @@ export function promptUserForWeight(
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-): Promise<number> {
+): Promise<number | undefined> {
   const { selectedExercise, previousWeight, hitAllReps, setCount, unit } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
@@ -263,8 +266,8 @@ export function promptUserForRepetitions(
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-  currWeight: number
-): Promise<number> {
+  currWeight?: number
+): Promise<number | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
@@ -301,9 +304,9 @@ export function promptUserForRPE(
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-  currWeight: number,
-  currReps: number
-): Promise<number> {
+  currWeight?: number,
+  currReps?: number
+): Promise<number | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
 
   let options: InlineKeyboardOptions = {

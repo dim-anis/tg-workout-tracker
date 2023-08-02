@@ -11,14 +11,12 @@ import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasExercises } from '../middleware/userHasExercises.js';
 import {
   promptUserForPredefinedString,
-  promptUserForRPE,
-  promptUserForRepetitions,
-  promptUserForWeight,
   isDeloadWorkout
 } from './helpers/promptUser.js';
 import { successMessages } from './helpers/textMessages.js';
 import { isToday } from 'date-fns';
 import { ExerciseType } from 'models/exercise.js';
+import { RecordExerciseParams, getSetData } from './helpers/workoutUtils.js';
 
 const composer = new Composer<MyContext>();
 
@@ -31,12 +29,13 @@ const handleRecordSet = async (
   }
 
   try {
+    let finished = false;
     const { user_id, exercises } = ctx.dbchat;
+    const { isMetric } = ctx.dbchat.settings;
     const { id: chat_id } = ctx.chat;
     const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
 
     const categories = new Set(exercises.map((exercise) => exercise.category));
-    conversation.log(categories);
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
     const isTodaysWorkout = isToday(mostRecentWorkout.createdAt);
 
@@ -44,41 +43,61 @@ const handleRecordSet = async (
       ? mostRecentWorkout.isDeload
       : await isDeloadWorkout(ctx, conversation, 'recordSet');
 
-    const chosenExercise = await chooseExercise(
-      ctx,
-      conversation,
-      chat_id,
-      categories,
-      exercisesByCategory
-    );
-    const setData = await getSetData(
-      ctx,
-      conversation,
-      chosenExercise,
-      chat_id
-    );
-    await conversation.external(
-      async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
-    );
+    while (!finished) {
+      const selectedExercise = await chooseExercise(
+        ctx,
+        conversation,
+        chat_id,
+        categories,
+        exercisesByCategory
+      );
 
-    await ctx.api.editMessageText(
-      chat_id,
-      conversation.session.state.lastMessageId,
-      successMessages.onRecordSetSuccess,
-      {
-        reply_markup: getYesNoOptions('recordSet'),
-        parse_mode: 'HTML'
+      const exerciseParams: RecordExerciseParams = {
+        selectedExercise,
+        unit: isMetric ? 'kg' : 'lb',
       }
-    );
 
-    ctx = await conversation.waitForCallbackQuery([
-      'recordSet:yes',
-      'recordSet:no'
-    ]);
+      const setData = await getSetData(
+        conversation,
+        ctx,
+        chat_id,
+        conversation.session.state.lastMessageId,
+        exerciseParams
+      );
 
-    if (ctx.callbackQuery?.data === 'recordSet:yes') {
-      await ctx.answerCallbackQuery();
-      return await ctx.conversation.reenter('handleRecordSet');
+      // re-enter the loop, it the setData is undefined
+
+      if (setData === undefined) {
+        continue;
+      }
+
+      await conversation.external(
+        async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
+      );
+
+      await ctx.api.editMessageText(
+        chat_id,
+        conversation.session.state.lastMessageId,
+        successMessages.onRecordSetSuccess,
+        {
+          reply_markup: getYesNoOptions('recordSet'),
+          parse_mode: 'HTML'
+        }
+      );
+
+      const continueWorkout = await conversation
+        .waitForCallbackQuery([
+          'recordSet:yes',
+          'recordSet:no'
+        ])
+        .then((ctx) => ctx.callbackQuery.data);
+
+      if (continueWorkout.split(':')[1] === 'yes') {
+        await ctx.answerCallbackQuery();
+        continue;
+      }
+
+      finished = true;
     }
 
     await ctx.api.deleteMessage(
@@ -145,51 +164,6 @@ async function chooseExercise(
   }
 
   return exercise;
-}
-
-async function getSetData(
-  ctx: MyContext,
-  conversation: MyConversation,
-  exercise: string,
-  chat_id: number
-) {
-  const weight = await promptUserForWeight(
-    ctx,
-    conversation,
-    chat_id,
-    conversation.session.state.lastMessageId,
-    {
-      selectedExercise: exercise,
-      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
-    },
-  );
-
-  const repetitions = await promptUserForRepetitions(
-    ctx,
-    conversation,
-    chat_id,
-    conversation.session.state.lastMessageId,
-    {
-      selectedExercise: exercise,
-      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
-    },
-    weight
-  );
-
-  const rpe = await promptUserForRPE(
-    ctx,
-    conversation,
-    chat_id,
-    conversation.session.state.lastMessageId,
-    {
-      selectedExercise: exercise,
-      unit: ctx.dbchat.settings.isMetric ? 'kg' : 'lb'
-    },
-    weight,
-    repetitions
-  );
-
-  return { exercise, weight, repetitions, rpe };
 }
 
 function getExercisesByCategory(

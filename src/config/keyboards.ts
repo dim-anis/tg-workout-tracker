@@ -40,6 +40,8 @@ export const getRpeOptions = (prefix = ''): InlineKeyboard => {
     }
   }
 
+  keyboard.text(backButton, `${prefix}:goBack`);
+
   return keyboard;
 };
 
@@ -68,11 +70,13 @@ export const getWeightOptions = (
     }
   }
 
+  keyboard.text(backButton, `${prefix}:goBack`);
+
   const toggleUnitButtonLabel = `${unit === 'kg' ? `${checkedCircle} kg / ${uncheckedCircle} lb` : `${uncheckedCircle} kg / ${checkedCircle} lb`}`;
   const toggleUnitButtonData = `${prefix}:toggle_unit~${unit}`;
   keyboard.text(toggleUnitButtonLabel, toggleUnitButtonData);
 
-  const defaultButtonLabel = '✓ Use same';
+  const defaultButtonLabel = '🆗 Use same';
   const defaultButtonData = `${prefix}:${prevWeight}`;
   keyboard.text(defaultButtonLabel, defaultButtonData);
 
@@ -97,6 +101,8 @@ export const getRepOptions = (
       keyboard.row();
     }
   }
+
+  keyboard.text(backButton, `${prefix}:goBack`);
 
   const defaultButtonLabel = '🆗 Use same';
   const defaultButtonData = `${prefix}:${prevReps}`;

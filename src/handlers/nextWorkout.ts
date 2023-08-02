@@ -3,28 +3,18 @@ import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import { InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards.js';
 import { type WorkoutType } from '../models/workout.js';
+import { type RecordExerciseParams } from './helpers/workoutUtils.js';
 import { countSets, getPrs, generateWorkoutStatsString } from './helpers/workoutStats.js';
 import { getWorkoutTitleMessage } from './helpers/textMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
 import {
-  promptUserForWeight,
-  promptUserForRepetitions,
-  promptUserForRPE,
   isDeloadWorkout,
   promptUserForPredefinedString
 } from './helpers/promptUser.js';
 import { getCompletedSetsString } from './helpers/workoutStats.js';
-
-export type RecordExerciseParams = {
-  selectedExercise: string;
-  previousWeight?: number;
-  previousReps?: number;
-  hitAllReps?: boolean;
-  setCount?: number;
-  unit: 'kg' | 'lb';
-};
+import { getSetData } from './helpers/workoutUtils.js';
 
 const composer = new Composer<MyContext>();
 
@@ -84,18 +74,25 @@ const handleNextWorkout = async (
 
     const exerciseParams: RecordExerciseParams = {
       selectedExercise,
+      unit: isMetric ? 'kg' : 'lb',
       setCount: setCountMap[selectedExercise],
       ...previousWorkoutSetData,
-      unit: isMetric ? 'kg' : 'lb'
     };
 
-    const updatedCurrentWorkout = await recordSet(
+    const setData = await getSetData(
       conversation,
       ctx,
       chat_id,
       conversation.session.state.lastMessageId,
-      exerciseParams,
-      isDeload
+      exerciseParams
+    );
+
+    if (setData === undefined) {
+      return;
+    }
+
+    const updatedCurrentWorkout = await conversation.external(() =>
+      createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
     );
 
     await ctx.api.editMessageText(
@@ -133,47 +130,6 @@ const handleNextWorkout = async (
     console.log(err);
   }
 };
-
-async function recordSet(
-  conversation: MyConversation,
-  ctx: MyContext,
-  chat_id: number,
-  message_id: number,
-  exerciseParams: RecordExerciseParams,
-  isDeload: boolean
-): Promise<WorkoutType> {
-  const weight = await promptUserForWeight(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    exerciseParams,
-  );
-  const repetitions = await promptUserForRepetitions(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    exerciseParams,
-    weight
-  );
-  const rpe = await promptUserForRPE(
-    ctx,
-    conversation,
-    chat_id,
-    message_id,
-    exerciseParams,
-    weight,
-    repetitions
-  );
-
-  const setData = { exercise: exerciseParams.selectedExercise, weight, repetitions, rpe };
-  const updatedWorkout = await conversation.external(() =>
-    createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
-  );
-
-  return updatedWorkout;
-}
 
 function getPreviousWorkout(
   recentWorkouts: WorkoutType[],
