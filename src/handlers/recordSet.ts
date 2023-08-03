@@ -41,7 +41,7 @@ const handleRecordSet = async (
 
     const isDeload = isTodaysWorkout
       ? mostRecentWorkout.isDeload
-      : await isDeloadWorkout(ctx, conversation, 'recordSet');
+      : await isDeloadWorkout(ctx, conversation, conversation.session.state.lastMessageId, 'recordSet');
 
     while (!finished) {
       const selectedExercise = await chooseExercise(
@@ -57,7 +57,7 @@ const handleRecordSet = async (
         unit: isMetric ? 'kg' : 'lb',
       }
 
-      const setData = await getSetData(
+      const getSetDataResult = await getSetData(
         conversation,
         ctx,
         chat_id,
@@ -67,9 +67,12 @@ const handleRecordSet = async (
 
       // re-enter the loop, it the setData is undefined
 
-      if (setData === undefined) {
+      if (getSetDataResult === undefined) {
         continue;
       }
+
+      const setData = getSetDataResult.data;
+      ctx = getSetDataResult.newContext;
 
       await conversation.external(
         async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
@@ -123,7 +126,7 @@ async function chooseExercise(
     parse_mode: 'HTML'
   };
 
-  const category = await promptUserForPredefinedString(
+  const promptForCategoryResult = await promptUserForPredefinedString(
     ctx,
     conversation,
     chat_id,
@@ -132,6 +135,13 @@ async function chooseExercise(
     chooseCategoryOptions,
     [...categories]
   );
+
+  if (!promptForCategoryResult) {
+    return '';
+  }
+
+  const category = promptForCategoryResult.data;
+  ctx = promptForCategoryResult.context;
 
   const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions: InlineKeyboardOptions = {
@@ -143,7 +153,7 @@ async function chooseExercise(
     parse_mode: 'HTML'
   };
 
-  const exercise = await promptUserForPredefinedString(
+  const promptForExerciseResult = await promptUserForPredefinedString(
     ctx,
     conversation,
     chat_id,
@@ -152,6 +162,13 @@ async function chooseExercise(
     chooseExerciseOptions,
     [backButton, ...(exercisesByCategory.get(category) as string[])]
   );
+
+  if (!promptForExerciseResult) {
+    return '';
+  }
+
+  const exercise = promptForExerciseResult.data;
+  ctx = promptForExerciseResult.context;
 
   if (exercise === backButton) {
     return chooseExercise(

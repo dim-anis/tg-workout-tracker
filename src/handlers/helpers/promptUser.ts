@@ -1,5 +1,5 @@
 import { type MyContext, type MyConversation } from 'types/bot.js';
-import { getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
+import { backButton, getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
 import { getCompletedSetsString } from './workoutStats.js';
 import { RecordExerciseParams } from './workoutUtils.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
@@ -103,6 +103,11 @@ function createPredefinedStringValidator(
   };
 }
 
+type NumberPromptResult = {
+  data: number,
+  context: MyContext
+}
+
 export async function promptUserForNumber(
   ctx: MyContext,
   conversation: MyConversation,
@@ -113,16 +118,15 @@ export async function promptUserForNumber(
   message: string,
   options: InlineKeyboardOptions,
   unit?: 'kg' | 'lb'
-): Promise<number | undefined> {
+): Promise<NumberPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
-  ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
+  ctx = await conversation.waitFor(['message:text', 'callback_query:data']).then(ctx => ctx);
 
   if (ctx.callbackQuery) {
-    conversation.log(ctx.callbackQuery.data);
-    const callbackData = ctx.callbackQuery.data?.split(':')[1];
-    if (callbackData && callbackData.startsWith('toggle_unit')) {
-      const currUnit = callbackData.split('~')[1];
+    const buttonData = ctx.callbackQuery.data?.split(':')[1];
+    if (buttonData && buttonData.startsWith('toggle_unit')) {
+      const currUnit = buttonData.split('~')[1];
 
       exerciseParams = {
         ...exerciseParams,
@@ -136,15 +140,15 @@ export async function promptUserForNumber(
         message_id,
         exerciseParams,
       )
-    } else if (callbackData === 'goBack') {
+    } else if (buttonData === 'goBack') {
       return undefined;
     }
 
-    return Number(callbackData);
+    return { data: Number(buttonData), context: ctx };
   }
 
   if (!ctx.chat || !ctx.message?.text) {
-    return NaN;
+    return { data: NaN, context: ctx };
   }
 
   await ctx.api.deleteMessage(ctx.chat.id, ctx.message.message_id);
@@ -155,9 +159,9 @@ export async function promptUserForNumber(
     const value = Number(ctx.message.text);
     if (unit) {
       const weight = unit === 'kg' ? value : fromLbToKgRounded(value);
-      return weight;
+      return { data: weight, context: ctx };
     } else {
-      return value;
+      return { data: value, context: ctx };
     }
   }
 
@@ -175,6 +179,11 @@ export async function promptUserForNumber(
   );
 }
 
+type TextPromptResult = {
+  data: string,
+  context: MyContext
+}
+
 export async function promptUserForText(
   ctx: MyContext,
   conversation: MyConversation,
@@ -183,22 +192,22 @@ export async function promptUserForText(
   message_id: number,
   message: string,
   options: InlineKeyboardOptions
-): Promise<string> {
+): Promise<TextPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
-  ctx = await conversation.waitFor(['message:text', 'callback_query:data']);
+  ctx = await conversation.waitFor(['message:text', 'callback_query:data']).then(ctx => ctx);
 
   if (ctx.callbackQuery?.data) {
-    let value = ctx.callbackQuery.data.split(':')[1];
+    let buttonData = ctx.callbackQuery.data.split(':')[1];
     // callback data doesn't contain prefix
-    if (typeof value === 'undefined') {
-      value = ctx.callbackQuery.data;
+    if (typeof buttonData === 'undefined') {
+      buttonData = ctx.callbackQuery.data;
     }
-    return value;
+    return { data: buttonData, context: ctx };
   }
 
   if (!ctx.chat || !ctx.message?.text) {
-    return '';
+    return { data: '', context: ctx };
   }
 
   await ctx.api.deleteMessage(ctx.chat.id, ctx.message.message_id);
@@ -206,7 +215,7 @@ export async function promptUserForText(
   const validationError = validatorFunc(ctx.message.text);
 
   if (!validationError && typeof ctx.message.text !== 'undefined') {
-    return ctx.message.text;
+    return { data: ctx.message.text, context: ctx };
   }
 
   const newMessage = updateMessageWithError(message, validationError);
@@ -228,7 +237,7 @@ export function promptUserForWeight(
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-): Promise<number | undefined> {
+): Promise<NumberPromptResult | undefined> {
   const { selectedExercise, previousWeight, hitAllReps, setCount, unit } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
@@ -267,7 +276,7 @@ export function promptUserForRepetitions(
   message_id: number,
   exerciseParams: RecordExerciseParams,
   currWeight?: number
-): Promise<number | undefined> {
+): Promise<NumberPromptResult | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
@@ -306,7 +315,7 @@ export function promptUserForRPE(
   exerciseParams: RecordExerciseParams,
   currWeight?: number,
   currReps?: number
-): Promise<number | undefined> {
+): Promise<NumberPromptResult | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
@@ -344,7 +353,7 @@ export function promptUserForExerciseName(
   message_id: number,
   message: string,
   options: InlineKeyboardOptions
-): Promise<string> {
+): Promise<TextPromptResult | undefined> {
   return promptUserForText(
     ctx,
     conversation,
@@ -363,7 +372,7 @@ export function promptUserForYesNo(
   message_id: number,
   message: string,
   options: InlineKeyboardOptions
-): Promise<string> {
+): Promise<TextPromptResult | undefined> {
   return promptUserForText(
     ctx,
     conversation,
@@ -383,7 +392,7 @@ export function promptUserForPredefinedString(
   message: string,
   options: InlineKeyboardOptions,
   validTextOptions: string[]
-): Promise<string> {
+): Promise<TextPromptResult | undefined> {
   const validatorFunc = createPredefinedStringValidator(validTextOptions);
 
   return promptUserForText(
@@ -400,19 +409,41 @@ export function promptUserForPredefinedString(
 export async function isDeloadWorkout(
   ctx: MyContext,
   conversation: MyConversation,
-  commandName: string
-) {
-  await ctx.reply('Is it a <b>deload workout</b>?', {
+  message_id: number,
+  commandName: string,
+  iteration = 1
+): Promise<boolean> {
+  const chat_id = ctx.chat?.id;
+  if (!chat_id) return false;
+
+  const message = 'Is it a <b>deload workout</b>?';
+  const keyboard = getYesNoOptions(commandName);
+  keyboard.row();
+  keyboard.text(backButton, `${commandName}:goBack`);
+
+  const options: InlineKeyboardOptions = {
     parse_mode: 'HTML',
-    reply_markup: getYesNoOptions(commandName)
-  });
+    reply_markup: keyboard
+  }
 
-  const {
-    callbackQuery: { data }
-  } = await conversation.waitForCallbackQuery([
-    `${commandName}:yes`,
-    `${commandName}:no`
-  ]);
+  if (iteration > 1) {
+    await ctx.api.editMessageText(
+      chat_id,
+      message_id,
+      message,
+      options
+    );
+  }
+  else {
+    await ctx.reply(message, options);
+  }
 
-  return data.split(':')[1] === 'yes' ? true : false;
+  const response = await conversation
+    .waitForCallbackQuery([
+      `${commandName}:yes`,
+      `${commandName}:no`
+    ])
+    .then(ctx => ctx.callbackQuery.data.split(':')[1]);
+
+  return response === 'yes' ? true : false;
 }

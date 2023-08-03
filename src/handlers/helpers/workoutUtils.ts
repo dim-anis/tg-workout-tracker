@@ -17,35 +17,45 @@ export type RecordExerciseParams = {
   setCount?: number;
 };
 
+type GetSetDataResult = {
+  data: SetType,
+  newContext: MyContext
+}
+
 export async function getSetData(
   conversation: MyConversation,
   ctx: MyContext,
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-): Promise<SetType | undefined> {
+): Promise<GetSetDataResult | undefined> {
   let currStep = RecordSetStep.WEIGHT;
+  let newContext = ctx;
   let weight: number | undefined;
   let repetitions: number | undefined;
   let rpe: number | undefined;
 
   while (true) {
     switch (currStep) {
-      case RecordSetStep.WEIGHT:
-        weight = await promptUserForWeight(
-          ctx,
+      case RecordSetStep.WEIGHT: {
+        const result = await promptUserForWeight(
+          newContext,
           conversation,
           chat_id,
           message_id,
           exerciseParams,
         );
-        if (weight === undefined) return undefined;
+        if (result === undefined) return undefined;
+
+        weight = result.data;
+        newContext = result.context;
         currStep = RecordSetStep.REPS;
         break;
+      }
 
-      case RecordSetStep.REPS:
-        repetitions = await promptUserForRepetitions(
-          ctx,
+      case RecordSetStep.REPS: {
+        const result = await promptUserForRepetitions(
+          newContext,
           conversation,
           chat_id,
           message_id,
@@ -53,16 +63,20 @@ export async function getSetData(
           weight
         );
 
-        if (repetitions === undefined) {
-          currStep = RecordSetStep.WEIGHT; // User wants to go back to the previous step
+        if (result === undefined) {
+          currStep = RecordSetStep.WEIGHT;
         } else {
           currStep = RecordSetStep.RPE;
+
+          repetitions = result.data;
+          newContext = result.context;
         }
         break;
+      }
 
-      case RecordSetStep.RPE:
-        rpe = await promptUserForRPE(
-          ctx,
+      case RecordSetStep.RPE: {
+        const result = await promptUserForRPE(
+          newContext,
           conversation,
           chat_id,
           message_id,
@@ -71,17 +85,24 @@ export async function getSetData(
           repetitions
         );
 
-        if (rpe === undefined) {
+        if (result === undefined) {
           currStep = RecordSetStep.REPS;
         } else {
+          rpe = result.data;
+          newContext = result.context;
+
           return {
-            exercise: exerciseParams.selectedExercise,
-            weight: weight!,
-            repetitions: repetitions!,
-            rpe: rpe!
+            data: {
+              exercise: exerciseParams.selectedExercise,
+              weight: weight!,
+              repetitions: repetitions!,
+              rpe: rpe!
+            },
+            newContext
           };
         }
         break;
+      }
     }
   }
 }

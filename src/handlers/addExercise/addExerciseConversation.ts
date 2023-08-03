@@ -26,7 +26,7 @@ export default async function handleAddExercise(
   try {
     const nameText = '📋 <b>Add new exercise</b>\n\nType in the name:';
     const nameOptions: InlineKeyboardOptions = { parse_mode: 'HTML', reply_markup: undefined };
-    const name = await promptUserForExerciseName(
+    const promptForNameResult = await promptUserForExerciseName(
       ctx,
       conversation,
       chat_id,
@@ -34,6 +34,13 @@ export default async function handleAddExercise(
       nameText,
       nameOptions
     );
+
+    if (!promptForNameResult) {
+      return;
+    }
+
+    const name = promptForNameResult.data;
+    ctx = promptForNameResult.context;
 
     const isCompoundText =
       `📋 <b>Add ${name.toUpperCase()}</b>\n\n` +
@@ -43,7 +50,7 @@ export default async function handleAddExercise(
       parse_mode: 'HTML',
       reply_markup: getYesNoOptions('addExercise')
     };
-    const isCompound = await promptUserForYesNo(
+    const promptForIsCompoundResult = await promptUserForYesNo(
       ctx,
       conversation,
       chat_id,
@@ -51,6 +58,13 @@ export default async function handleAddExercise(
       isCompoundText,
       isCompoundTextOptions
     );
+
+    if (!promptForIsCompoundResult) {
+      return;
+    }
+
+    const isCompound = promptForIsCompoundResult.data;
+    ctx = promptForIsCompoundResult.context;
 
     const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
@@ -61,14 +75,21 @@ export default async function handleAddExercise(
         nColumns: 3
       })
     };
-    const category = await promptUserForExerciseName(
+    const promptForCategoryResult = await promptUserForExerciseName(
       ctx,
       conversation,
       chat_id,
       lastMessageId,
       categoryText,
       categoryOptions
-    ); // <- same logic as in promptUserForExerciseName
+    );
+
+    if (!promptForCategoryResult) {
+      return;
+    }
+
+    const category = promptForCategoryResult.data;
+    ctx = promptForCategoryResult.context;
 
     const updatedUser = await conversation.external(async () =>
       await createUserExercise(user_id, { name, category, is_compound })

@@ -35,7 +35,7 @@ export default async function editExerciseConversation(
 
   const newNameText = `<b>Edit ${currName.toLocaleUpperCase()}</b>\n\nType in the new name:`;
   const newNameOptions: InlineKeyboardOptions = { parse_mode: 'HTML', reply_markup: undefined };
-  const newName = await promptUserForExerciseName(
+  const promptForNameResult = await promptUserForExerciseName(
     ctx,
     conversation,
     chat_id,
@@ -43,6 +43,13 @@ export default async function editExerciseConversation(
     newNameText,
     newNameOptions
   );
+
+  if (!promptForNameResult) {
+    return;
+  }
+
+  const newName = promptForNameResult.data;
+  ctx = promptForNameResult.context;
 
   const isCompoundText =
     `📋 <b>Edit ${newName.toUpperCase()}</b>\n\n` +
@@ -52,7 +59,7 @@ export default async function editExerciseConversation(
     parse_mode: 'HTML',
     reply_markup: getYesNoOptions('editExercise')
   };
-  const isCompound = await promptUserForYesNo(
+  const promptForYesNoResult = await promptUserForYesNo(
     ctx,
     conversation,
     chat_id,
@@ -61,6 +68,13 @@ export default async function editExerciseConversation(
     isCompoundTextOptions
   );
 
+  if (!promptForYesNoResult) {
+    return;
+  }
+
+  const isCompound = promptForYesNoResult.data;
+  ctx = promptForYesNoResult.context;
+
   const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
   const categoryText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
@@ -68,7 +82,7 @@ export default async function editExerciseConversation(
     parse_mode: 'HTML',
     reply_markup: getExerciseCategoriesMenu(exerciseCategories)
   };
-  const category = await promptUserForExerciseName(
+  const promptForCategoryResult = await promptUserForExerciseName(
     ctx,
     conversation,
     chat_id,
@@ -76,6 +90,13 @@ export default async function editExerciseConversation(
     categoryText,
     categoryOptions
   );
+
+  if (!promptForCategoryResult) {
+    return;
+  }
+
+  const category = promptForCategoryResult.data;
+  ctx = promptForCategoryResult.context;
 
   const createdExercise = await conversation.external(async () =>
     await updateUserExercise(ctx.dbchat.user_id, currName, {
