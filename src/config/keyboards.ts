@@ -1,6 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { InlineKeyboardMarkup } from 'grammy/types';
 import { fromLbToKgRounded } from '../handlers/helpers/unitConverters.js';
+import { getCompletedSetsString } from '../handlers/helpers/workoutStats.js';
 
 export const backButton = '◀ Back';
 export const prevButton = '<< Prev';
@@ -44,6 +45,28 @@ export const getRpeOptions = (prefix = ''): InlineKeyboard => {
 
   return keyboard;
 };
+
+export function generateExerciseOptions(
+  exerciseNames: string[],
+  setCountMap: Record<string, number>,
+  prefix = ''
+) {
+  const todaysExercises = new InlineKeyboard();
+  todaysExercises
+    .text(backButton, `${prefix}:goBack`)
+    .row();
+
+  for (const exerciseName of exerciseNames) {
+    const numberOfCompletedSets = setCountMap[exerciseName];
+    const buttonLabel = `${exerciseName} ${getCompletedSetsString(
+      numberOfCompletedSets
+    )}`;
+
+    todaysExercises.text(buttonLabel, `${prefix}:${exerciseName}`).row();
+  }
+
+  return todaysExercises;
+}
 
 export const getWeightOptions = (
   prevWeight: number,

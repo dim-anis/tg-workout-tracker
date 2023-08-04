@@ -51,6 +51,8 @@ export default async function editExerciseConversation(
   const newName = promptForNameResult.data;
   ctx = promptForNameResult.context;
 
+  if (newName === undefined) return;
+
   const isCompoundText =
     `📋 <b>Edit ${newName.toUpperCase()}</b>\n\n` +
     'Is it a compound exercise?\n\n' +
@@ -75,6 +77,8 @@ export default async function editExerciseConversation(
   const isCompound = promptForYesNoResult.data;
   ctx = promptForYesNoResult.context;
 
+  if (isCompound === undefined) return;
+
   const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
   const categoryText = `📋 <b>Edit ${newName.toUpperCase()}</b>\n\nWhat muscle group is it primarily targeting?`;
@@ -97,6 +101,8 @@ export default async function editExerciseConversation(
 
   const category = promptForCategoryResult.data;
   ctx = promptForCategoryResult.context;
+
+  if (category === undefined) return;
 
   const createdExercise = await conversation.external(async () =>
     await updateUserExercise(ctx.dbchat.user_id, currName, {

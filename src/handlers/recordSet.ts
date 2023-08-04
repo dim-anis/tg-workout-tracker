@@ -33,15 +33,34 @@ const handleRecordSet = async (
     const { user_id, exercises } = ctx.dbchat;
     const { isMetric } = ctx.dbchat.settings;
     const { id: chat_id } = ctx.chat;
-    const mostRecentWorkout = ctx.dbchat.recentWorkouts[0];
+    const lastWorkout = ctx.dbchat.recentWorkouts[0];
 
     const categories = new Set(exercises.map((exercise) => exercise.category));
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
-    const isTodaysWorkout = isToday(mostRecentWorkout.createdAt);
+    const isTodayWorkout = isToday(lastWorkout.createdAt);
 
-    const isDeload = isTodaysWorkout
-      ? mostRecentWorkout.isDeload
-      : await isDeloadWorkout(ctx, conversation, conversation.session.state.lastMessageId, 'recordSet');
+    let isDeload: boolean | undefined = isTodayWorkout ? lastWorkout.isDeload : undefined;
+    // set isDeload to today's value, else prompt user for isDeload
+    // if undefined returned => user clicked goBack, delete the message
+    if (isDeload === undefined) {
+      const result =
+        await isDeloadWorkout(
+          ctx,
+          conversation,
+          conversation.session.state.lastMessageId,
+          'recordSet',
+        )
+
+      if (result === undefined) return;
+
+      isDeload = result?.data;
+      ctx = result?.context;
+    }
+
+    if (isDeload === undefined) {
+      await ctx.deleteMessage();
+      return;
+    }
 
     while (!finished) {
       const selectedExercise = await chooseExercise(
@@ -51,6 +70,10 @@ const handleRecordSet = async (
         categories,
         exercisesByCategory
       );
+
+      if (selectedExercise === undefined) {
+        return;
+      }
 
       const exerciseParams: RecordExerciseParams = {
         selectedExercise,
@@ -75,7 +98,7 @@ const handleRecordSet = async (
       ctx = getSetDataResult.newContext;
 
       await conversation.external(
-        async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
+        async () => await createOrUpdateUserWorkout(user_id, setData, isDeload as boolean)
       );
 
       await ctx.api.editMessageText(
@@ -118,7 +141,7 @@ async function chooseExercise(
   chat_id: number,
   categories: Set<string>,
   exercisesByCategory: Map<string, string[]>
-): Promise<string> {
+): Promise<string | undefined> {
   const chooseCategoryText =
     '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
   const chooseCategoryOptions: InlineKeyboardOptions = {
@@ -136,12 +159,17 @@ async function chooseExercise(
     [...categories]
   );
 
-  if (!promptForCategoryResult) {
-    return '';
+  if (promptForCategoryResult === undefined) {
+    return;
   }
 
   const category = promptForCategoryResult.data;
   ctx = promptForCategoryResult.context;
+
+  if (category === undefined) {
+    await ctx.deleteMessage();
+    return;
+  }
 
   const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions: InlineKeyboardOptions = {

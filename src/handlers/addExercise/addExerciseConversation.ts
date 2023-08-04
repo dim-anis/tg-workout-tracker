@@ -42,6 +42,8 @@ export default async function handleAddExercise(
     const name = promptForNameResult.data;
     ctx = promptForNameResult.context;
 
+    if (name === undefined) return;
+
     const isCompoundText =
       `📋 <b>Add ${name.toUpperCase()}</b>\n\n` +
       'Is it a compound exercise?\n\n' +
@@ -65,6 +67,8 @@ export default async function handleAddExercise(
 
     const isCompound = promptForIsCompoundResult.data;
     ctx = promptForIsCompoundResult.context;
+
+    if (isCompound === undefined) return;
 
     const is_compound = isCompound.toLowerCase().trim() === 'yes';
 
@@ -90,6 +94,8 @@ export default async function handleAddExercise(
 
     const category = promptForCategoryResult.data;
     ctx = promptForCategoryResult.context;
+
+    if (category === undefined) return;
 
     const updatedUser = await conversation.external(async () =>
       await createUserExercise(user_id, { name, category, is_compound })

@@ -180,7 +180,7 @@ export async function promptUserForNumber(
 }
 
 type TextPromptResult = {
-  data: string,
+  data: string | undefined,
   context: MyContext
 }
 
@@ -202,12 +202,14 @@ export async function promptUserForText(
     // callback data doesn't contain prefix
     if (typeof buttonData === 'undefined') {
       buttonData = ctx.callbackQuery.data;
+    } else if (buttonData === 'goBack') {
+      return {data: undefined, context: ctx};
     }
     return { data: buttonData, context: ctx };
   }
 
   if (!ctx.chat || !ctx.message?.text) {
-    return { data: '', context: ctx };
+    return;
   }
 
   await ctx.api.deleteMessage(ctx.chat.id, ctx.message.message_id);
@@ -406,15 +408,20 @@ export function promptUserForPredefinedString(
   );
 }
 
+type IsDeloadResult = {
+  data: boolean | undefined,
+  context: MyContext
+}
+
 export async function isDeloadWorkout(
   ctx: MyContext,
   conversation: MyConversation,
   message_id: number,
   commandName: string,
   iteration = 1
-): Promise<boolean> {
+): Promise<IsDeloadResult | undefined> {
   const chat_id = ctx.chat?.id;
-  if (!chat_id) return false;
+  if (!chat_id) return undefined;
 
   const message = 'Is it a <b>deload workout</b>?';
   const keyboard = getYesNoOptions(commandName);
@@ -438,12 +445,29 @@ export async function isDeloadWorkout(
     await ctx.reply(message, options);
   }
 
-  const response = await conversation
+  const [response, context] = await conversation
     .waitForCallbackQuery([
       `${commandName}:yes`,
-      `${commandName}:no`
+      `${commandName}:no`,
+      `${commandName}:goBack`,
     ])
-    .then(ctx => ctx.callbackQuery.data.split(':')[1]);
+    .then(ctx => [ctx.callbackQuery.data.split(':')[1], ctx] as const);
 
-  return response === 'yes' ? true : false;
+  switch (response) {
+    case 'yes':
+      return {
+        data: true,
+        context
+      };
+    case 'no':
+      return {
+        data: false,
+        context
+      };
+    case 'goBack':
+      return {
+        data: undefined,
+        context
+      };
+  }
 }
