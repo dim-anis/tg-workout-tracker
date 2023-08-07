@@ -1,6 +1,7 @@
 import type { MyConversation, MyContext } from '../../types/bot.js';
 import type { SetType } from 'models/set.js';
-import { promptUserForWeight, promptUserForRepetitions, promptUserForRPE } from './promptUser.js';
+import { promptUserForWeight, promptUserForRepetitions, promptUserForRPE, isDeloadWorkout } from './promptUser.js';
+import { isToday } from 'date-fns';
 
 enum RecordSetStep {
   WEIGHT,
@@ -105,4 +106,36 @@ export async function getSetData(
       }
     }
   }
+}
+
+interface DetermineIsDeloadOptions {
+  cmdPrefix?: string,
+  iteration?: number
+}
+
+export async function determineIsDeload(ctx: MyContext, conversation: MyConversation, options: DetermineIsDeloadOptions = {}) {
+  const { iteration = 1, cmdPrefix = '' } = options;
+
+  const lastWorkout = ctx.dbchat.recentWorkouts[0];
+  const isTodayWorkout = isToday(lastWorkout.createdAt);
+  let isDeload = isTodayWorkout ? lastWorkout.isDeload : undefined;
+
+  if (isDeload === undefined) {
+    const result = await isDeloadWorkout(
+      ctx,
+      conversation,
+      conversation.session.state.lastMessageId,
+      cmdPrefix,
+      iteration
+    );
+
+    if (result === undefined) {
+      return;
+    }
+
+    isDeload = result.data;
+    ctx = result.context;
+  }
+
+  return { isDeload, ctx };
 }

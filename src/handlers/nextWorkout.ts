@@ -5,15 +5,16 @@ import { type InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards
 import { type WorkoutType } from '../models/workout.js';
 import { type RecordExerciseParams } from './helpers/workoutUtils.js';
 import { countSets, getPrs, generateWorkoutStatsString } from './helpers/workoutStats.js';
-import { getWorkoutTitleMessage } from './helpers/textMessages.js';
+import { getWorkoutTitleMessage, successMessages } from './helpers/textMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasEnoughWorkouts } from '../middleware/userHasEnoughWorkouts.js';
-import { isDeloadWorkout, promptUserForPredefinedString } from './helpers/promptUser.js';
-import { getSetData } from './helpers/workoutUtils.js';
+import { promptUserForPredefinedString, promptUserForYesNo } from './helpers/promptUser.js';
+import { getSetData, determineIsDeload } from './helpers/workoutUtils.js';
 import { generateExerciseOptions } from '../config/keyboards.js';
 
 const composer = new Composer<MyContext>();
+const CMD_PREFIX = 'nextWorkout';
 
 const handleNextWorkout = async (
   conversation: MyConversation,
@@ -34,25 +35,19 @@ const handleNextWorkout = async (
       const lastWorkout = recentWorkouts[0];
       const isTodayWorkout = isToday(lastWorkout.createdAt);
 
-      // if hasTodayWorkout => set isDeload to today workout's isDeload value, else prompt user for isDeload
-      let isDeload: boolean | undefined = isTodayWorkout ? lastWorkout.isDeload : undefined;
-      if (isDeload === undefined) {
-        const result =
-          await isDeloadWorkout(
-            ctx,
-            conversation,
-            conversation.session.state.lastMessageId,
-            'nextWorkout',
-            iteration
-          )
+      const determineIsDeloadResult = await determineIsDeload(ctx, conversation, {
+        cmdPrefix: CMD_PREFIX,
+        iteration
+      });
 
-        if (result === undefined) return;
-
-        isDeload = result?.data;
-        ctx = result?.context;
+      if (!determineIsDeloadResult) {
+        return;
       }
 
-      // if undefined returned => user clicked goBack, delete the message
+      const { isDeload, ctx: updatedContext } = determineIsDeloadResult;
+
+      ctx = updatedContext;
+
       if (isDeload === undefined) {
         await ctx.deleteMessage();
         return;
@@ -64,19 +59,18 @@ const handleNextWorkout = async (
         ...new Set(previousWorkout.sets.map((set) => set.exercise))
       ];
 
-      // Prompt user for next exercise in todays workout
       const workoutTitle = getWorkoutTitleMessage(workoutCount);
       const setCountMap = isTodayWorkout ? countSets(lastWorkout.sets) : {};
       const todaysExercises = generateExerciseOptions(
         previousWorkoutExercises,
         setCountMap,
-        'nextWorkout'
+        CMD_PREFIX
       );
       const options: InlineKeyboardOptions = {
         reply_markup: todaysExercises,
         parse_mode: 'HTML'
       };
-      const result = await promptUserForPredefinedString(
+      const promptForExerciseResult = await promptUserForPredefinedString(
         ctx,
         conversation,
         chat_id,
@@ -86,12 +80,12 @@ const handleNextWorkout = async (
         previousWorkoutExercises
       );
 
-      if (result === undefined) {
+      if (promptForExerciseResult === undefined) {
         return;
       }
 
-      const selectedExercise = result.data;
-      ctx = result.context;
+      const selectedExercise = promptForExerciseResult.data;
+      ctx = promptForExerciseResult.context;
 
       if (selectedExercise === undefined) {
         await ctx.deleteMessage();
@@ -134,23 +128,26 @@ const handleNextWorkout = async (
         createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload as boolean)
       );
 
-      await ctx.api.editMessageText(
+      const continueWorkoutResult = await promptUserForYesNo(
+        ctx,
+        conversation,
         chat_id,
-        conversation.session.state.lastMessageId,
-        'Continue the workout?',
-        { reply_markup: getYesNoOptions('nextWorkout') }
-      );
+        ctx.session.state.lastMessageId,
+        successMessages.onRecordSetSuccess,
+        {
+          reply_markup: getYesNoOptions(CMD_PREFIX),
+          parse_mode: 'HTML'
+        }
+      )
 
-      const [response, newContext] = await conversation
-        .waitForCallbackQuery([
-          'nextWorkout:yes',
-          'nextWorkout:no'
-        ])
-        .then(ctx => [ctx.callbackQuery.data.split(':')[1], ctx] as const);
+      if (!continueWorkoutResult) {
+        return;
+      }
 
-      ctx = newContext;
+      const continueWorkout = continueWorkoutResult.data;
+      ctx = continueWorkoutResult.context;
 
-      if (response === 'yes') {
+      if (continueWorkout === 'yes') {
         iteration += 1;
         continue;
       }
@@ -166,9 +163,7 @@ const handleNextWorkout = async (
         prs,
       );
 
-      await ctx.api.editMessageText(
-        chat_id,
-        conversation.session.state.lastMessageId,
+      await ctx.editMessageText(
         workoutStatsString,
         { parse_mode: 'HTML' }
       );

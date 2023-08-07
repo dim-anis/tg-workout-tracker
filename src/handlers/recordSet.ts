@@ -3,22 +3,18 @@ import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import {
   getMenuFromStringArray,
-  backButton,
   getYesNoOptions,
   InlineKeyboardOptions
 } from '../config/keyboards.js';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasExercises } from '../middleware/userHasExercises.js';
-import {
-  promptUserForPredefinedString,
-  isDeloadWorkout
-} from './helpers/promptUser.js';
+import { promptUserForPredefinedString, promptUserForYesNo } from './helpers/promptUser.js';
 import { successMessages } from './helpers/textMessages.js';
-import { isToday } from 'date-fns';
 import { ExerciseType } from 'models/exercise.js';
-import { RecordExerciseParams, getSetData } from './helpers/workoutUtils.js';
+import { RecordExerciseParams, getSetData, determineIsDeload } from './helpers/workoutUtils.js';
 
 const composer = new Composer<MyContext>();
+const CMD_PREFIX = 'recordSet';
 
 const handleRecordSet = async (
   conversation: MyConversation,
@@ -29,40 +25,31 @@ const handleRecordSet = async (
   }
 
   try {
-    let finished = false;
+    let isFinished = false;
+    let iteration = 1;
     const { user_id, exercises } = ctx.dbchat;
     const { isMetric } = ctx.dbchat.settings;
     const { id: chat_id } = ctx.chat;
-    const lastWorkout = ctx.dbchat.recentWorkouts[0];
 
     const categories = new Set(exercises.map((exercise) => exercise.category));
     const exercisesByCategory = getExercisesByCategory(categories, exercises);
-    const isTodayWorkout = isToday(lastWorkout.createdAt);
 
-    let isDeload: boolean | undefined = isTodayWorkout ? lastWorkout.isDeload : undefined;
-    // set isDeload to today's value, else prompt user for isDeload
-    // if undefined returned => user clicked goBack, delete the message
-    if (isDeload === undefined) {
-      const result =
-        await isDeloadWorkout(
-          ctx,
-          conversation,
-          conversation.session.state.lastMessageId,
-          'recordSet',
-        )
+    const result = await determineIsDeload(ctx, conversation, { cmdPrefix: CMD_PREFIX, iteration });
 
-      if (result === undefined) return;
-
-      isDeload = result?.data;
-      ctx = result?.context;
+    if (!result) {
+      return;
     }
+
+    const { isDeload, ctx: updatedContext } = result;
+
+    ctx = updatedContext;
 
     if (isDeload === undefined) {
       await ctx.deleteMessage();
       return;
     }
 
-    while (!finished) {
+    while (!isFinished) {
       const selectedExercise = await chooseExercise(
         ctx,
         conversation,
@@ -88,9 +75,8 @@ const handleRecordSet = async (
         exerciseParams
       );
 
-      // re-enter the loop, it the setData is undefined
-
       if (getSetDataResult === undefined) {
+        iteration += 1;
         continue;
       }
 
@@ -101,35 +87,34 @@ const handleRecordSet = async (
         async () => await createOrUpdateUserWorkout(user_id, setData, isDeload as boolean)
       );
 
-      await ctx.api.editMessageText(
+      const continueWorkoutResult = await promptUserForYesNo(
+        ctx,
+        conversation,
         chat_id,
-        conversation.session.state.lastMessageId,
+        ctx.session.state.lastMessageId,
         successMessages.onRecordSetSuccess,
         {
-          reply_markup: getYesNoOptions('recordSet'),
+          reply_markup: getYesNoOptions(CMD_PREFIX),
           parse_mode: 'HTML'
         }
-      );
+      )
 
-      const continueWorkout = await conversation
-        .waitForCallbackQuery([
-          'recordSet:yes',
-          'recordSet:no'
-        ])
-        .then((ctx) => ctx.callbackQuery.data);
+      if (!continueWorkoutResult) {
+        return;
+      }
 
-      if (continueWorkout.split(':')[1] === 'yes') {
-        await ctx.answerCallbackQuery();
+      const continueWorkout = continueWorkoutResult.data;
+      ctx = continueWorkoutResult.context;
+
+      if (continueWorkout === 'yes') {
+        iteration += 1;
         continue;
       }
 
-      finished = true;
+      isFinished = true;
     }
 
-    await ctx.api.deleteMessage(
-      chat_id,
-      conversation.session.state.lastMessageId
-    );
+    await ctx.deleteMessage();
   } catch (err: unknown) {
     console.log(err);
   }
@@ -142,12 +127,15 @@ async function chooseExercise(
   categories: Set<string>,
   exercisesByCategory: Map<string, string[]>
 ): Promise<string | undefined> {
+  const cmdTitle = '<b>Record exercise</b>';
   const chooseCategoryText =
-    '<b>Record exercise</b>\n\n<i>Choose a category:</i>';
+    cmdTitle + '\n\n<i>Choose a category:</i>';
   const chooseCategoryOptions: InlineKeyboardOptions = {
-    reply_markup: getMenuFromStringArray([...categories], 'recordSet'),
+    reply_markup: getMenuFromStringArray([...categories], CMD_PREFIX, { addBackButton: true }),
     parse_mode: 'HTML'
   };
+
+  const backButtonCbData = `${CMD_PREFIX}:goBack`;
 
   const promptForCategoryResult = await promptUserForPredefinedString(
     ctx,
@@ -156,7 +144,7 @@ async function chooseExercise(
     conversation.session.state.lastMessageId,
     chooseCategoryText,
     chooseCategoryOptions,
-    [...categories]
+    [...categories, backButtonCbData]
   );
 
   if (promptForCategoryResult === undefined) {
@@ -171,11 +159,11 @@ async function chooseExercise(
     return;
   }
 
-  const chooseExerciseText = `<b>Record exercise</b>\n\n<b>${category}</b>\n\n<i>Choose an exercise:</i>`;
+  const chooseExerciseText = cmdTitle + ` > <b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions: InlineKeyboardOptions = {
     reply_markup: getMenuFromStringArray(
       exercisesByCategory.get(category) as string[],
-      'recordSet',
+      CMD_PREFIX,
       { addBackButton: true }
     ),
     parse_mode: 'HTML'
@@ -188,7 +176,7 @@ async function chooseExercise(
     conversation.session.state.lastMessageId,
     chooseExerciseText,
     chooseExerciseOptions,
-    [backButton, ...(exercisesByCategory.get(category) as string[])]
+    [...(exercisesByCategory.get(category) as string[]), backButtonCbData]
   );
 
   if (!promptForExerciseResult) {
@@ -198,7 +186,7 @@ async function chooseExercise(
   const exercise = promptForExerciseResult.data;
   ctx = promptForExerciseResult.context;
 
-  if (exercise === backButton) {
+  if (exercise === undefined) {
     return chooseExercise(
       ctx,
       conversation,

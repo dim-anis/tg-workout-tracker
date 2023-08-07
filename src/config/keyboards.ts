@@ -170,7 +170,7 @@ export const getMenuFromStringArray = (
 
   const keyboard = new InlineKeyboard();
   if (addBackButton) {
-    keyboard.text(backButton, `${prefix}:${backButton}`).row();
+    keyboard.text(backButton, `${prefix}:goBack`).row();
   }
 
   for (const [index, label] of labels.entries()) {
