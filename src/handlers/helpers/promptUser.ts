@@ -4,7 +4,7 @@ import { getCompletedSetsString } from './workoutStats.js';
 import { RecordExerciseParams } from './workoutUtils.js';
 import { getYesNoOptions } from '../../config/keyboards.js';
 import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './textMessages.js';
-import { fromLbToKgRounded } from './unitConverters.js';
+import { kgs } from './unitConverters.js';
 import { errorMessages } from './textMessages.js';
 
 function updateMessageWithError(message: string, error = '') {
@@ -130,7 +130,7 @@ export async function promptUserForNumber(
 
       exerciseParams = {
         ...exerciseParams,
-        unit: currUnit === 'kg' ? 'lb' : 'kg'
+        weightUnit: currUnit === 'kg' ? 'lb' : 'kg'
       }
 
       return promptUserForWeight(
@@ -158,7 +158,7 @@ export async function promptUserForNumber(
   if (!validationError) {
     const value = Number(ctx.message.text);
     if (unit) {
-      const weight = unit === 'kg' ? value : fromLbToKgRounded(value);
+      const weight = unit === 'kg' ? value : kgs(value);
       return { data: weight, context: ctx };
     } else {
       return { data: value, context: ctx };
@@ -240,7 +240,7 @@ export function promptUserForWeight(
   message_id: number,
   exerciseParams: RecordExerciseParams,
 ): Promise<NumberPromptResult | undefined> {
-  const { selectedExercise, previousWeight, hitAllReps, setCount, unit } = exerciseParams;
+  const { selectedExercise, previousWeight, hitAllReps, setCount, weightUnit: unit } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
     parse_mode: 'HTML',

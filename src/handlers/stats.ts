@@ -11,12 +11,13 @@ import { getUserWorkoutsGroupedByMonth, getUserWorkoutsGroupedByWeek } from "../
 const DAY_PAGE_SIZE = 19;
 const WEEK_PAGE_SIZE = 5;
 const MONTH_PAGE_SIZE = 5;
+const dateFormat = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' });
 
 const composer = new Composer<MyContext>();
 
 const mainMenu = new Menu<MyContext>('statsMenu')
   .submenu(
-    { text: 'Daily', payload: 'day?page=0' },
+    { text: 'Daily', payload: 'day?page=1' },
     'periodMenu',
     async ctx => await ctx.editMessageText(mainMenuTitle + " > <b>Daily</b>", { parse_mode: 'HTML' })
   )
@@ -63,26 +64,20 @@ async function createStatsByWeekMenu(ctx: MyContext, page = 1) {
     const workoutsByWeek = group.workouts;
 
     const { startDate, endDate } = getWeekDates(year, Number(week), 1);
-    const formattedStartDate = startDate
-      .toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short'
-      });
-    const formattedEndDate = endDate
-      .toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'short'
-      });
 
-    const fromToDate = `${formattedStartDate} - ${formattedEndDate}`;
+    const fromToDate = `${dateFormat.format(startDate)} - ${dateFormat.format(endDate)}`;
+
     range
       .submenu(
         { text: fromToDate, payload: `week?page=${page}` },
         'renderWeekMenu',
         async ctx => {
-          const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats(workoutsByWeek, exercises);
-          const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
-          await ctx.editMessageText(mainMenuTitle + ' > <b>Weekly</b>' + ` > <b>${fromToDate}</b>\n` + statsText, { parse_mode: 'HTML' });
+          await ctx.editMessageText(
+            mainMenuTitle +
+            ' > <b>Weekly</b>' +
+            ` > <b>${fromToDate}</b>\n`
+            + getStatsString(getStats(workoutsByWeek, exercises), isMetric),
+            { parse_mode: 'HTML' })
         }
       )
       .row()
@@ -127,19 +122,21 @@ async function createStatsByMonthMenu(ctx: MyContext, page = 0) {
 
   const range = new MenuRange<MyContext>();
   for (const group of workoutsGroupedByMonth) {
-    const { month, year } = group._id;
-    const {workouts} = group;
+    const { month } = group._id;
+    const { workouts } = group;
     const monthString = getMonthNameFromNumber(Number(month));
     range
       .submenu(
         { text: monthString, payload: `month?page=${page}` },
         'renderMonthMenu',
         async ctx => {
-          const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats(workouts, exercises);
-          const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
-          await ctx.editMessageText(mainMenuTitle + ' > <b>Monthly</b>' + ` > <b>${monthString}</b>\n` + statsText, { parse_mode: 'HTML' });
-        }
-      )
+          await ctx.editMessageText(
+            mainMenuTitle +
+            ' > <b>Monthly</b>' +
+            ` > <b>${monthString}</b>\n`
+            + getStatsString(getStats(workouts, exercises), isMetric),
+            { parse_mode: 'HTML' })
+        })
       .row()
   }
 
@@ -195,31 +192,22 @@ async function createStatsByDayMenu(ctx: MyContext, page = 1) {
       range.row();
     }
 
-    let formattedDate: string;
-    if ('created' in workout) {
-      formattedDate = workout
-        .created
-        .toLocaleDateString('en-US', {
-          day: 'numeric',
-          month: 'short'
-        });
-    } else {
-      formattedDate = workout
-        .createdAt
-        .toLocaleDateString('en-US', {
-          day: 'numeric',
-          month: 'short'
-        });
-    }
+    const formattedDate = dateFormat.format('created' in workout
+      ? workout.created
+      : workout.createdAt
+    );
+
     range.submenu(
       { text: `${formattedDate}`, payload: `day?page=${page}` },
       'renderDayMenu',
       async ctx => {
-        const { volumePerMuscleGroup, totalVolume, avgRPE } = getStats([workout], exercises);
-        const statsText = getStatsString(totalVolume, volumePerMuscleGroup, avgRPE, isMetric);
-        await ctx.editMessageText(mainMenuTitle + ' > <b>Daily</b>' + ` > <b>${formattedDate}</b>\n` + statsText, { parse_mode: 'HTML' });
-      }
-    )
+        await ctx.editMessageText(
+          mainMenuTitle +
+          ' > <b>Daily</b>' +
+          ` > <b>${formattedDate}</b>\n` +
+          getStatsString(getStats([workout], exercises), isMetric),
+          { parse_mode: 'HTML' })
+      })
 
     if (Number(index) === workouts.length - 1) {
       range.row();

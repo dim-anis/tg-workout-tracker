@@ -11,7 +11,7 @@ enum RecordSetStep {
 
 export type RecordExerciseParams = {
   selectedExercise: string;
-  unit: 'kg' | 'lb';
+  weightUnit: 'kg' | 'lb';
   previousWeight?: number;
   previousReps?: number;
   hitAllReps?: boolean;

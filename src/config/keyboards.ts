@@ -1,6 +1,6 @@
 import { InlineKeyboard } from 'grammy';
 import { InlineKeyboardMarkup } from 'grammy/types';
-import { fromLbToKgRounded } from '../handlers/helpers/unitConverters.js';
+import { kgs } from '../handlers/helpers/unitConverters.js';
 import { getCompletedSetsString } from '../handlers/helpers/workoutStats.js';
 
 export const backButton = '◀ Back';
@@ -80,7 +80,7 @@ export const getWeightOptions = (
   const keyboard = new InlineKeyboard();
 
   for (const [index, value] of weightIncrements.entries()) {
-    const incrementValue = unit === 'kg' ? value : fromLbToKgRounded(value);
+    const incrementValue = unit === 'kg' ? value : kgs(value);
     const newWeightInKg = prevWeight + incrementValue;
 
     const buttonLabel = value > 0 ? `+${value}` : `${value}`;

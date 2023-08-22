@@ -2,85 +2,99 @@ import { type WorkoutType } from 'models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from 'models/exercise.js';
 import { isToday } from 'date-fns';
-import { fromKgToLbRounded, roundToNearestHalf } from './unitConverters.js';
+import { pounds, roundToNearestHalf } from './unitConverters.js';
 import { checkedCircle, getRpeOptionColor } from '../../config/keyboards.js';
 import { ArchivedWorkoutType } from 'models/archivedWorkout.js';
+import { MyContext } from 'types/bot.js';
+
+const dateFormat = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' });
 
 type PersonalBestWithName = PersonalBest & { exerciseName: string };
 type MuscleGroupToVolumeMap = { [muscleGroup: string]: number };
+type WorkoutStats = {
+  muscleGroupVolumes: MuscleGroupToVolumeMap,
+  totalVolume: number,
+  avgRPE: number
+}
 
-export function getStats(workouts: (WorkoutType | ArchivedWorkoutType)[], exercises: ExerciseType[]) {
-  const volumePerMuscleGroup = workouts.reduce((acc: MuscleGroupToVolumeMap, workout) => {
+export function getStats(workouts: (WorkoutType | ArchivedWorkoutType)[], exercises: ExerciseType[]): WorkoutStats {
+  const muscleGroupVolumes = workouts.reduce((acc: MuscleGroupToVolumeMap, workout) => {
     const volumePerWorkout = getVolumePerMuscleGroup(workout.sets, exercises);
     for (const [muscleGroup, volume] of Object.entries(volumePerWorkout)) {
-      if (!acc[muscleGroup]) {
-        acc[muscleGroup] = volume;
-      } else {
-        acc[muscleGroup] += volume;
-      }
+      !acc[muscleGroup]
+        ? acc[muscleGroup] = volume
+        : acc[muscleGroup] += volume
     }
 
     return acc;
   }, {});
 
-  const totalVolume = Object.values(volumePerMuscleGroup).reduce((total, currVolume) => total + currVolume, 0);
+  const totalVolume = Object.values(muscleGroupVolumes).reduce((total, currVolume) => total + currVolume, 0);
   let avgRPE = workouts.reduce((total, workout) => total + workout.avg_rpe, 0);
   avgRPE = roundToNearestHalf(avgRPE / workouts.length);
 
-  return { volumePerMuscleGroup, totalVolume, avgRPE };
+  return { muscleGroupVolumes, totalVolume, avgRPE };
 }
 
-export function getStatsString(totalVolume: number, volumePerMuscleGroupMap: MuscleGroupToVolumeMap, avgRPE: number, isMetric: boolean) {
-  const weightUnit = isMetric ? 'kg' : 'lb';
-  totalVolume = weightUnit === 'kg' ? Math.round(totalVolume) : Math.round(fromKgToLbRounded(totalVolume));
+export function getStatsForWorkout(ctx: MyContext, workout: WorkoutType) {
+  const date = workout.createdAt;
+  const duration = workout.updatedAt && intervalToDuration({
+    start: new Date(workout.createdAt),
+    end: new Date(workout.updatedAt)
+  });
+  const totalVolume = getTotalVolume(workout.sets);
+  const prs = getPrs(ctx.dbchat.exercises);
 
-  const volumePerMuscleGroup: string[] = [];
-  for (let [muscleGroup, volume] of Object.entries(volumePerMuscleGroupMap)) {
-    volume = weightUnit === 'kg' ? Math.round(volume) : Math.round(fromKgToLbRounded(volume));
-    volumePerMuscleGroup.push(`    • <b>${muscleGroup}:</b> ${volume.toLocaleString()}${weightUnit}`);
+  return { date, duration, totalVolume, prs };
+}
+
+export function renderWorkoutStatsMessage(
+  ctx: MyContext,
+  workout: WorkoutType,
+  workoutCount?: number,
+) {
+  const { isMetric } = ctx.dbchat.settings;
+  const weightUnit = isMetric ? 'kg' : 'lb';
+  const { date, duration, totalVolume, prs } = getStatsForWorkout(ctx, workout);
+  const totalDurationString = workout.updatedAt
+    ? `<b>${duration.hours || 0}h ${duration.minutes || 0}m ${duration.seconds || 0}s</b>`
+    : 'N/A'
+  const prMessage = prs?.length ? generatePrMessage(prs, weightUnit) : '';
+
+  const message =
+    `<b>Workout Stats</b>\n\n` +
+    `📅 Date: <b>${dateFormat.format(date)}</b>\n` +
+    `📋 Workout number: <b>${workout.isDeload ? 'deload workout' : workoutCount}</b>\n` +
+    `🏋️‍♂️ Total volume: <b>${isMetric ? totalVolume : pounds(totalVolume)}${weightUnit}</b>\n` +
+    `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
+    `${getRpeOptionColor(workout.avg_rpe)} Average RPE: <b>${workout.avg_rpe}</b>` +
+    prMessage;
+
+  return message;
+}
+
+export function getStatsString(workoutStats: WorkoutStats, isMetric: boolean) {
+  const { muscleGroupVolumes, avgRPE } = workoutStats;
+  let { totalVolume } = workoutStats;
+  const weightUnit = isMetric ? 'kg' : 'lb';
+  totalVolume = Math.round(isMetric ? totalVolume : pounds(totalVolume));
+
+  const volumePerGroup: string[] = [];
+  for (let [muscleGroup, volume] of Object.entries(muscleGroupVolumes)) {
+    volume = Math.round(isMetric ? volume : pounds(volume));
+    volumePerGroup.push(`    • <b>${muscleGroup}:</b> ${volume.toLocaleString()}${weightUnit}`);
   }
 
   const statsText = `
 <b>Total volume: ${totalVolume.toLocaleString()}${weightUnit}</b> 
 
-${volumePerMuscleGroup.join('\n')}
+${volumePerGroup.join('\n')}
 
 Average RPE: ${getRpeOptionColor(avgRPE)} <b>${avgRPE}</b>
 `
   return statsText;
 }
 
-export function generateWorkoutStatsString(
-  workout: WorkoutType,
-  isMetric: boolean,
-  workoutCount?: number,
-  prs?: PersonalBestWithName[],
-) {
-  const weightUnit = isMetric ? 'kg' : 'lb';
-  const workoutDate = workout.createdAt.toLocaleDateString();
-  const { hours, minutes, seconds } = workout.updatedAt && intervalToDuration({
-    start: new Date(workout.createdAt),
-    end: new Date(workout.updatedAt)
-  });
-  const totalDurationString = workout.updatedAt
-    ? `<b>${hours || 0}h ${minutes || 0}m ${seconds || 0}s</b>`
-    : 'N/A'
-  const totalVolumeInKg = getTotalVolume(workout.sets);
-  const totalVolume = weightUnit === 'kg' ? totalVolumeInKg : fromKgToLbRounded(totalVolumeInKg);
-  const prMessage = prs?.length ? generatePrMessage(prs, weightUnit) : '';
-
-  const statsText =
-    `<b>Workout Stats</b>\n\n` +
-    `📅 Date: <b>${workoutDate}</b>\n` +
-    `💤 Is deload workout: <b>${workout.isDeload ? 'yes' : 'no'}</b>\n` +
-    `📋 Workout number: <b>${workoutCount}</b>\n` +
-    `🏋️‍♂️ Total volume: <b>${totalVolume.toLocaleString()}${weightUnit}</b>\n` +
-    `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
-    `${getRpeOptionColor(workout.avg_rpe)} Average RPE: <b>${workout.avg_rpe}</b>` +
-    prMessage;
-
-  return statsText;
-}
 
 export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
   const exerciseMap = new Map(exercises.map(exercise => [exercise.name, exercise]));
@@ -100,20 +114,20 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
   return out;
 }
 
-function generatePrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
+export function generatePrMessage(newPbs: PersonalBestWithName[], unit: 'kg' | 'lb') {
   const pbMessageLines = [];
   if (newPbs.length > 0) {
     for (const newPb of newPbs) {
       let pbDiff = 0;
       if (newPb.oldPb) {
         const pbWeightDiffInKg = Number((newPb.weight - newPb.oldPb?.weight).toFixed(1));
-        const pbWeightDiffConverted = unit === 'kg' ? pbWeightDiffInKg : fromKgToLbRounded(pbWeightDiffInKg);
+        const pbWeightDiffConverted = unit === 'kg' ? pbWeightDiffInKg : pounds(pbWeightDiffInKg);
         const pbWeightDiffConvertedRounded = Number.isInteger(pbWeightDiffConverted) ? Math.floor(pbWeightDiffConverted) : pbWeightDiffConverted;
         pbDiff = pbWeightDiffConvertedRounded;
       }
 
       const strengthImprovement = pbDiff ? ` (+${pbDiff}${unit})` : '';
-      const newWeight = unit === 'kg' ? newPb.weight : fromKgToLbRounded(newPb.weight);
+      const newWeight = unit === 'kg' ? newPb.weight : pounds(newPb.weight);
 
       pbMessageLines.push(`${newPb.exerciseName} - <b>${newWeight}${unit} x ${newPb.repetitions} ${strengthImprovement}</b>`)
     }

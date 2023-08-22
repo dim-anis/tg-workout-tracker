@@ -2,9 +2,9 @@ import { Composer } from 'grammy';
 import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '../types/bot.js';
 import { type InlineKeyboardOptions, getYesNoOptions } from '../config/keyboards.js';
-import { type WorkoutType } from '../models/workout.js';
-import { type RecordExerciseParams } from './helpers/workoutUtils.js';
-import { countSets, getPrs, generateWorkoutStatsString } from './helpers/workoutStats.js';
+import type { WorkoutType } from '../models/workout.js';
+import type { RecordExerciseParams } from './helpers/workoutUtils.js';
+import { countSets, renderWorkoutStatsMessage } from './helpers/workoutStats.js';
 import { getWorkoutTitleMessage, successMessages } from './helpers/textMessages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '../models/user.js';
@@ -31,6 +31,7 @@ const handleNextWorkout = async (
   while (!isFinished) {
     try {
       const { splitLength, isMetric } = ctx.dbchat.settings;
+      const weightUnit = isMetric ? 'kg' : 'lb';
       const { recentWorkouts } = ctx.dbchat;
       const lastWorkout = recentWorkouts[0];
       const isTodayWorkout = isToday(lastWorkout.createdAt);
@@ -103,7 +104,7 @@ const handleNextWorkout = async (
 
       const exerciseParams: RecordExerciseParams = {
         selectedExercise,
-        unit: isMetric ? 'kg' : 'lb',
+        weightUnit,
         setCount: setCountMap[selectedExercise],
         ...previousWorkoutSetData,
       };
@@ -154,17 +155,8 @@ const handleNextWorkout = async (
 
       isFinished = true;
 
-      const prs = getPrs(ctx.dbchat.exercises);
-
-      const workoutStatsString = generateWorkoutStatsString(
-        updatedCurrentWorkout,
-        ctx.dbchat.settings.isMetric,
-        workoutCount,
-        prs,
-      );
-
       await ctx.editMessageText(
-        workoutStatsString,
+        renderWorkoutStatsMessage(ctx, updatedCurrentWorkout, workoutCount),
         { parse_mode: 'HTML' }
       );
     } catch (err: unknown) {

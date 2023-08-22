@@ -64,7 +64,7 @@ const handleRecordSet = async (
 
       const exerciseParams: RecordExerciseParams = {
         selectedExercise,
-        unit: isMetric ? 'kg' : 'lb',
+        weightUnit: isMetric ? 'kg' : 'lb',
       }
 
       const getSetDataResult = await getSetData(

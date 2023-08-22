@@ -1,4 +1,4 @@
-import { fromKgToLbRounded } from "./unitConverters.js";
+import { pounds } from "./unitConverters.js";
 
 export const successMessages = {
   onRecordSetSuccess:
@@ -25,7 +25,7 @@ export const errorMessages = {
 };
 
 export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb') => {
-  const convertedWeight = unit === 'kg' ? previousWeight : fromKgToLbRounded(previousWeight); 
+  const convertedWeight = unit === 'kg' ? previousWeight : pounds(previousWeight); 
 
   return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
     'Please enter the weight\n\n' +
