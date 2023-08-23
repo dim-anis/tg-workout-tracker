@@ -1,11 +1,11 @@
-import { type WorkoutType } from 'models/workout.js';
+import { type WorkoutType } from '@/models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
-import { ExerciseType, PersonalBest } from 'models/exercise.js';
+import { ExerciseType, PersonalBest } from '@/models/exercise.js';
 import { isToday } from 'date-fns';
 import { pounds, roundToNearestHalf } from './unitConverters.js';
-import { checkedCircle, getRpeOptionColor } from '../../config/keyboards.js';
-import { ArchivedWorkoutType } from 'models/archivedWorkout.js';
-import { MyContext } from 'types/bot.js';
+import { checkedCircle, getRpeOptionColor } from '@/config/keyboards.js';
+import { ArchivedWorkoutType } from '@/models/archivedWorkout.js';
+import { MyContext } from '@/types/bot.js';
 
 const dateFormat = new Intl.DateTimeFormat('en-US', { day: 'numeric', month: 'short' });
 

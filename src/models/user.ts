@@ -3,7 +3,7 @@ import { WorkoutSchema, Workout, type WorkoutType } from './workout.js';
 import { ExerciseSchema, type ExerciseType } from './exercise.js';
 import { type SetType } from './set.js';
 import isSameDay from 'date-fns/isSameDay';
-import { getAverageRPE } from '../handlers/helpers/workoutStats.js';
+import { getAverageRPE } from '@/helpers/workoutStats.js';
 import {
   ArchivedWorkoutSchema,
   type ArchivedWorkoutType

@@ -1,15 +1,15 @@
-import type { MyConversation, MyContext } from '../../types/bot.js';
+import type { MyConversation, MyContext } from '@/types/bot.js';
 import {
   InlineKeyboardOptions,
   getMenuFromStringArray,
   getYesNoOptions
-} from '../../config/keyboards.js';
-import { exerciseCategories } from '../../config/exercises.js';
-import { createUserExercise } from '../../models/user.js';
+} from '@/config/keyboards.js';
+import { exerciseCategories } from '@/config/exercises.js';
+import { createUserExercise } from '@/models/user.js';
 import {
   promptUserForExerciseName,
   promptUserForYesNo
-} from '../helpers/promptUser.js';
+} from '@/helpers/promptUser.js';
 
 export default async function handleAddExercise(
   conversation: MyConversation,

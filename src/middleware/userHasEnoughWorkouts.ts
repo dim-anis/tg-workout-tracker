@@ -1,6 +1,6 @@
 import { type NextFunction } from 'grammy';
-import { type MyContext } from 'types/bot.js';
-import { sendNotEnoughWorkoutsError } from '../handlers/helpers/errors.js';
+import { type MyContext } from '@/types/bot.js';
+import { sendNotEnoughWorkoutsError } from '@/helpers/errors.js';
 
 export async function userHasEnoughWorkouts(
   ctx: MyContext,

@@ -1,12 +1,12 @@
 import { Menu, MenuRange } from "@grammyjs/menu";
-import { InlineKeyboardOptions, prevButton, nextButton, backButton } from "../config/keyboards.js";
+import { InlineKeyboardOptions, prevButton, nextButton, backButton } from "@/config/keyboards.js";
 import { Composer } from "grammy";
-import { type WorkoutType } from "../models/workout.js";
-import { type MyContext } from "types/bot.js";
-import { getMonthNameFromNumber, getWeekDates } from "./helpers/dateConverters.js";
-import { ArchivedWorkoutType, getArchivedWorkouts } from "../models/archivedWorkout.js";
-import { getStats, getStatsString } from "./helpers/workoutStats.js";
-import { getUserWorkoutsGroupedByMonth, getUserWorkoutsGroupedByWeek } from "../models/user.js";
+import { type WorkoutType } from "@/models/workout.js";
+import { type MyContext } from "@/types/bot.js";
+import { getMonthNameFromNumber, getWeekDates } from "@/helpers/dateConverters.js";
+import { ArchivedWorkoutType, getArchivedWorkouts } from "@/models/archivedWorkout.js";
+import { getStats, getStatsString } from "@/helpers/workoutStats.js";
+import { getUserWorkoutsGroupedByMonth, getUserWorkoutsGroupedByWeek } from "@/models/user.js";
 
 const DAY_PAGE_SIZE = 19;
 const WEEK_PAGE_SIZE = 5;

@@ -8,10 +8,10 @@ import {
 } from '../config/keyboards.js';
 import { createOrUpdateUserWorkout } from '../models/user.js';
 import { userHasExercises } from '../middleware/userHasExercises.js';
-import { promptUserForPredefinedString, promptUserForYesNo } from './helpers/promptUser.js';
-import { successMessages } from './helpers/textMessages.js';
-import { ExerciseType } from 'models/exercise.js';
-import { RecordExerciseParams, getSetData, determineIsDeload } from './helpers/workoutUtils.js';
+import { promptUserForPredefinedString, promptUserForYesNo } from '@/helpers/promptUser.js';
+import { successMessages } from '@/helpers/textMessages.js';
+import { ExerciseType } from '@/models/exercise.js';
+import { RecordExerciseParams, getSetData, determineIsDeload } from '@/helpers/workoutUtils.js';
 
 const composer = new Composer<MyContext>();
 const CMD_PREFIX = 'recordSet';

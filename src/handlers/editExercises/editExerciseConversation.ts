@@ -5,7 +5,7 @@ import { updateUserExercise } from '../../models/user.js';
 import {
   promptUserForExerciseName,
   promptUserForYesNo
-} from '../../handlers/helpers/promptUser.js';
+} from '@/helpers/promptUser.js';
 import { exerciseCategories } from '../../config/exercises.js';
 
 function getExerciseCategoriesMenu(categories: string[]) {

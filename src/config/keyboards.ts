@@ -1,7 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { InlineKeyboardMarkup } from 'grammy/types';
-import { kgs } from '../handlers/helpers/unitConverters.js';
-import { getCompletedSetsString } from '../handlers/helpers/workoutStats.js';
+import { kgs } from '@/helpers/unitConverters.js';
+import { getCompletedSetsString } from '@/helpers/workoutStats.js';
 
 export const backButton = '◀ Back';
 export const prevButton = '<< Prev';

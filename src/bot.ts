@@ -1,16 +1,13 @@
 import dotenv from 'dotenv';
-import dbConnect from './config/dbConnection.js';
-import mongoose from 'mongoose';
-const { connection } = mongoose;
-import { MongoDBAdapter, type ISession } from '@grammyjs/storage-mongodb';
+import dbConnect from '@/config/dbConnection.js';
 import { Bot, session } from 'grammy';
-import { type MyContext } from 'types/bot.js';
-import commands from './config/botCommands.js';
-import { type SessionStorage, initial } from './config/sessionStorage.js';
-import attachUser from './middleware/attachUser.js';
+import { type MyContext } from '@/types/bot.js';
+import commands from '@/config/botCommands.js';
+import { initial } from '@/config/sessionStorage.js';
+import attachUser from '@/middleware/attachUser.js';
 import { conversations } from '@grammyjs/conversations';
-import handlers from './handlers/index.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import handlers from '@/handlers/index.js';
+import { errorHandler } from '@/middleware/errorHandler.js';
 
 dotenv.config();
 
@@ -18,15 +15,12 @@ async function runBot() {
   await dbConnect();
   console.log('connected to MongoDB');
 
-  const collection = connection.db.collection<ISession>('sessions');
-
   const bot = new Bot<MyContext>(process.env.KEY!);
   await bot.api.setMyCommands(commands);
 
   bot.use(
     session({
       initial
-      // storage: new MongoDBAdapter<SessionStorage>({ collection })
     })
   );
   bot.use(attachUser);

@@ -1,8 +1,8 @@
-import { type MyContext, type MyConversation } from 'types/bot.js';
-import { backButton, getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '../../config/keyboards.js';
+import { type MyContext, type MyConversation } from '@/types/bot.js';
+import { backButton, getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '@/config/keyboards.js';
 import { getCompletedSetsString } from './workoutStats.js';
 import { RecordExerciseParams } from './workoutUtils.js';
-import { getYesNoOptions } from '../../config/keyboards.js';
+import { getYesNoOptions } from '@/config/keyboards.js';
 import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './textMessages.js';
 import { kgs } from './unitConverters.js';
 import { errorMessages } from './textMessages.js';

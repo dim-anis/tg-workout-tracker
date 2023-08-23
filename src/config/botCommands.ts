@@ -12,12 +12,16 @@ const commands = [
     description: 'record a single set'
   },
   {
+    command: '/stats',
+    description: 'see dayily, weekly, monthly stats'
+  },
+  {
     command: '/add_exercise',
     description: 'add your own or choose from a set of preloaded exercises'
   },
   {
     command: '/edit_exercises',
-    description: 'edit, remove or add new exercises'
+    description: 'edit or remove exercises'
   },
   {
     command: '/settings',

@@ -1,6 +1,6 @@
 import { type NextFunction } from 'grammy';
-import { type MyContext } from 'types/bot.js';
-import { sendNoExercisesAddedError } from '../handlers/helpers/errors.js';
+import { type MyContext } from '@/types/bot.js';
+import { sendNoExercisesAddedError } from '@/helpers/errors.js';
 
 export async function userHasExercises(ctx: MyContext, next: NextFunction) {
   if (ctx.dbchat.exercises.length > 0) {
