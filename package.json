@@ -5,7 +5,7 @@
   "main": "./src/bot.ts",
   "type": "module",
   "scripts": {
-    "dev": "nodemon --exec ts-node ./src/bot.ts",
+    "dev": "tsx ./src/bot.ts",
     "trasnpiled": "node ./dist/bot.js",
     "build": "tsc",
     "lint": "eslint . --ext .ts"
@@ -44,6 +44,8 @@
     "nodemon": "^3.0.1",
     "prettier": "^3.0.0",
     "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^3.12.7",
     "typescript": "^5.0.4"
   }
 }
