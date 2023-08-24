@@ -5,7 +5,7 @@
   "main": "./src/bot.ts",
   "type": "module",
   "scripts": {
-    "dev": "tsx ./src/bot.ts",
+    "dev": "tsx watch ./src/bot.ts",
     "trasnpiled": "node ./dist/bot.js",
     "build": "tsc",
     "lint": "eslint . --ext .ts"
@@ -21,7 +21,7 @@
     "telegram"
   ],
   "author": "dim-anis",
-  "license": "ISC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/dim-anis/tg-workout-tracker/issues"
   },
@@ -40,7 +40,7 @@
     "@typescript-eslint/parser": "^6.2.0",
     "dotenv": "^16.0.3",
     "eslint": "^8.38.0",
-    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-prettier": "^9.0.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.0.0",
     "ts-node": "^10.9.1",

@@ -1,11 +1,11 @@
-import { pounds } from "./unitConverters.js";
+import { pounds } from "./units.js";
 
 export const successMessages = {
   onRecordSetSuccess:
     '✅ <b>Successfully recorded.</b> Would you like to record one more set?'
 };
 
-export const errorMessages = {
+export const validationErrors = {
   input_is_not_yes_or_no: '\n\n❌ <b>Input must be "Yes" or "No".</b>',
   input_too_long:
     '\n\n❌ <b>Input is too long. Max length is 50 characters.</b>',
@@ -25,7 +25,7 @@ export const errorMessages = {
 };
 
 export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb') => {
-  const convertedWeight = unit === 'kg' ? previousWeight : pounds(previousWeight); 
+  const convertedWeight = unit === 'kg' ? previousWeight : pounds(previousWeight);
 
   return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
     'Please enter the weight\n\n' +

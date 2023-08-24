@@ -1,6 +1,6 @@
-import type { MyConversation, MyContext } from '../../types/bot.js';
-import type { SetType } from 'models/set.js';
-import { promptUserForWeight, promptUserForRepetitions, promptUserForRPE, isDeloadWorkout } from './promptUser.js';
+import type { MyConversation, MyContext } from '@/types/bot.js';
+import type { SetType } from '@/models/set.js';
+import { promptUserForWeight, promptUserForRepetitions, promptUserForRPE, isDeloadWorkout } from './prompts.js';
 import { isToday } from 'date-fns';
 
 enum RecordSetStep {

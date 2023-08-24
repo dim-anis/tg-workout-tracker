@@ -1,11 +1,21 @@
 import { type MyContext, type MyConversation } from '@/types/bot.js';
-import { backButton, getRepOptions, getRpeOptions, getWeightOptions, type InlineKeyboardOptions } from '@/config/keyboards.js';
 import { getCompletedSetsString } from './workoutStats.js';
 import { RecordExerciseParams } from './workoutUtils.js';
-import { getYesNoOptions } from '@/config/keyboards.js';
-import { getRPEText, getRepetitionsText, getRecordWeightMessage as getRecordWeightMessage } from './textMessages.js';
-import { kgs } from './unitConverters.js';
-import { errorMessages } from './textMessages.js';
+import { kgs } from './units.js';
+import {
+  getYesNoOptions,
+  backButton,
+  getRepOptions,
+  getRpeOptions,
+  getWeightOptions,
+  type InlineKeyboardOptions
+} from '@/config/keyboards.js';
+import {
+  validationErrors,
+  getRPEText,
+  getRepetitionsText,
+  getRecordWeightMessage as getRecordWeightMessage
+} from './messages.js';
 
 function updateMessageWithError(message: string, error = '') {
   const existingErrorMessages = message
@@ -13,7 +23,7 @@ function updateMessageWithError(message: string, error = '') {
     .filter((msg) => msg.startsWith('❌'));
   const timestamp = new Date().toLocaleTimeString();
   const errorMsg = error
-    ? errorMessages[error as keyof typeof errorMessages] + '\n' + timestamp
+    ? validationErrors[error as keyof typeof validationErrors] + '\n' + timestamp
     : '';
   const newMessage =
     existingErrorMessages.length > 0
@@ -203,7 +213,7 @@ export async function promptUserForText(
     if (typeof buttonData === 'undefined') {
       buttonData = ctx.callbackQuery.data;
     } else if (buttonData === 'goBack') {
-      return {data: undefined, context: ctx};
+      return { data: undefined, context: ctx };
     }
     return { data: buttonData, context: ctx };
   }

@@ -1,12 +1,12 @@
-import { type MyConversation, type MyContext } from '../../types/bot.js';
-import { InlineKeyboardOptions, getYesNoOptions } from '../../config/keyboards.js';
+import type { MyConversation, MyContext } from '@/types/bot.js';
+import { InlineKeyboardOptions, getYesNoOptions } from '@/config/keyboards.js';
 import { InlineKeyboard } from 'grammy';
-import { updateUserExercise } from '../../models/user.js';
+import { updateUserExercise } from '@/models/user.js';
 import {
   promptUserForExerciseName,
   promptUserForYesNo
-} from '@/helpers/promptUser.js';
-import { exerciseCategories } from '../../config/exercises.js';
+} from '@/helpers/prompts.js';
+import { exerciseCategories } from '@/config/exercises.js';
 
 function getExerciseCategoriesMenu(categories: string[]) {
   const categoryOptionsKbd = new InlineKeyboard();

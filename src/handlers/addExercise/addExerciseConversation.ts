@@ -9,7 +9,7 @@ import { createUserExercise } from '@/models/user.js';
 import {
   promptUserForExerciseName,
   promptUserForYesNo
-} from '@/helpers/promptUser.js';
+} from '@/helpers/prompts.js';
 
 export default async function handleAddExercise(
   conversation: MyConversation,

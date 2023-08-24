@@ -1,17 +1,16 @@
 import { Composer } from 'grammy';
 import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '@/types/bot.js';
-import { type InlineKeyboardOptions, getYesNoOptions } from '@/config/keyboards.js';
+import { generateExerciseOptions, type InlineKeyboardOptions, getYesNoOptions } from '@/config/keyboards.js';
 import type { WorkoutType } from '@/models/workout.js';
 import type { RecordExerciseParams } from '@/helpers/workoutUtils.js';
 import { countSets, renderWorkoutStatsMessage } from '@/helpers/workoutStats.js';
-import { getWorkoutTitleMessage, successMessages } from '@/helpers/textMessages.js';
+import { getWorkoutTitleMessage, successMessages } from '@/helpers/messages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '@/models/user.js';
 import { userHasEnoughWorkouts } from '@/middleware/userHasEnoughWorkouts.js';
-import { promptUserForPredefinedString, promptUserForYesNo } from '@/helpers/promptUser.js';
+import { promptUserForPredefinedString, promptUserForYesNo } from '@/helpers/prompts.js';
 import { getSetData, determineIsDeload } from '@/helpers/workoutUtils.js';
-import { generateExerciseOptions } from '@/config/keyboards.js';
 
 const composer = new Composer<MyContext>();
 const CMD_PREFIX = 'nextWorkout';
@@ -60,7 +59,6 @@ const handleNextWorkout = async (
         ...new Set(previousWorkout.sets.map((set) => set.exercise))
       ];
 
-      const workoutTitle = getWorkoutTitleMessage(workoutCount);
       const setCountMap = isTodayWorkout ? countSets(lastWorkout.sets) : {};
       const todaysExercises = generateExerciseOptions(
         previousWorkoutExercises,
@@ -76,7 +74,7 @@ const handleNextWorkout = async (
         conversation,
         chat_id,
         conversation.session.state.lastMessageId,
-        workoutTitle,
+        getWorkoutTitleMessage(workoutCount),
         options,
         previousWorkoutExercises
       );

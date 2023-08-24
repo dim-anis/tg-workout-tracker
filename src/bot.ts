@@ -13,7 +13,7 @@ dotenv.config();
 
 async function runBot() {
   await dbConnect();
-  console.log('connected to MongoDB');
+  console.log('✓ Connected to MongoDB');
 
   const bot = new Bot<MyContext>(process.env.KEY!);
   await bot.api.setMyCommands(commands);
@@ -44,7 +44,7 @@ async function runBot() {
     drop_pending_updates: true,
     allowed_updates: ['message', 'callback_query'],
     onStart() {
-      console.log('bot is up and running');
+      console.log('✓ Bot is up and running');
     }
   });
 

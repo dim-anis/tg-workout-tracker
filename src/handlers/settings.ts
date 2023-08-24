@@ -1,67 +1,69 @@
 import { Composer } from 'grammy';
-import type { MyContext } from '../types/bot.js';
+import type { MyContext } from '@/types/bot.js';
 import { Menu, type MenuFlavor } from '@grammyjs/menu';
-import { updateUserSettings } from '../models/user.js';
-import { InlineKeyboardOptions, checkedSquare, uncheckedSquare } from '../config/keyboards.js';
-import { type UserType } from '../models/user.js';
+import { updateUserSettings } from '@/models/user.js';
+import { InlineKeyboardOptions, checkedSquare, uncheckedSquare } from '@/config/keyboards.js';
+import { type UserType } from '@/models/user.js';
 
 const mesocycleLengths = [4, 5, 6];
 
 const composer = new Composer<MyContext>();
+
+const mainMenuTitle = '⚙️ ' + '<b>Settings</b>';
+const unitMenuTitle = '<b>Unit system</b>';
+const mesoLengthMenuTitle = '<b>Mesocycle length</b>';
+const splitLengthMenuTitle = '<b>Split length</b>';
 
 const mainMenu = new Menu<MyContext>('main')
   .submenu(
     { text: 'Unit system', payload: 'unit' },
     'settings-unit',
     async (ctx) =>
-      await ctx.editMessageText('<b>⚙️ Unit system</b>\n\nChoose one of the two:', {
-        parse_mode: 'HTML'
-      })
-  )
+      await ctx.editMessageText(
+        `${mainMenuTitle} > ${unitMenuTitle} > Select unit`,
+        { parse_mode: 'HTML' }
+      ))
   .row()
   .submenu(
     { text: 'Split length', payload: 'splitLength' },
     'split-length',
-    async (ctx) => {
+    async (ctx) =>
       await ctx.editMessageText(
-        '<b>⚙️ Split length</b>\n\nChoose the new length:',
+        `${mainMenuTitle} > ${splitLengthMenuTitle} > Select length`,
         { parse_mode: 'HTML' }
-      );
-    }
-  )
+      ))
   .row()
   .submenu(
     { text: 'Mesocycle length', payload: 'mesosycleLength' },
     'mesocycle-length',
-    async (ctx) => {
+    async (ctx) =>
       await ctx.editMessageText(
-        '<b>⚙️ Mesocycle length</b>\n\nChoose the new length (in weeks):',
+        `${mainMenuTitle} > ${mesoLengthMenuTitle} > Select length (in weeks)`,
         { parse_mode: 'HTML' }
-      );
-    }
-  )
+      ))
   .row()
-  .text('✅ Submit', async (ctx) => {
-    await ctx.editMessageText('👌 Settings saved!', {
-      reply_markup: undefined
-    });
-  });
-
-const splitLengthMenu = new Menu<MyContext>('split-length');
-for (let length = 1; length < 8; length++) {
-  splitLengthMenu.text(
-    (ctx) =>
-      ctx.dbchat.settings.splitLength === length
-        ? `${checkedSquare} ${length}`
-        : `${uncheckedSquare} ${length}`,
-    async (ctx) => await updateSettings(ctx, 'splitLength', length)
+  .text('✅ Submit', async (ctx) =>
+    await ctx.editMessageText(
+      '👌 Settings saved!',
+      { reply_markup: undefined })
   );
-}
 
-const mainMenuTitle = '⚙️ ' + '<b>Settings</b>';
 const mainMenuOpts: InlineKeyboardOptions = {
   reply_markup: mainMenu,
   parse_mode: 'HTML'
+}
+
+const splitLengthMenu = new Menu<MyContext>('split-length');
+for (let l = 1; l < 8; l++) {
+  if (l === 5) splitLengthMenu.row();
+
+  splitLengthMenu.text(
+    (ctx) =>
+      ctx.dbchat.settings.splitLength === l
+        ? `${checkedSquare} ${l}`
+        : `${uncheckedSquare} ${l}`,
+    async (ctx) => await updateSettings(ctx, 'splitLength', l)
+  );
 }
 
 splitLengthMenu

@@ -2,7 +2,7 @@ import { type WorkoutType } from '@/models/workout.js';
 import intervalToDuration from 'date-fns/intervalToDuration';
 import { ExerciseType, PersonalBest } from '@/models/exercise.js';
 import { isToday } from 'date-fns';
-import { pounds, roundToNearestHalf } from './unitConverters.js';
+import { pounds, roundToNearestHalf } from './units.js';
 import { checkedCircle, getRpeOptionColor } from '@/config/keyboards.js';
 import { ArchivedWorkoutType } from '@/models/archivedWorkout.js';
 import { MyContext } from '@/types/bot.js';

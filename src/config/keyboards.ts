@@ -1,6 +1,6 @@
 import { InlineKeyboard } from 'grammy';
 import { InlineKeyboardMarkup } from 'grammy/types';
-import { kgs } from '@/helpers/unitConverters.js';
+import { kgs } from '@/helpers/units.js';
 import { getCompletedSetsString } from '@/helpers/workoutStats.js';
 
 export const backButton = '◀ Back';
@@ -21,7 +21,6 @@ export const getRpeOptionColor = (value: number): string => {
   if (value >= 9) {
     return '🔴';
   }
-
   if (value >= 7.5) {
     return '🟠';
   }

@@ -1,15 +1,15 @@
 import { Composer } from 'grammy';
 import { Menu, MenuRange } from '@grammyjs/menu';
-import { type MyContext } from '../../types/bot.js';
+import type { MyContext } from '@/types/bot.js';
 import { createConversation } from '@grammyjs/conversations';
 import handleAddExercise from './addExerciseConversation.js';
-import { defaultExercises } from '../../config/exercises.js';
-import { createUserExercise } from '../../models/user.js';
+import { defaultExercises } from '@/config/exercises.js';
+import { createUserExercise } from '@/models/user.js';
 import {
   backButton,
   checkedSquare,
   uncheckedSquare
-} from '../../config/keyboards.js';
+} from '@/config/keyboards.js';
 
 const composer = new Composer<MyContext>();
 
@@ -101,7 +101,7 @@ function createExerciseMenu(category: string) {
         {
           text: (ctx) =>
             ctx.session.exercises.fromDB.has(exercise.name) ||
-            ctx.session.exercises.toAdd.has(exercise.name)
+              ctx.session.exercises.toAdd.has(exercise.name)
               ? `${exercise.name} ${checkedSquare}`
               : `${exercise.name} ${uncheckedSquare}`,
           payload: category

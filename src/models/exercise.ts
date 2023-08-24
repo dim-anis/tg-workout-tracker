@@ -1,4 +1,5 @@
 import { model, Schema } from 'mongoose';
+
 export type OldPersonalBest = { 
   weight: number;
   repetitions: number;

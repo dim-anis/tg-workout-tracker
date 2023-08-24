@@ -3,7 +3,7 @@ import { InlineKeyboardOptions, prevButton, nextButton, backButton } from "@/con
 import { Composer } from "grammy";
 import { type WorkoutType } from "@/models/workout.js";
 import { type MyContext } from "@/types/bot.js";
-import { getMonthNameFromNumber, getWeekDates } from "@/helpers/dateConverters.js";
+import { getMonthNameFromNumber, getWeekDates } from "@/helpers/dates.js";
 import { ArchivedWorkoutType, getArchivedWorkouts } from "@/models/archivedWorkout.js";
 import { getStats, getStatsString } from "@/helpers/workoutStats.js";
 import { getUserWorkoutsGroupedByMonth, getUserWorkoutsGroupedByWeek } from "@/models/user.js";
