@@ -193,9 +193,7 @@ function getPreviousWorkoutSetData(
     return null;
   }
 
-  // if isDeload => cut sets, reps in 2, later cut weight in 2, possibly make choosing type of deload an option in settings
-  const previousWeight = allSets[allSets.length - 1].weight;
-  const previousReps = allSets[allSets.length - 1].repetitions;
+  const { weight: previousWeight, repetitions: previousReps } = allSets[0];
   const hitAllReps = allSets.every((set) => set.repetitions >= previousReps);
 
   return { previousWeight, previousReps, hitAllReps };
@@ -217,7 +215,6 @@ const getWorkoutCount = (workouts: WorkoutType[], isTodayWorkout: boolean) => {
 
   return count;
 };
-
 
 composer.use(createConversation(handleNextWorkout));
 

@@ -1,5 +1,3 @@
-import { type ExerciseType } from '../models/exercise.js';
-
 export const exerciseCategories = [
   'Legs',
   'Back',
@@ -9,7 +7,7 @@ export const exerciseCategories = [
   'Shoulders'
 ];
 
-export const defaultExercises: ExerciseType[] = [
+export const defaultExercises = [
   {
     name: 'Seated Leg Curl',
     category: 'Legs',

@@ -3,7 +3,6 @@
     "lib": [
       "es2023"
     ],
-    "noEmit": true,
     "module": "node16",
     "target": "es2022",
     "sourceMap": true,

@@ -30,13 +30,11 @@ const addExerciseMenu = new Menu<MyContext>('addExerciseMenu')
   });
 
 const populateMainText =
-  '<b>Populate exercises</b>\n\nSelect the exercise that you would like to add to your list, then click "SUBMIT"';
+  '<b>Populate exercises</b>\n\nSelect the exercises that you would like to add, then click "SUBMIT"';
 const populateExercisesMain = new Menu<MyContext>('populate-exercises-main');
 populateExercisesMain.dynamic(() => {
   const categories = new Set(defaultExercises.map((ex) => ex.category));
-
   const range = new MenuRange<MyContext>().back(backButton).row();
-
   for (const cat of categories) {
     range
       .submenu(
@@ -59,7 +57,7 @@ populateExercisesMain.dynamic(() => {
     const exercisesToAdd = defaultExercises.filter((exObj) =>
       [...toAdd].includes(exObj.name)
     );
-    const r = await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
+    await createUserExercise(ctx.dbchat.user_id, exercisesToAdd);
     ctx.dbchat.exercises.concat(exercisesToAdd);
 
     await ctx.editMessageText('👌 Exercises updated!', {
