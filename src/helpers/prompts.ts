@@ -23,7 +23,9 @@ function updateMessageWithError(message: string, error = '') {
     .filter((msg) => msg.startsWith('❌'));
   const timestamp = new Date().toLocaleTimeString();
   const errorMsg = error
-    ? validationErrors[error as keyof typeof validationErrors] + '\n' + timestamp
+    ? validationErrors[error as keyof typeof validationErrors] +
+      '\n' +
+      timestamp
     : '';
   const newMessage =
     existingErrorMessages.length > 0
@@ -114,9 +116,9 @@ function createPredefinedStringValidator(
 }
 
 type NumberPromptResult = {
-  data: number,
-  context: MyContext
-}
+  data: number;
+  context: MyContext;
+};
 
 export async function promptUserForNumber(
   ctx: MyContext,
@@ -131,7 +133,9 @@ export async function promptUserForNumber(
 ): Promise<NumberPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
-  ctx = await conversation.waitFor(['message:text', 'callback_query:data']).then(ctx => ctx);
+  ctx = await conversation
+    .waitFor(['message:text', 'callback_query:data'])
+    .then((ctx) => ctx);
 
   if (ctx.callbackQuery) {
     const buttonData = ctx.callbackQuery.data?.split(':')[1];
@@ -141,15 +145,15 @@ export async function promptUserForNumber(
       exerciseParams = {
         ...exerciseParams,
         weightUnit: currUnit === 'kg' ? 'lb' : 'kg'
-      }
+      };
 
       return promptUserForWeight(
         ctx,
         conversation,
         chat_id,
         message_id,
-        exerciseParams,
-      )
+        exerciseParams
+      );
     } else if (buttonData === 'goBack') {
       return undefined;
     }
@@ -190,9 +194,9 @@ export async function promptUserForNumber(
 }
 
 type TextPromptResult = {
-  data: string | undefined,
-  context: MyContext
-}
+  data: string | undefined;
+  context: MyContext;
+};
 
 export async function promptUserForText(
   ctx: MyContext,
@@ -205,7 +209,9 @@ export async function promptUserForText(
 ): Promise<TextPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
-  ctx = await conversation.waitFor(['message:text', 'callback_query:data']).then(ctx => ctx);
+  ctx = await conversation
+    .waitFor(['message:text', 'callback_query:data'])
+    .then((ctx) => ctx);
 
   if (ctx.callbackQuery?.data) {
     let buttonData = ctx.callbackQuery.data.split(':')[1];
@@ -248,24 +254,36 @@ export function promptUserForWeight(
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
-  exerciseParams: RecordExerciseParams,
+  exerciseParams: RecordExerciseParams
 ): Promise<NumberPromptResult | undefined> {
-  const { selectedExercise, previousWeight, hitAllReps, setCount, weightUnit: unit } = exerciseParams;
+  const {
+    selectedExercise,
+    previousWeight,
+    hitAllReps,
+    setCount,
+    weightUnit: unit
+  } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML',
+    parse_mode: 'HTML'
   };
   let message: string;
 
   if (previousWeight !== undefined && hitAllReps !== undefined) {
     const completedSets = getCompletedSetsString(setCount);
-    message = getRecordWeightMessage(selectedExercise, completedSets, previousWeight, hitAllReps, unit);
+    message = getRecordWeightMessage(
+      selectedExercise,
+      completedSets,
+      previousWeight,
+      hitAllReps,
+      unit
+    );
     options = {
       ...options,
-      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', unit),
+      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', unit)
     };
   } else {
-    message = `<b>${selectedExercise.toUpperCase()}</b>\n\nType in the weight:`;
+    message = `<b>${selectedExercise}</b>\n\nPlease enter the weight:`;
   }
 
   return promptUserForNumber(
@@ -289,19 +307,25 @@ export function promptUserForRepetitions(
   exerciseParams: RecordExerciseParams,
   currWeight?: number
 ): Promise<NumberPromptResult | undefined> {
-  const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
+  const { selectedExercise, previousReps, hitAllReps, setCount } =
+    exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML',
+    parse_mode: 'HTML'
   };
   let message: string;
 
   if (previousReps !== undefined && hitAllReps !== undefined) {
     const completedSets = getCompletedSetsString(setCount);
-    message = getRepetitionsText(selectedExercise, completedSets, previousReps, hitAllReps);
+    message = getRepetitionsText(
+      selectedExercise,
+      completedSets,
+      previousReps,
+      hitAllReps
+    );
     options = {
       ...options,
-      reply_markup: getRepOptions(previousReps, 'nextWorkout'),
+      reply_markup: getRepOptions(previousReps, 'nextWorkout')
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs</i>\n\nType in the repetitions:`;
@@ -328,10 +352,11 @@ export function promptUserForRPE(
   currWeight?: number,
   currReps?: number
 ): Promise<NumberPromptResult | undefined> {
-  const { selectedExercise, previousReps, hitAllReps, setCount } = exerciseParams;
+  const { selectedExercise, previousReps, hitAllReps, setCount } =
+    exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML',
+    parse_mode: 'HTML'
   };
   let message: string;
 
@@ -340,7 +365,7 @@ export function promptUserForRPE(
     message = getRPEText(selectedExercise, completedSets);
     options = {
       ...options,
-      reply_markup: getRpeOptions('nextWorkout'),
+      reply_markup: getRpeOptions('nextWorkout')
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs x ${currReps}</i>\n\nChoose the RPE:`;
@@ -419,9 +444,9 @@ export function promptUserForPredefinedString(
 }
 
 type IsDeloadResult = {
-  data: boolean | undefined,
-  context: MyContext
-}
+  data: boolean | undefined;
+  context: MyContext;
+};
 
 export async function isDeloadWorkout(
   ctx: MyContext,
@@ -441,17 +466,11 @@ export async function isDeloadWorkout(
   const options: InlineKeyboardOptions = {
     parse_mode: 'HTML',
     reply_markup: keyboard
-  }
+  };
 
   if (iteration > 1) {
-    await ctx.api.editMessageText(
-      chat_id,
-      message_id,
-      message,
-      options
-    );
-  }
-  else {
+    await ctx.api.editMessageText(chat_id, message_id, message, options);
+  } else {
     await ctx.reply(message, options);
   }
 
@@ -459,9 +478,9 @@ export async function isDeloadWorkout(
     .waitForCallbackQuery([
       `${commandName}:yes`,
       `${commandName}:no`,
-      `${commandName}:goBack`,
+      `${commandName}:goBack`
     ])
-    .then(ctx => [ctx.callbackQuery.data.split(':')[1], ctx] as const);
+    .then((ctx) => [ctx.callbackQuery.data.split(':')[1], ctx] as const);
 
   switch (response) {
     case 'yes':

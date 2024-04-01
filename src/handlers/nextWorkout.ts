@@ -4,7 +4,7 @@ import type { MyConversation, MyContext } from '@/types/bot.js';
 import { generateExerciseOptions, type InlineKeyboardOptions, getYesNoOptions } from '@/config/keyboards.js';
 import type { WorkoutType } from '@/models/workout.js';
 import type { RecordExerciseParams } from '@/helpers/workoutUtils.js';
-import { countSets, renderWorkoutStatsMessage } from '@/helpers/workoutStats.js';
+import { generateSetCountMap, renderWorkoutStatsMessage } from '@/helpers/workoutStats.js';
 import { getWorkoutTitleMessage, successMessages } from '@/helpers/messages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '@/models/user.js';
@@ -59,7 +59,8 @@ const handleNextWorkout = async (
         ...new Set(previousWorkout.sets.map((set) => set.exercise))
       ];
 
-      const setCountMap = isTodayWorkout ? countSets(lastWorkout.sets) : {};
+      const setCountMap = isTodayWorkout ? generateSetCountMap(lastWorkout.sets) : {};
+
       const todaysExercises = generateExerciseOptions(
         previousWorkoutExercises,
         setCountMap,
@@ -91,12 +92,12 @@ const handleNextWorkout = async (
         return;
       }
 
-      const previousWorkoutSetData = getPreviousWorkoutSetData(
+      const exerciseData = getExerciseData(
         selectedExercise,
         previousWorkout
       );
 
-      if (!previousWorkoutSetData) {
+      if (!exerciseData) {
         throw new Error('No data found for this exercise');
       }
 
@@ -104,7 +105,7 @@ const handleNextWorkout = async (
         selectedExercise,
         weightUnit,
         setCount: setCountMap[selectedExercise],
-        ...previousWorkoutSetData,
+        ...exerciseData,
       };
 
       const getSetDataResult = await getSetData(
@@ -163,6 +164,9 @@ const handleNextWorkout = async (
   }
 };
 
+// previousWorkout here is the last workout of the same type
+// assuming a trainee follows a 4 day split with workouts A, B, C, D and they repeat in a cyclical manner
+// if we're currently on workout D (in squiggly brackets), then the last workout would be ... last -> [D], A, B, C, {D} <- current
 function getPreviousWorkout(
   recentWorkouts: WorkoutType[],
   splitLength: number
@@ -181,7 +185,8 @@ function getPreviousWorkout(
   return recentWorkouts[workoutNumber];
 }
 
-function getPreviousWorkoutSetData(
+// should update exercise data based on whether it's a deload or not
+function getExerciseData(
   selectedExercise: string,
   previousWorkout: WorkoutType
 ) {
@@ -193,10 +198,11 @@ function getPreviousWorkoutSetData(
     return null;
   }
 
+  const numberOfSets = allSets.length;
   const { weight: previousWeight, repetitions: previousReps } = allSets[0];
   const hitAllReps = allSets.every((set) => set.repetitions >= previousReps);
 
-  return { previousWeight, previousReps, hitAllReps };
+  return { previousWeight, previousReps, numberOfSets, hitAllReps };
 }
 
 // count num of workouts since the start of meso (startOfMeso = first session after the deload)

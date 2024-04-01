@@ -1,4 +1,4 @@
-import { pounds } from "./units.js";
+import { pounds } from './units.js';
 
 export const successMessages = {
   onRecordSetSuccess:
@@ -24,26 +24,42 @@ export const validationErrors = {
   input_is_not_defined: "\n\n❌ <b>Input isn't one of the given options.</b>\n"
 };
 
-export const getRecordWeightMessage = (exerciseName: string, completedSets: string, previousWeight: number, hitAllReps: boolean, unit: 'kg' | 'lb') => {
-  const convertedWeight = unit === 'kg' ? previousWeight : pounds(previousWeight);
+export const getRecordWeightMessage = (
+  exerciseName: string,
+  completedSets: string,
+  previousWeight: number,
+  hitAllReps: boolean,
+  unit: 'kg' | 'lb'
+) => {
+  const convertedWeight =
+    unit === 'kg' ? Number(previousWeight.toFixed(1)) : pounds(previousWeight);
 
-  return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
-    'Please enter the weight\n\n' +
-    `Last working weight: <b>${convertedWeight}${unit}</b>\n\n` +
-    `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
-}
+  return (
+    `<b>${exerciseName} ${completedSets}</b>\n\n` +
+    `Prev weight: <b>${convertedWeight}${unit} ${hitAllReps ? '✅' : '❌'}</b>`
+  );
+};
 
-export const getRepetitionsText = (exerciseName: string, completedSets: string, previousReps: number, hitAllReps: boolean) => {
-  return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
+export const getRepetitionsText = (
+  exerciseName: string,
+  completedSets: string,
+  previousReps: number,
+  hitAllReps: boolean
+) => {
+  return (
+    `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
     'Please enter the repetitions\n\n' +
-    `Expected number of repetitions: <b>${previousReps}</b>\n\n` +
-    `${hitAllReps ? '✅' : "❌ didn't"} hit all reps last time`;
-}
+    `Prev repetitions: <b>${previousReps} ${hitAllReps ? '✅' : '❌'}</b>\n\n`
+  );
+};
 
 export const getRPEText = (exerciseName: string, completedSets: string) => {
-  return `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` + 'Please enter the RPE\n\nHow hard was this set?';
-}
+  return (
+    `<b>${exerciseName.toUpperCase()} ${completedSets}</b>\n\n` +
+    '\n\nHow hard was this set?'
+  );
+};
 
 export const getWorkoutTitleMessage = (workoutCount: number) => {
   return `<b>Workout #${workoutCount} of Current Mesocycle</b>\n\n<i>Select an exercise:</i>`;
-}
+};

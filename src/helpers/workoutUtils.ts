@@ -1,12 +1,17 @@
 import type { MyConversation, MyContext } from '@/types/bot.js';
 import type { SetType } from '@/models/set.js';
-import { promptUserForWeight, promptUserForRepetitions, promptUserForRPE, isDeloadWorkout } from './prompts.js';
+import {
+  promptUserForWeight,
+  promptUserForRepetitions,
+  promptUserForRPE,
+  isDeloadWorkout
+} from './prompts.js';
 import { isToday } from 'date-fns';
 
 enum RecordSetStep {
   WEIGHT,
   REPS,
-  RPE,
+  RPE
 }
 
 export type RecordExerciseParams = {
@@ -19,16 +24,16 @@ export type RecordExerciseParams = {
 };
 
 type GetSetDataResult = {
-  data: SetType,
-  newContext: MyContext
-}
+  data: SetType;
+  newContext: MyContext;
+};
 
 export async function getSetData(
   conversation: MyConversation,
   ctx: MyContext,
   chat_id: number,
   message_id: number,
-  exerciseParams: RecordExerciseParams,
+  exerciseParams: RecordExerciseParams
 ): Promise<GetSetDataResult | undefined> {
   let currStep = RecordSetStep.WEIGHT;
   let newContext = ctx;
@@ -44,7 +49,7 @@ export async function getSetData(
           conversation,
           chat_id,
           message_id,
-          exerciseParams,
+          exerciseParams
         );
         if (result === undefined) return undefined;
 
@@ -109,33 +114,44 @@ export async function getSetData(
 }
 
 interface DetermineIsDeloadOptions {
-  cmdPrefix?: string,
-  iteration?: number
+  cmdPrefix?: string;
+  iteration?: number;
 }
 
-export async function determineIsDeload(ctx: MyContext, conversation: MyConversation, options: DetermineIsDeloadOptions = {}) {
+export async function determineIsDeload(
+  ctx: MyContext,
+  conversation: MyConversation,
+  options: DetermineIsDeloadOptions = {}
+) {
   const { iteration = 1, cmdPrefix = '' } = options;
 
   const lastWorkout = ctx.dbchat.recentWorkouts[0];
-  const isTodayWorkout = isToday(lastWorkout.createdAt);
-  let isDeload = isTodayWorkout ? lastWorkout.isDeload : undefined;
-
-  if (isDeload === undefined) {
-    const result = await isDeloadWorkout(
-      ctx,
-      conversation,
-      conversation.session.state.lastMessageId,
-      cmdPrefix,
-      iteration
-    );
-
-    if (result === undefined) {
-      return;
-    }
-
-    isDeload = result.data;
-    ctx = result.context;
+  if (!lastWorkout) {
+    return { isDeload: false, ctx };
   }
+
+  let isDeload = isToday(lastWorkout.createdAt)
+    ? lastWorkout.isDeload
+    : undefined;
+
+  if (lastWorkout && lastWorkout.isDeload) {
+    return { isDeload: true, ctx };
+  }
+
+  const result = await isDeloadWorkout(
+    ctx,
+    conversation,
+    conversation.session.state.lastMessageId,
+    cmdPrefix,
+    iteration
+  );
+
+  if (result === undefined) {
+    return;
+  }
+
+  isDeload = result.data;
+  ctx = result.context;
 
   return { isDeload, ctx };
 }
