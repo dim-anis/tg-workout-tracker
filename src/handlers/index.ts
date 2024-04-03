@@ -3,9 +3,9 @@ import start from "./start.js";
 import stats from "./stats.js";
 import recordSet from "./recordSet.js";
 import nextWorkout from "./nextWorkout.js";
-import addExercise from "./addExercise/populateExercises.js";
+import addExercise from "./addExercise.js";
 import settings from "./settings.js";
-import editExerciseMenu from "./editExercises/editExerciseMenu.js";
+import editExercise from "./editExercise.js";
 import type { MyContext } from "../types/bot.js";
 
 const composer = new Composer<MyContext>();
@@ -24,6 +24,6 @@ composer.use(stats);
 composer.use(addExercise);
 composer.use(recordSet);
 composer.use(nextWorkout);
-composer.use(editExerciseMenu);
+composer.use(editExercise);
 
 export default composer;
