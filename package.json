@@ -8,7 +8,7 @@
     "dev": "tsx watch ./src/bot.ts",
     "trasnpiled": "node ./dist/bot.js",
     "build": "tsc && tsc-alias",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",
