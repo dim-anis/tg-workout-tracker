@@ -7,7 +7,7 @@ interface WorkoutType {
   isDeload: boolean;
   updatedAt: Date;
   createdAt: Date;
-};
+}
 
 const WorkoutSchema = new Schema<WorkoutType>(
   {

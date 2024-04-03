@@ -218,5 +218,5 @@ export function getVolumePerMuscleGroup(
 }
 
 export function getCompletedSetsString(setCount = 0) {
-  return `${[checkedCircle.repeat(setCount)]}`;
+  return `[${checkedCircle.repeat(setCount)}]`;
 }

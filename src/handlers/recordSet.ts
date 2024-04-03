@@ -7,8 +7,15 @@ import {
   InlineKeyboardOptions
 } from '@/config/keyboards.js';
 import { userHasExercises } from '@/middleware/userHasExercises.js';
-import { RecordExerciseParams, getSetData, determineIsDeload } from '@/helpers/workoutUtils.js';
-import { promptUserForPredefinedString, promptUserForYesNo } from '@/helpers/prompts.js';
+import {
+  RecordExerciseParams,
+  getSetData,
+  determineIsDeload
+} from '@/helpers/workoutUtils.js';
+import {
+  promptUserForPredefinedString,
+  promptUserForYesNo
+} from '@/helpers/prompts.js';
 import { successMessages } from '@/helpers/messages.js';
 import { createOrUpdateUserWorkout } from '@/models/user.js';
 import { ExerciseType } from '@/models/exercise.js';
@@ -35,7 +42,10 @@ const handleRecordSet = async (
     const categories = new Set(exercises.map((exercise) => exercise.category));
     const exercisesByCategory = getExercisesByCategory(exercises);
 
-    const result = await determineIsDeload(ctx, conversation, { cmdPrefix: CMD_PREFIX, iteration });
+    const result = await determineIsDeload(ctx, conversation, {
+      cmdPrefix: CMD_PREFIX,
+      iteration
+    });
 
     if (!result) {
       return;
@@ -65,8 +75,8 @@ const handleRecordSet = async (
 
       const exerciseParams: RecordExerciseParams = {
         selectedExercise,
-        weightUnit,
-      }
+        weightUnit
+      };
 
       const getSetDataResult = await getSetData(
         conversation,
@@ -85,7 +95,7 @@ const handleRecordSet = async (
       ctx = getSetDataResult.newContext;
 
       await conversation.external(
-        async () => await createOrUpdateUserWorkout(user_id, setData, isDeload as boolean)
+        async () => await createOrUpdateUserWorkout(user_id, setData, isDeload)
       );
 
       const continueWorkoutResult = await promptUserForYesNo(
@@ -98,7 +108,7 @@ const handleRecordSet = async (
           reply_markup: getYesNoOptions(CMD_PREFIX),
           parse_mode: 'HTML'
         }
-      )
+      );
 
       if (!continueWorkoutResult) {
         return;
@@ -131,7 +141,9 @@ async function chooseExercise(
   const cmdTitle = '<b>Record exercise</b>';
   const chooseCategoryText = cmdTitle + '\n\n<i>Choose a category:</i>';
   const chooseCategoryOptions: InlineKeyboardOptions = {
-    reply_markup: getMenuFromStringArray([...categories], CMD_PREFIX, { addBackButton: true }),
+    reply_markup: getMenuFromStringArray([...categories], CMD_PREFIX, {
+      addBackButton: true
+    }),
     parse_mode: 'HTML'
   };
 
@@ -159,7 +171,8 @@ async function chooseExercise(
     return;
   }
 
-  const chooseExerciseText = cmdTitle + ` > <b>${category}</b>\n\n<i>Choose an exercise:</i>`;
+  const chooseExerciseText =
+    cmdTitle + ` > <b>${category}</b>\n\n<i>Choose an exercise:</i>`;
   const chooseExerciseOptions: InlineKeyboardOptions = {
     reply_markup: getMenuFromStringArray(
       exercisesByCategory.get(category) as string[],
@@ -205,12 +218,14 @@ function getExercisesByCategory(exercises: ExerciseType[]) {
     if (!result.get(current.category)) {
       result.set(current.category, [current.name]);
     } else {
-      result.set(current.category, [...result.get(current.category) as string[], current.name])
+      result.set(current.category, [
+        ...(result.get(current.category) as string[]),
+        current.name
+      ]);
     }
     return result;
   }, exercisesByCategory);
 }
-
 
 composer.use(createConversation(handleRecordSet));
 

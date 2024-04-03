@@ -102,7 +102,7 @@ export async function getSetData(
               exercise: exerciseParams.selectedExercise,
               weight: weight!,
               repetitions: repetitions!,
-              rpe: rpe!
+              rpe: rpe
             },
             newContext
           };

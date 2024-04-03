@@ -1,12 +1,12 @@
-import { Composer } from 'grammy';
-import start from './start.js';
-import stats from './stats.js';
-import recordSet from './recordSet.js';
-import nextWorkout from './nextWorkout.js';
-import addExercise from './addExercise/populateExercises.js';
-import settings from './settings.js';
-import editExerciseMenu from './editExercises/editExerciseMenu.js';
-import type { MyContext } from '../types/bot.js';
+import { Composer } from "grammy";
+import start from "./start.js";
+import stats from "./stats.js";
+import recordSet from "./recordSet.js";
+import nextWorkout from "./nextWorkout.js";
+import addExercise from "./addExercise/populateExercises.js";
+import settings from "./settings.js";
+import editExerciseMenu from "./editExercises/editExerciseMenu.js";
+import type { MyContext } from "../types/bot.js";
 
 const composer = new Composer<MyContext>();
 

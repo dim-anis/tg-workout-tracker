@@ -1,15 +1,25 @@
 import { Composer } from 'grammy';
 import { createConversation } from '@grammyjs/conversations';
 import type { MyConversation, MyContext } from '@/types/bot.js';
-import { generateExerciseOptions, type InlineKeyboardOptions, getYesNoOptions } from '@/config/keyboards.js';
+import {
+  generateExerciseOptions,
+  type InlineKeyboardOptions,
+  getYesNoOptions
+} from '@/config/keyboards.js';
 import type { WorkoutType } from '@/models/workout.js';
 import type { RecordExerciseParams } from '@/helpers/workoutUtils.js';
-import { generateSetCountMap, renderWorkoutStatsMessage } from '@/helpers/workoutStats.js';
+import {
+  generateSetCountMap,
+  renderWorkoutStatsMessage
+} from '@/helpers/workoutStats.js';
 import { getWorkoutTitleMessage, successMessages } from '@/helpers/messages.js';
 import { isSameDay, isToday } from 'date-fns';
 import { createOrUpdateUserWorkout } from '@/models/user.js';
 import { userHasEnoughWorkouts } from '@/middleware/userHasEnoughWorkouts.js';
-import { promptUserForPredefinedString, promptUserForYesNo } from '@/helpers/prompts.js';
+import {
+  promptUserForPredefinedString,
+  promptUserForYesNo
+} from '@/helpers/prompts.js';
 import { getSetData, determineIsDeload } from '@/helpers/workoutUtils.js';
 
 const composer = new Composer<MyContext>();
@@ -32,13 +42,17 @@ const handleNextWorkout = async (
       const { splitLength, isMetric } = ctx.dbchat.settings;
       const weightUnit = isMetric ? 'kg' : 'lb';
       const { recentWorkouts } = ctx.dbchat;
-      const lastWorkout = recentWorkouts[0];
+      const lastWorkout = recentWorkouts[0]!;
       const isTodayWorkout = isToday(lastWorkout.createdAt);
 
-      const determineIsDeloadResult = await determineIsDeload(ctx, conversation, {
-        cmdPrefix: CMD_PREFIX,
-        iteration
-      });
+      const determineIsDeloadResult = await determineIsDeload(
+        ctx,
+        conversation,
+        {
+          cmdPrefix: CMD_PREFIX,
+          iteration
+        }
+      );
 
       if (!determineIsDeloadResult) {
         return;
@@ -54,12 +68,14 @@ const handleNextWorkout = async (
       }
 
       const workoutCount = getWorkoutCount(recentWorkouts, isTodayWorkout);
-      const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength);
+      const previousWorkout = getPreviousWorkout(recentWorkouts, splitLength)!;
       const previousWorkoutExercises = [
         ...new Set(previousWorkout.sets.map((set) => set.exercise))
       ];
 
-      const setCountMap = isTodayWorkout ? generateSetCountMap(lastWorkout.sets) : {};
+      const setCountMap = isTodayWorkout
+        ? generateSetCountMap(lastWorkout?.sets)
+        : {};
 
       const todaysExercises = generateExerciseOptions(
         previousWorkoutExercises,
@@ -92,10 +108,7 @@ const handleNextWorkout = async (
         return;
       }
 
-      const exerciseData = getExerciseData(
-        selectedExercise,
-        previousWorkout
-      );
+      const exerciseData = getExerciseData(selectedExercise, previousWorkout);
 
       if (!exerciseData) {
         throw new Error('No data found for this exercise');
@@ -105,7 +118,7 @@ const handleNextWorkout = async (
         selectedExercise,
         weightUnit,
         setCount: setCountMap[selectedExercise],
-        ...exerciseData,
+        ...exerciseData
       };
 
       const getSetDataResult = await getSetData(
@@ -125,7 +138,7 @@ const handleNextWorkout = async (
       ctx = getSetDataResult.newContext;
 
       const updatedCurrentWorkout = await conversation.external(() =>
-        createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload as boolean)
+        createOrUpdateUserWorkout(ctx.dbchat.user_id, setData, isDeload)
       );
 
       const continueWorkoutResult = await promptUserForYesNo(
@@ -138,7 +151,7 @@ const handleNextWorkout = async (
           reply_markup: getYesNoOptions(CMD_PREFIX),
           parse_mode: 'HTML'
         }
-      )
+      );
 
       if (!continueWorkoutResult) {
         return;
@@ -155,7 +168,7 @@ const handleNextWorkout = async (
       isFinished = true;
 
       await ctx.editMessageText(
-        renderWorkoutStatsMessage(ctx, updatedCurrentWorkout, workoutCount),
+        renderWorkoutStatsMessage(ctx, updatedCurrentWorkout!, workoutCount),
         { parse_mode: 'HTML' }
       );
     } catch (err: unknown) {
@@ -171,7 +184,7 @@ function getPreviousWorkout(
   recentWorkouts: WorkoutType[],
   splitLength: number
 ) {
-  const isSameWorkout = isSameDay(recentWorkouts[0].createdAt, new Date());
+  const isSameWorkout = isSameDay(recentWorkouts[0]!.createdAt, new Date());
   let workoutNumber = splitLength - 1;
 
   if (isSameWorkout) {
@@ -199,7 +212,7 @@ function getExerciseData(
   }
 
   const numberOfSets = allSets.length;
-  const { weight: previousWeight, repetitions: previousReps } = allSets[0];
+  const { weight: previousWeight, repetitions: previousReps } = allSets[0]!;
   const hitAllReps = allSets.every((set) => set.repetitions >= previousReps);
 
   return { previousWeight, previousReps, numberOfSets, hitAllReps };
