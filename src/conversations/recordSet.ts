@@ -23,10 +23,6 @@ export const RECORD_SET_CONVERSATION = "recordSet";
 export function recordSetConversation() {
   return createConversation(
     async (conversation: MyConversation, ctx: MyContext) => {
-      if (!ctx.chat) {
-        return;
-      }
-
       try {
         let isFinished = false;
         let iteration = 1;

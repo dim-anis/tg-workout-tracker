@@ -19,10 +19,6 @@ export function addExerciseConversation() {
     conversation: MyConversation,
     ctx: MyContext,
   ) {
-    if (!ctx.chat) {
-      return;
-    }
-
     const { user_id } = ctx.dbchat;
     const { lastMessageId } = ctx.session.state;
     const { id: chat_id } = ctx.chat;

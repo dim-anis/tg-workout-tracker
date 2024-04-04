@@ -1,35 +1,35 @@
-import { type MyContext, type MyConversation } from '@/types/bot.js';
-import { getCompletedSetsString } from './workoutStats.js';
-import { RecordExerciseParams } from './workoutUtils.js';
-import { kgs } from './units.js';
+import { type MyContext, type MyConversation } from "@/types/bot.js";
+import { getCompletedSetsString } from "./workoutStats.js";
+import { RecordExerciseParams } from "./workoutUtils.js";
+import { kgs } from "./units.js";
 import {
   getYesNoOptions,
   backButton,
   getRepOptions,
   getRpeOptions,
   getWeightOptions,
-  type InlineKeyboardOptions
-} from '@/config/keyboards.js';
+  type InlineKeyboardOptions,
+} from "@/config/keyboards.js";
 import {
   validationErrors,
   getRPEText,
   getRepetitionsText,
-  getRecordWeightMessage as getRecordWeightMessage
-} from './messages.js';
+  getRecordWeightMessage as getRecordWeightMessage,
+} from "./messages.js";
 
-function updateMessageWithError(message: string, error = '') {
+function updateMessageWithError(message: string, error = "") {
   const existingErrorMessages = message
-    .split('\n\n')
-    .filter((msg) => msg.startsWith('❌'));
+    .split("\n\n")
+    .filter((msg) => msg.startsWith("❌"));
   const timestamp = new Date().toLocaleTimeString();
   const errorMsg = error
     ? validationErrors[error as keyof typeof validationErrors] +
-      '\n' +
+      "\n" +
       timestamp
-    : '';
+    : "";
   const newMessage =
     existingErrorMessages.length > 0
-      ? message.replace('\n\n' + existingErrorMessages.join('\n\n'), errorMsg)
+      ? message.replace("\n\n" + existingErrorMessages.join("\n\n"), errorMsg)
       : message + errorMsg;
 
   return newMessage;
@@ -38,11 +38,11 @@ function updateMessageWithError(message: string, error = '') {
 export function validateWeight(input: string): string | undefined {
   const parsedInput = parseFloat(input);
   if (isNaN(parsedInput)) {
-    return 'input_is_not_a_number';
+    return "input_is_not_a_number";
   }
 
   if (parsedInput < 1 || parsedInput > 999) {
-    return 'input_is_out_of_range_weight';
+    return "input_is_out_of_range_weight";
   }
 
   return undefined;
@@ -51,15 +51,15 @@ export function validateWeight(input: string): string | undefined {
 export function validateReps(input: string): string | undefined {
   const parsedInput = parseInt(input, 10);
   if (isNaN(parsedInput)) {
-    return 'input_is_not_a_number';
+    return "input_is_not_a_number";
   }
 
   if (!Number.isInteger(parsedInput)) {
-    return 'input_is_not_an_integer';
+    return "input_is_not_an_integer";
   }
 
   if (parsedInput < 1 || parsedInput > 99) {
-    return 'input_is_out_of_range_repetitions';
+    return "input_is_out_of_range_repetitions";
   }
 
   return undefined;
@@ -68,15 +68,15 @@ export function validateReps(input: string): string | undefined {
 export function validateRPE(input: string): string | undefined {
   const floatValue = parseFloat(input);
   if (isNaN(floatValue)) {
-    return 'input_is_not_a_number';
+    return "input_is_not_a_number";
   }
 
   if (floatValue < 6.0 || floatValue > 10.0) {
-    return 'input_is_out_of_range_rpe';
+    return "input_is_out_of_range_rpe";
   }
 
   if (floatValue % 0.5 !== 0) {
-    return 'input_is_not_a_multiple_of_half';
+    return "input_is_not_a_multiple_of_half";
   }
 
   return undefined;
@@ -84,12 +84,12 @@ export function validateRPE(input: string): string | undefined {
 
 export function validateExerciseName(input: string): string | undefined {
   if (!input || input.trim().length > 50) {
-    return 'input_too_long';
+    return "input_too_long";
   }
 
   const regex = /^[a-zA-Z0-9\s'".!?()_-]+$/;
   if (!regex.test(input.trim())) {
-    return 'input_contains_special_chars';
+    return "input_contains_special_chars";
   }
 
   return undefined;
@@ -97,19 +97,19 @@ export function validateExerciseName(input: string): string | undefined {
 
 export function validateYesNoInput(input: string): string | undefined {
   const normalizedInput = input.toLowerCase().trim();
-  if (normalizedInput !== 'yes' && normalizedInput !== 'no') {
-    return 'input_is_not_yes_or_no';
+  if (normalizedInput !== "yes" && normalizedInput !== "no") {
+    return "input_is_not_yes_or_no";
   }
 
   return undefined;
 }
 
 function createPredefinedStringValidator(
-  validTextOptions: string[]
+  validTextOptions: string[],
 ): (input: string) => string | undefined {
   return (input: string) => {
     if (!validTextOptions.includes(input)) {
-      return 'input_is_not_defined';
+      return "input_is_not_defined";
     }
     return undefined;
   };
@@ -129,22 +129,22 @@ export async function promptUserForNumber(
   exerciseParams: RecordExerciseParams,
   message: string,
   options: InlineKeyboardOptions,
-  unit?: 'kg' | 'lb'
+  unit?: "kg" | "lb",
 ): Promise<NumberPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
   ctx = await conversation
-    .waitFor(['message:text', 'callback_query:data'])
+    .waitFor(["message:text", "callback_query:data"])
     .then((ctx) => ctx);
 
   if (ctx.callbackQuery) {
-    const buttonData = ctx.callbackQuery.data?.split(':')[1];
-    if (buttonData && buttonData.startsWith('toggle_unit')) {
-      const currUnit = buttonData.split('~')[1];
+    const buttonData = ctx.callbackQuery.data?.split(":")[1];
+    if (buttonData && buttonData.startsWith("toggle_unit")) {
+      const currUnit = buttonData.split("~")[1];
 
       exerciseParams = {
         ...exerciseParams,
-        weightUnit: currUnit === 'kg' ? 'lb' : 'kg'
+        weightUnit: currUnit === "kg" ? "lb" : "kg",
       };
 
       return promptUserForWeight(
@@ -152,9 +152,9 @@ export async function promptUserForNumber(
         conversation,
         chat_id,
         message_id,
-        exerciseParams
+        exerciseParams,
       );
-    } else if (buttonData === 'goBack') {
+    } else if (buttonData === "goBack") {
       return undefined;
     }
 
@@ -172,7 +172,7 @@ export async function promptUserForNumber(
   if (!validationError) {
     const value = Number(ctx.message.text);
     if (unit) {
-      const weight = unit === 'kg' ? value : kgs(value);
+      const weight = unit === "kg" ? value : kgs(value);
       return { data: weight, context: ctx };
     } else {
       return { data: value, context: ctx };
@@ -189,7 +189,7 @@ export async function promptUserForNumber(
     message_id,
     exerciseParams,
     newMessage,
-    options
+    options,
   );
 }
 
@@ -205,20 +205,20 @@ export async function promptUserForText(
   chat_id: number,
   message_id: number,
   message: string,
-  options: InlineKeyboardOptions
+  options: InlineKeyboardOptions,
 ): Promise<TextPromptResult | undefined> {
   await ctx.api.editMessageText(chat_id, message_id, message, options);
 
   ctx = await conversation
-    .waitFor(['message:text', 'callback_query:data'])
+    .waitFor(["message:text", "callback_query:data"])
     .then((ctx) => ctx);
 
   if (ctx.callbackQuery?.data) {
-    let buttonData = ctx.callbackQuery.data.split(':')[1];
+    let buttonData = ctx.callbackQuery.data.split(":")[1];
     // callback data doesn't contain prefix
-    if (typeof buttonData === 'undefined') {
+    if (typeof buttonData === "undefined") {
       buttonData = ctx.callbackQuery.data;
-    } else if (buttonData === 'goBack') {
+    } else if (buttonData === "goBack") {
       return { data: undefined, context: ctx };
     }
     return { data: buttonData, context: ctx };
@@ -232,7 +232,7 @@ export async function promptUserForText(
 
   const validationError = validatorFunc(ctx.message.text);
 
-  if (!validationError && typeof ctx.message.text !== 'undefined') {
+  if (!validationError && typeof ctx.message.text !== "undefined") {
     return { data: ctx.message.text, context: ctx };
   }
 
@@ -245,7 +245,7 @@ export async function promptUserForText(
     chat_id,
     message_id,
     newMessage,
-    options
+    options,
   );
 }
 
@@ -254,18 +254,18 @@ export function promptUserForWeight(
   conversation: MyConversation,
   chat_id: number,
   message_id: number,
-  exerciseParams: RecordExerciseParams
+  exerciseParams: RecordExerciseParams,
 ): Promise<NumberPromptResult | undefined> {
   const {
     selectedExercise,
     previousWeight,
     hitAllReps,
     setCount,
-    weightUnit: unit
+    weightUnit: unit,
   } = exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML'
+    parse_mode: "HTML",
   };
   let message: string;
 
@@ -276,11 +276,11 @@ export function promptUserForWeight(
       completedSets,
       previousWeight,
       hitAllReps,
-      unit
+      unit,
     );
     options = {
       ...options,
-      reply_markup: getWeightOptions(previousWeight, 'nextWorkout', unit)
+      reply_markup: getWeightOptions(previousWeight, "nextWorkout", unit),
     };
   } else {
     message = `<b>${selectedExercise}</b>\n\nPlease enter the weight:`;
@@ -295,7 +295,7 @@ export function promptUserForWeight(
     exerciseParams,
     message,
     options,
-    unit
+    unit,
   );
 }
 
@@ -305,13 +305,13 @@ export function promptUserForRepetitions(
   chat_id: number,
   message_id: number,
   exerciseParams: RecordExerciseParams,
-  currWeight?: number
+  currWeight?: number,
 ): Promise<NumberPromptResult | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } =
     exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML'
+    parse_mode: "HTML",
   };
   let message: string;
 
@@ -321,11 +321,11 @@ export function promptUserForRepetitions(
       selectedExercise,
       completedSets,
       previousReps,
-      hitAllReps
+      hitAllReps,
     );
     options = {
       ...options,
-      reply_markup: getRepOptions(previousReps, 'nextWorkout')
+      reply_markup: getRepOptions(previousReps, "nextWorkout"),
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs</i>\n\nType in the repetitions:`;
@@ -339,7 +339,7 @@ export function promptUserForRepetitions(
     message_id,
     exerciseParams,
     message,
-    options
+    options,
   );
 }
 
@@ -350,13 +350,13 @@ export function promptUserForRPE(
   message_id: number,
   exerciseParams: RecordExerciseParams,
   currWeight?: number,
-  currReps?: number
+  currReps?: number,
 ): Promise<NumberPromptResult | undefined> {
   const { selectedExercise, previousReps, hitAllReps, setCount } =
     exerciseParams;
 
   let options: InlineKeyboardOptions = {
-    parse_mode: 'HTML'
+    parse_mode: "HTML",
   };
   let message: string;
 
@@ -365,7 +365,7 @@ export function promptUserForRPE(
     message = getRPEText(selectedExercise, completedSets);
     options = {
       ...options,
-      reply_markup: getRpeOptions('nextWorkout')
+      reply_markup: getRpeOptions("nextWorkout"),
     };
   } else {
     message = `<b>${selectedExercise.toUpperCase()}</b>\n\n<i>${currWeight}kgs x ${currReps}</i>\n\nChoose the RPE:`;
@@ -379,7 +379,7 @@ export function promptUserForRPE(
     message_id,
     exerciseParams,
     message,
-    options
+    options,
   );
 }
 
@@ -389,7 +389,7 @@ export function promptUserForExerciseName(
   chat_id: number,
   message_id: number,
   message: string,
-  options: InlineKeyboardOptions
+  options: InlineKeyboardOptions,
 ): Promise<TextPromptResult | undefined> {
   return promptUserForText(
     ctx,
@@ -398,7 +398,7 @@ export function promptUserForExerciseName(
     chat_id,
     message_id,
     message,
-    options
+    options,
   );
 }
 
@@ -408,7 +408,7 @@ export function promptUserForYesNo(
   chat_id: number,
   message_id: number,
   message: string,
-  options: InlineKeyboardOptions
+  options: InlineKeyboardOptions,
 ): Promise<TextPromptResult | undefined> {
   return promptUserForText(
     ctx,
@@ -417,7 +417,7 @@ export function promptUserForYesNo(
     chat_id,
     message_id,
     message,
-    options
+    options,
   );
 }
 
@@ -428,7 +428,7 @@ export function promptUserForPredefinedString(
   message_id: number,
   message: string,
   options: InlineKeyboardOptions,
-  validTextOptions: string[]
+  validTextOptions: string[],
 ): Promise<TextPromptResult | undefined> {
   const validatorFunc = createPredefinedStringValidator(validTextOptions);
 
@@ -439,7 +439,7 @@ export function promptUserForPredefinedString(
     chat_id,
     message_id,
     message,
-    options
+    options,
   );
 }
 
@@ -453,23 +453,20 @@ export async function isDeloadWorkout(
   conversation: MyConversation,
   message_id: number,
   commandName: string,
-  iteration = 1
-): Promise<IsDeloadResult | undefined> {
-  const chat_id = ctx.chat?.id;
-  if (!chat_id) return undefined;
-
-  const message = 'Is it a <b>deload workout</b>?';
+  iteration = 1,
+): Promise<IsDeloadResult> {
+  const message = "Is it a <b>deload workout</b>?";
   const keyboard = getYesNoOptions(commandName);
   keyboard.row();
   keyboard.text(backButton, `${commandName}:goBack`);
 
   const options: InlineKeyboardOptions = {
-    parse_mode: 'HTML',
-    reply_markup: keyboard
+    parse_mode: "HTML",
+    reply_markup: keyboard,
   };
 
   if (iteration > 1) {
-    await ctx.api.editMessageText(chat_id, message_id, message, options);
+    await ctx.api.editMessageText(ctx.chat.id, message_id, message, options);
   } else {
     await ctx.reply(message, options);
   }
@@ -478,25 +475,25 @@ export async function isDeloadWorkout(
     .waitForCallbackQuery([
       `${commandName}:yes`,
       `${commandName}:no`,
-      `${commandName}:goBack`
+      `${commandName}:goBack`,
     ])
-    .then((ctx) => [ctx.callbackQuery.data.split(':')[1], ctx] as const);
+    .then((ctx) => [ctx.callbackQuery.data.split(":")[1], ctx] as const);
 
   switch (response) {
-    case 'yes':
+    case "yes":
       return {
         data: true,
-        context
+        context,
       };
-    case 'no':
+    case "no":
       return {
         data: false,
-        context
+        context,
       };
-    case 'goBack':
+    default:
       return {
         data: undefined,
-        context
+        context,
       };
   }
 }

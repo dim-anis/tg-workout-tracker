@@ -1,15 +1,15 @@
-import { type WorkoutType } from '@/models/workout.js';
-import { intervalToDuration } from 'date-fns/intervalToDuration';
-import { ExerciseType, PersonalBest } from '@/models/exercise.js';
-import { isToday } from 'date-fns';
-import { pounds, roundToNearestHalf } from './units.js';
-import { checkedCircle, getRpeOptionColor } from '@/config/keyboards.js';
-import { ArchivedWorkoutType } from '@/models/archivedWorkout.js';
-import { MyContext } from '@/types/bot.js';
+import { type WorkoutType } from "@/models/workout.js";
+import { intervalToDuration } from "date-fns/intervalToDuration";
+import { ExerciseType, PersonalBest } from "@/models/exercise.js";
+import { isToday } from "date-fns";
+import { pounds, roundToNearestHalf } from "./units.js";
+import { checkedCircle, getRpeOptionColor } from "@/config/keyboards.js";
+import { ArchivedWorkoutType } from "@/models/archivedWorkout.js";
+import { MyContext } from "@/types/bot.js";
 
-const dateFormat = new Intl.DateTimeFormat('en-US', {
-  day: 'numeric',
-  month: 'short'
+const dateFormat = new Intl.DateTimeFormat("en-US", {
+  day: "numeric",
+  month: "short",
 });
 
 type PersonalBestWithName = PersonalBest & { exerciseName: string };
@@ -22,7 +22,7 @@ type WorkoutStats = {
 
 export function getStats(
   workouts: (WorkoutType | ArchivedWorkoutType)[],
-  exercises: ExerciseType[]
+  exercises: ExerciseType[],
 ): WorkoutStats {
   const muscleGroupVolumes = workouts.reduce(
     (acc: MuscleGroupToVolumeMap, workout) => {
@@ -35,12 +35,12 @@ export function getStats(
 
       return acc;
     },
-    {}
+    {},
   );
 
   const totalVolume = Object.values(muscleGroupVolumes).reduce(
     (total, currVolume) => total + currVolume,
-    0
+    0,
   );
   let avgRPE = workouts.reduce((total, workout) => total + workout.avg_rpe, 0);
   avgRPE = roundToNearestHalf(avgRPE / workouts.length);
@@ -54,7 +54,7 @@ export function getStatsForWorkout(ctx: MyContext, workout: WorkoutType) {
     workout.updatedAt &&
     intervalToDuration({
       start: new Date(workout.createdAt),
-      end: new Date(workout.updatedAt)
+      end: new Date(workout.updatedAt),
     });
   const totalVolume = getTotalVolume(workout.sets);
   const prs = getPrs(ctx.dbchat.exercises);
@@ -65,20 +65,20 @@ export function getStatsForWorkout(ctx: MyContext, workout: WorkoutType) {
 export function renderWorkoutStatsMessage(
   ctx: MyContext,
   workout: WorkoutType,
-  workoutCount?: number
+  workoutCount?: number,
 ) {
   const { isMetric } = ctx.dbchat.settings;
-  const weightUnit = isMetric ? 'kg' : 'lb';
+  const weightUnit = isMetric ? "kg" : "lb";
   const { date, duration, totalVolume, prs } = getStatsForWorkout(ctx, workout);
   const totalDurationString = workout.updatedAt
     ? `<b>${duration.hours || 0}h ${duration.minutes || 0}m ${duration.seconds || 0}s</b>`
-    : 'N/A';
-  const prMessage = prs?.length ? generatePrMessage(prs, weightUnit) : '';
+    : "N/A";
+  const prMessage = prs?.length ? generatePrMessage(prs, weightUnit) : "";
 
   const message =
     `<b>Workout Stats</b>\n\n` +
     `📅 Date: <b>${dateFormat.format(date)}</b>\n` +
-    `📋 Workout number: <b>${workout.isDeload ? 'deload workout' : workoutCount}</b>\n` +
+    `📋 Workout number: <b>${workout.isDeload ? "deload workout" : workoutCount}</b>\n` +
     `🏋️‍♂️ Total volume: <b>${isMetric ? totalVolume : pounds(totalVolume)}${weightUnit}</b>\n` +
     `⏱️ Total duration: <b>${totalDurationString}</b>\n` +
     `${getRpeOptionColor(workout.avg_rpe)} Average RPE: <b>${workout.avg_rpe}</b>` +
@@ -88,32 +88,37 @@ export function renderWorkoutStatsMessage(
 }
 
 export function getStatsString(workoutStats: WorkoutStats, isMetric: boolean) {
-  const { muscleGroupVolumes, avgRPE } = workoutStats;
-  let { totalVolume } = workoutStats;
-  const weightUnit = isMetric ? 'kg' : 'lb';
-  totalVolume = Math.round(isMetric ? totalVolume : pounds(totalVolume));
+  const { muscleGroupVolumes, avgRPE, totalVolume } = workoutStats;
+  const weightUnit = isMetric ? "kg" : "lb";
+  const formattedTotalVolume = Math.round(
+    isMetric ? totalVolume : pounds(totalVolume),
+  ).toLocaleString();
 
-  const volumePerGroup: string[] = [];
-  for (let [muscleGroup, volume] of Object.entries(muscleGroupVolumes)) {
-    volume = Math.round(isMetric ? volume : pounds(volume));
-    volumePerGroup.push(
-      `    • <b>${muscleGroup}:</b> ${volume.toLocaleString()}${weightUnit}`
-    );
-  }
+  const volumePerGroup = Object.entries(muscleGroupVolumes).reduce(
+    (message, [muscleGroupName, volume]) => {
+      const formattedVolume = Math.round(
+        isMetric ? volume : pounds(volume),
+      ).toLocaleString();
+      message.push(
+        `    • <b>${muscleGroupName}:</b> ${formattedVolume} ${weightUnit}`,
+      );
+      return message;
+    },
+    [] as string[],
+  );
 
-  const statsText = `
-<b>Total volume: ${totalVolume.toLocaleString()}${weightUnit}</b> 
+  return `
+<b>Total volume: ${formattedTotalVolume} ${weightUnit}</b> 
 
-${volumePerGroup.join('\n')}
+${volumePerGroup.join("\n")}
 
 Average RPE: ${getRpeOptionColor(avgRPE)} <b>${avgRPE}</b>
 `;
-  return statsText;
 }
 
 export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
   const exerciseMap = new Map(
-    exercises.map((exercise) => [exercise.name, exercise])
+    exercises.map((exercise) => [exercise.name, exercise]),
   );
   const out = [];
 
@@ -133,7 +138,7 @@ export function getPrs(exercises: ExerciseType[]): PersonalBestWithName[] {
 
 export function generatePrMessage(
   newPbs: PersonalBestWithName[],
-  unit: 'kg' | 'lb'
+  unit: "kg" | "lb",
 ) {
   const pbMessageLines = [];
   if (newPbs.length > 0) {
@@ -141,32 +146,32 @@ export function generatePrMessage(
       let pbDiff = 0;
       if (newPb.oldPb) {
         const pbWeightDiffInKg = Number(
-          (newPb.weight - newPb.oldPb?.weight).toFixed(1)
+          (newPb.weight - newPb.oldPb?.weight).toFixed(1),
         );
         const pbWeightDiffConverted =
-          unit === 'kg' ? pbWeightDiffInKg : pounds(pbWeightDiffInKg);
+          unit === "kg" ? pbWeightDiffInKg : pounds(pbWeightDiffInKg);
         const pbWeightDiffConvertedRounded = Number.isInteger(
-          pbWeightDiffConverted
+          pbWeightDiffConverted,
         )
           ? Math.floor(pbWeightDiffConverted)
           : pbWeightDiffConverted;
         pbDiff = pbWeightDiffConvertedRounded;
       }
 
-      const strengthImprovement = pbDiff ? ` (+${pbDiff}${unit})` : '';
-      const newWeight = unit === 'kg' ? newPb.weight : pounds(newPb.weight);
+      const strengthImprovement = pbDiff ? ` (+${pbDiff}${unit})` : "";
+      const newWeight = unit === "kg" ? newPb.weight : pounds(newPb.weight);
 
       pbMessageLines.push(
-        `${newPb.exerciseName} - <b>${newWeight}${unit} x ${newPb.repetitions} ${strengthImprovement}</b>`
+        `${newPb.exerciseName} - <b>${newWeight}${unit} x ${newPb.repetitions} ${strengthImprovement}</b>`,
       );
     }
   }
 
-  return "\n\n<b>You've hit new PRs!</b>\n" + pbMessageLines.join('\n');
+  return "\n\n<b>You've hit new PRs!</b>\n" + pbMessageLines.join("\n");
 }
 
 export function generateSetCountMap(
-  setsArray: WorkoutType['sets'] = []
+  setsArray: WorkoutType["sets"] = [],
 ): Record<string, number> {
   const counts: Record<string, number> = setsArray.reduce<
     Record<string, number>
@@ -183,25 +188,25 @@ export function generateSetCountMap(
   return counts;
 }
 
-export const getAverageRPE = (sets: WorkoutType['sets']) =>
+export const getAverageRPE = (sets: WorkoutType["sets"]) =>
   roundToNearestHalf(
-    sets.reduce((total, set) => total + set.rpe, 0) / sets.length
+    sets.reduce((total, set) => total + set.rpe, 0) / sets.length,
   );
 
-export function getTotalVolume(sets: WorkoutType['sets']) {
+export function getTotalVolume(sets: WorkoutType["sets"]) {
   return sets.reduce(
     (totalVolume, set) => totalVolume + set.weight * set.repetitions,
-    0
+    0,
   );
 }
 
 export function getVolumePerMuscleGroup(
-  sets: WorkoutType['sets'],
-  exercises: ExerciseType[]
+  sets: WorkoutType["sets"],
+  exercises: ExerciseType[],
 ) {
   const result = sets.reduce((acc: MuscleGroupToVolumeMap, set) => {
     const category = exercises.find(
-      (exercise) => exercise.name === set.exercise
+      (exercise) => exercise.name === set.exercise,
     )?.category;
     if (!category) return {};
 

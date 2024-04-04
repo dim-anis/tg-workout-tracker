@@ -31,19 +31,14 @@ export function nextWorkoutConversation() {
     conversation: MyConversation,
     ctx: MyContext,
   ) {
-    if (!ctx.chat) {
-      return;
-    }
-
     const { id: chat_id } = ctx.chat;
     let isFinished = false;
     let iteration = 1;
 
     while (!isFinished) {
       try {
-        const { splitLength, isMetric } = ctx.dbchat.settings;
-        const weightUnit = isMetric ? "kg" : "lb";
-        const { recentWorkouts } = ctx.dbchat;
+        const { settings: userSettings, recentWorkouts } = ctx.dbchat;
+        const weightUnit = userSettings.isMetric ? "kg" : "lb";
         const lastWorkout = recentWorkouts[0]!;
         const isTodayWorkout = isToday(lastWorkout.createdAt);
 
@@ -72,7 +67,7 @@ export function nextWorkoutConversation() {
         const workoutCount = getWorkoutCount(recentWorkouts, isTodayWorkout);
         const previousWorkout = getPreviousWorkout(
           recentWorkouts,
-          splitLength,
+          userSettings.splitLength,
         )!;
         const previousWorkoutExercises = [
           ...new Set(previousWorkout.sets.map((set) => set.exercise)),
