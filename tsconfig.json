@@ -8,19 +8,19 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
-
     /* If transpiling with TypeScript: */
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
-    "outDir": "dist",
+    "rootDir": ".",
+    "outDir": "build",
     "sourceMap": true,
-
     /* If your code doesn't run in the DOM: */
-    "lib": ["es2022"],
+    "lib": [
+      "es2022"
+    ],
     "paths": {
       "@/*": [
         "./src/*"
@@ -28,7 +28,8 @@
     }
   },
   "include": [
-    "**/*.ts"
+    "api/**/*",
+    "src/**/*"
   ],
   "exclude": [
     "node_modules"
