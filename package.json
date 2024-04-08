@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch ./src/index.ts",
     "trasnpiled": "node ./dist/bot.js",
-    "build": "tsc && tsc-alias",
+    "build": "tsc --noEmit false",
     "lint": "eslint ."
   },
   "repository": {

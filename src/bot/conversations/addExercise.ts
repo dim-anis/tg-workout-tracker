@@ -110,7 +110,7 @@ export function addExerciseConversation() {
       }
 
       const newExericse =
-        updatedUser.exercises[updatedUser.exercises.length - 1];
+        updatedUser.exercises[updatedUser.exercises.length - 1]!;
       ctx.dbchat.exercises.push(newExericse);
 
       await ctx.api.editMessageText(

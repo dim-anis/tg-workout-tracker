@@ -3,6 +3,5 @@ README.md
 .env
 .vscode/
 .eslintrc.json
-nodemon.json
 node_modules/
 build/

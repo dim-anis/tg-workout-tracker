@@ -42,7 +42,7 @@ exercisesMenu.dynamic((ctx) => {
 
   const [category] = payload.split(",");
 
-  return createExerciseMenu(ctx, category);
+  return createExerciseMenu(ctx, category!);
 });
 
 function createExerciseMenu(ctx: MyContext, category: string) {
@@ -89,7 +89,7 @@ selectExerciseMenu.dynamic((ctx) => {
 
   const [category, exercise] = payload.split(",");
 
-  return createSelectExerciseMenu(category, exercise);
+  return createSelectExerciseMenu(category!, exercise!);
 });
 
 function createSelectExerciseMenu(category: string, exercise: string) {
@@ -104,7 +104,7 @@ function createSelectExerciseMenu(category: string, exercise: string) {
       { text: "❌ Delete", payload: `${category},${exercise}` },
       async (ctx) => {
         const exercise = ctx.match.split(",")[1];
-        await deleteUserExercise(ctx.dbchat.user_id, exercise);
+        await deleteUserExercise(ctx.dbchat.user_id, exercise!);
         const index = ctx.dbchat.exercises.findIndex(
           (e) => e.name === exercise,
         );
