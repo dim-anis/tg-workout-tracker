@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { createBot } from "../src/bot/index.js";
-import { envVariables } from "../src/config.js";
-import { createServer } from "../src/server/index.js";
+import { createBot } from "@/bot/index.js";
+import { envVariables } from "@/config.js";
+import { createServer } from "@/server/index.js";
 
 const bot = createBot(envVariables.BOT_TOKEN);
 const server = await createServer(bot);
