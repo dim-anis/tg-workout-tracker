@@ -1,5 +1,5 @@
 {
-  "outputDirectory": "dist",
+  "outputDirectory": "build",
   "routes": [
     {
       "src": "/.*",
