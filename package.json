@@ -9,7 +9,6 @@
   },
   "scripts": {
     "dev": "tsx watch ./src/index.ts",
-    "trasnpiled": "node ./dist/bot.js",
     "build": "tsc --noEmit false",
     "lint": "eslint ."
   },
