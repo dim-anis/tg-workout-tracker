@@ -2,7 +2,7 @@
   "name": "tg-workout-tracker",
   "version": "1.0.0",
   "description": "WrktTrckr is a workout tracker built with GrammyJS. It supports periodisation & predicts your next workout.",
-  "main": "./src/bot.ts",
+  "main": "./src/index.ts",
   "type": "module",
   "imports": {
     "@/*": "./build/src/*"
