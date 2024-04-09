@@ -53,5 +53,9 @@
     "tsx": "^4.7.1",
     "typescript": "^5.4.3",
     "typescript-eslint": "^7.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
